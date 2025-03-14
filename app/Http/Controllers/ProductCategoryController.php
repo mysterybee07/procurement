@@ -25,6 +25,10 @@ class ProductCategoryController extends Controller
 
         return Inertia::render('product-category/list-product-category', [
             'categories' => $categories,
+            'flash' => [
+            'message' => session('message'),
+            'error' => session('error'),
+            ]
             // 'parentCategories' => $parentCategories
         ]);
     }
@@ -84,7 +88,7 @@ class ProductCategoryController extends Controller
     {
         $category->update($request->validated());
 
-        return redirect()->route('categories.index')->with('success', 'Category updated successfully.');
+        return redirect()->route('categories.index')->with('message', 'Category updated successfully.');
     }
 
     /**
@@ -101,6 +105,6 @@ class ProductCategoryController extends Controller
         
         $category->delete();
         
-        return back()->with('success', 'Category deleted successfully.');
+        return back()->with('message', 'Category deleted successfully.');
     }
 }

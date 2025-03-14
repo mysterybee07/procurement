@@ -2,13 +2,14 @@ import React from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
+import DeleteModal from '@/components/delete-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'All Categories',
         href: '/dashboard',
     },
-   
+
 ];
 
 interface Category {
@@ -35,39 +36,31 @@ interface IndexProps {
     };
 }
 
-export default function Index({ categories }: IndexProps) {
-
-    console.log(categories);
-    const deleteCategory = (id: number) => {
-        if (confirm('Are you sure you want to delete this category?')) {
-            router.delete(route('categories.destroy', id));
-        }
-    };
+export default function Index({ categories, flash }: IndexProps) {
 
     return (
         // <h1>Category Page</h1>
         <AppLayout
             breadcrumbs={breadcrumbs}
-            // header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Product Categories</h2>}
+        // header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Product Categories</h2>}
         >
             <Head title="Product Categories" />
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    {/* Flash Message */}
+                    {flash.message && (
+                        <div className="mb-4 text-green-600 bg-green-100 border border-green-400 px-4 py-2 rounded-md">
+                            {flash.message}
+                        </div>
+                    )}
+                    {flash.error && (
+                        <div className="mb-4 text-red-600 bg-red-100 border border-red-400 px-4 py-2 rounded-md">
+                            {flash.error}
+                        </div>
+                    )}
+
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-
-                        {/* {flash.message && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-                {flash.message}
-              </div>
-            )} */}
-
-                        {/* {flash.error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-                {flash.error}
-              </div>
-            )} */}
-
                         <div className="flex justify-end mb-6">
                             <Link
                                 href={route('categories.create')}
@@ -115,13 +108,14 @@ export default function Index({ categories }: IndexProps) {
                                                     >
                                                         Edit
                                                     </Link>
-                                                    <button
-                                                        onClick={() => deleteCategory(category.id)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                        type="button"
-                                                    >
-                                                        Delete
-                                                    </button>
+                                                    <DeleteModal
+                                                        title="Delete Category"
+                                                        description="Are you sure you want to delete this category? This action cannot be undone."
+                                                        deleteRoute="categories.destroy"
+                                                        itemId={category.id}
+                                                        onSuccess={() => console.log("Category deleted successfully!")}
+                                                    />
+
                                                 </td>
                                             </tr>
                                         ))
@@ -155,8 +149,8 @@ export default function Index({ categories }: IndexProps) {
                                                     key={page}
                                                     href={route('categories.index', { page })}
                                                     className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${page === categories.current_page
-                                                            ? 'z-10 bg-indigo-600 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-                                                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
+                                                        ? 'z-10 bg-indigo-600 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+                                                        : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
                                                         }`}
                                                 >
                                                     {page}
