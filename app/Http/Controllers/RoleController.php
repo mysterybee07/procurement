@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RoleRequest;
 use App\Models\Permission;
-use App\Models\Role;
+use Illuminate\Auth\Events\Validated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
@@ -18,10 +20,17 @@ class RoleController extends Controller
      */
     public function index()
     {
-        $roles = Role::with('permissions')->get();
+        $roles = Role::with('permissions')->paginate(10); 
         
-        return Inertia::render('', [
-            'roles' => $roles
+        return Inertia::render('auth/role/list-role', [
+            'roles' => [
+                'data' => $roles->items(),
+                'links' => $roles->links()->elements,
+            ],
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
+            ]
         ]);
     }
 
@@ -42,35 +51,55 @@ class RoleController extends Controller
 
     /**
      * Store a newly created role in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
      */
-    public function store(Request $request)
+    // public function store(RoleRequest $request)
+    // {    
+        // // dd($request->json());
+        // $request->validate([
+        //     'name' => 'required|string|unique:roles,name',
+        //     'permissions' => 'required|array',
+        //     'permissions.*' => 'exists:permissions,name',
+        // ]);
+        // dd($request);
+
+    //     // Create the new role
+    //     $role = Role::create(['name' => $request->validated('name')]);
+
+    //     // Assign permissions to the role
+    //     $role->givePermissionTo($request->permissions);
+            
+    //     return redirect()->route('roles.index')->with(
+    //         'message', 'Role created successfully'
+    //     );
+    // }
+    public function store(RoleRequest $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
-            'selectedPermissions' => ['required', 'array', 'min:1'],
-            'selectedPermissions.*' => ['exists:permissions,id']
-        ], [
-            'selectedPermissions.required' => 'Please select at least one permission',
-            'selectedPermissions.min' => 'Please select at least one permission'
-        ]);
-        
+        // dd($request->json());
+        // $request->validate([
+        //     'name' => 'required|string|unique:roles,name',
+        //     'permissions' => 'required|array',
+        //     'permissions.*' => 'exists:permissions,name',
+        // ]);
+        // dd($request);
         DB::beginTransaction();
         
         try {
-            // Create role
+            
+            $validated = $request->validated();
+            
+            // Create the new role
             $role = Role::create(['name' => $validated['name']]);
             
-            // Attach permissions
-            $role->permissions()->attach($validated['selectedPermissions']);
+            // Assign permissions to the role
+            $role->givePermissionTo($validated['selectedPermissions']);
+
+            // dd($role);
             
             DB::commit();
             
-            return redirect()->route('roles.index')
-                ->with('success', 'Role created successfully.');
-                
+            return redirect()->route('roles.index')->with(
+                'message', 'Role created successfully'
+            );
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -80,11 +109,10 @@ class RoleController extends Controller
         }
     }
 
+
     /**
      * Show the form for editing the specified role.
      *
-     * @param  \App\Models\Role  $role
-     * @return \Inertia\Response
      */
     public function edit(Role $role)
     {
@@ -97,7 +125,7 @@ class RoleController extends Controller
             'selectedPermissions' => $role->permissions->pluck('id')->toArray()
         ];
         
-        return Inertia::render('Roles/Form', [
+        return Inertia::render('auth/role/role-form', [
             'permissions' => $permissions,
             'isEditing' => true,
             'role' => $roleData
@@ -106,34 +134,19 @@ class RoleController extends Controller
 
     /**
      * Update the specified role in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Role  $role
-     * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, Role $role)
+    public function update(RoleRequest $request, Role $role)
     {
-        $validated = $request->validate([
-            'name' => [
-                'required', 
-                'string', 
-                'max:255', 
-                Rule::unique('roles')->ignore($role->id)
-            ],
-            'selectedPermissions' => ['required', 'array', 'min:1'],
-            'selectedPermissions.*' => ['exists:permissions,id']
-        ], [
-            'selectedPermissions.required' => 'Please select at least one permission',
-            'selectedPermissions.min' => 'Please select at least one permission'
-        ]);
-        
         DB::beginTransaction();
         
         try {
-            // Update role
+            // Get validated data from the request
+            $validated = $request->validated();
+            
+            // Update role name
             $role->update(['name' => $validated['name']]);
             
-            // Sync permissions
+            //selected permissions
             $role->permissions()->sync($validated['selectedPermissions']);
             
             DB::commit();
@@ -149,12 +162,11 @@ class RoleController extends Controller
             ]);
         }
     }
+    
 
     /**
      * Remove the specified role from storage.
      *
-     * @param  \App\Models\Role  $role
-     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Role $role)
     {

@@ -1,34 +1,29 @@
 import React from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import DeleteModal from '@/components/delete-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'All Categories',
-        href: '/dashboard',
-    },
-
+    { title: 'All Roles', href: '/dashboard' },
 ];
 
-interface Category {
+interface Permission {
     id: number;
-    category_name: string;
-    category_code: string;
-    parent_category_id: number | null;
-    description: string;
-    parentCategory?: {
-        id: number;
-        category_name: string;
-    } | null;
+    name: string;
 }
 
-interface IndexProps {
-    categories: {
-        data: Category[];
-        current_page: number;
-        last_page: number;
+interface Role {
+    id: number;
+    name: string;
+    permissions: Permission[];
+}
+
+interface PageProps {
+    roles: {
+        data: Role[];
+        current_page:number;
+        last_page:number;
     };
     flash: {
         message?: string;
@@ -36,15 +31,13 @@ interface IndexProps {
     };
 }
 
-export default function ListProduct({ categories, flash }: IndexProps) {
-
+export default function ListRole({ roles, flash }: PageProps) {
     return (
-        // <h1>Category Page</h1>
         <AppLayout
             breadcrumbs={breadcrumbs}
         // header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Product Categories</h2>}
         >
-            <Head title="Product Categories" />
+            <Head title="Roles" />
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -63,10 +56,10 @@ export default function ListProduct({ categories, flash }: IndexProps) {
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <div className="flex justify-end mb-6">
                             <Link
-                                href={route('categories.create')}
+                                href={route('roles.create')}
                                 className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                             >
-                                Add New Category
+                                Add New Role
                             </Link>
                         </div>
 
@@ -74,46 +67,38 @@ export default function ListProduct({ categories, flash }: IndexProps) {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent Category</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {categories.data.length === 0 ? (
+                                    {roles.data.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                                                No categories found
+                                                No roles found
                                             </td>
                                         </tr>
                                     ) : (
-                                        categories.data.map((category) => (
-                                            <tr key={category.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">{category.category_code}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{category.category_name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {category.parentCategory ? category.parentCategory.category_name : 'N/A'}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {category.description && category.description.length > 50
-                                                        ? `${category.description.substring(0, 50)}...`
-                                                        : category.description || 'N/A'}
-                                                </td>
+                                        roles.data.map((role) => (
+                                            <tr key={role.id}>
+                                                <td className="px-6 py-4 whitespace-nowrap">{role.name}</td>
+
+                                                <td className="table-cell">{role.permissions.map(p => p.name).join(', ') || 'No Permissions'}</td>
+                                                
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                     <Link
-                                                        href={route('categories.edit', category.id)}
+                                                        href={route('roles.edit', role.id)}
                                                         className="text-indigo-600 hover:text-indigo-900 mr-3"
                                                     >
                                                         Edit
                                                     </Link>
                                                     <DeleteModal
-                                                        title="Delete Category"
-                                                        description="Are you sure you want to delete this category? This action cannot be undone."
-                                                        deleteRoute="categories.destroy"
-                                                        itemId={category.id}
-                                                        onSuccess={() => console.log("Category deleted successfully!")}
+                                                        title="Delete Role"
+                                                        description="Are you sure you want to delete this role? This action cannot be undone."
+                                                        deleteRoute="roles.destroy"
+                                                        itemId={role.id}
+                                                        onSuccess={() => console.log("Role deleted successfully!")}
                                                     />
 
                                                 </td>
@@ -125,18 +110,18 @@ export default function ListProduct({ categories, flash }: IndexProps) {
                         </div>
 
                         {/* Pagination */}
-                        {categories.last_page > 1 && (
+                        {roles.last_page > 1 && (
                             <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
                                 <div className="flex flex-1 justify-between sm:hidden">
                                     <Link
-                                        href={categories.current_page > 1 ? route('categories.index', { page: categories.current_page - 1 }) : '#'}
-                                        className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${categories.current_page === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        href={roles.current_page > 1 ? route('roles.index', { page: roles.current_page - 1 }) : '#'}
+                                        className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${roles.current_page === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         Previous
                                     </Link>
                                     <Link
-                                        href={categories.current_page < categories.last_page ? route('categories.index', { page: categories.current_page + 1 }) : '#'}
-                                        className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${categories.current_page === categories.last_page ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        href={roles.current_page < roles.last_page ? route('roles.index', { page: roles.current_page + 1 }) : '#'}
+                                        className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${roles.current_page === roles.last_page ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         Next
                                     </Link>
@@ -144,11 +129,11 @@ export default function ListProduct({ categories, flash }: IndexProps) {
                                 <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-center">
                                     <div>
                                         <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                                            {Array.from({ length: categories.last_page }, (_, i) => i + 1).map((page) => (
+                                            {Array.from({ length: roles.last_page }, (_, i) => i + 1).map((page) => (
                                                 <Link
                                                     key={page}
-                                                    href={route('categories.index', { page })}
-                                                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${page === categories.current_page
+                                                    href={route('roles.index', { page })}
+                                                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${page === roles.current_page
                                                         ? 'z-10 bg-indigo-600 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
                                                         : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
                                                         }`}

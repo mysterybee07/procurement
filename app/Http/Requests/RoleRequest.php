@@ -12,7 +12,7 @@ class RoleRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,23 +22,37 @@ class RoleRequest extends FormRequest
      */
     public function rules()
     {
-        $roleId = $this->route('role') ? $this->route('role')->id : null;
+        // Retrieve role ID from the route, if available
+        $roleId = $this->route('roles') ? $this->route('roles')->id : null;
 
         return [
-            [
-                'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
-                'selectedPermissions' => ['required', 'array', 'min:1'],
-                'selectedPermissions.*' => ['exists:permissions,id']
+            'name' => [
+                'required', 
+                'string', 
+                'max:255', 
+                'unique:roles,name,'.$this->id
             ],
+            'selectedPermissions' => [
+                'required', 
+                'array', 
+                'min:1',
+            ],
+            'selectedPermissions.*' => [
+                'exists:permissions,id',
+            ]
         ];
     }
 
+    
     public function messages()
     {
         return [
-            'role_name.required' => 'The role name is required.',
-            'selectedPermissions.required' => 'Please select at least one permission',
-            'selectedPermissions.min' => 'Please select at least one permission'
+            'name.required' => 'The role name is required.',
+            'name.unique' => 'The role name has already been taken.',
+            'selectedPermissions.required' => 'Please select at least one permission.',
+            'selectedPermissions.min' => 'Please select at least one permission.',
+            'selectedPermissions.*.exists' => 'One or more of the selected permissions are invalid.',
         ];
     }
+    
 }

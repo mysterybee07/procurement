@@ -22,6 +22,7 @@ class CategoryRequest extends FormRequest
      */
     public function rules()
     {
+        // dd();
         $categoryId = $this->route('category') ? $this->route('category')->id : null;
 
         return [
@@ -30,7 +31,7 @@ class CategoryRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('product_categories', 'category_code')->ignore($categoryId),
+                'unique:product_categories,category_code,'.$this->id
             ],
             'parent_category_id' => 'nullable|exists:product_categories,id',
             'description' => 'nullable|string',
