@@ -8,6 +8,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         title: 'All Categories',
         href: '/dashboard',
     },
+   
 ];
 
 interface Category {

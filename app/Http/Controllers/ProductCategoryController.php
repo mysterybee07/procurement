@@ -37,7 +37,7 @@ class ProductCategoryController extends Controller
         $parentCategories = ProductCategory::select('id', 'category_name')
         ->orderBy('category_name')
         ->get();
-        return Inertia::render('product-category/create-product-category',[
+        return Inertia::render('product-category/product-category-form',[
             'parentCategories'=> $parentCategories
         ]);
     }
@@ -70,7 +70,7 @@ class ProductCategoryController extends Controller
             ->orderBy('category_name')
             ->get();
 
-        return Inertia::render('product-category/create-product-category', [
+        return Inertia::render('product-category/product-category-form', [
             'category' => $category,
             'parentCategories' => $parentCategories,
             'isEditing' => true,

@@ -3,13 +3,6 @@ import React from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Create Category',
-        href: '/dashboard',
-    },
-];
-
 interface ParentCategory {
     id: number;
     category_name: string;
@@ -18,33 +11,68 @@ interface ParentCategory {
 interface Props {
     parentCategories: ParentCategory[];
     isEditing?: boolean;
+    category?: {
+        id?: number;
+        category_name: string;
+        category_code: string;
+        description: string;
+        parent_category_id: string | number | null;
+    };
 }
 
-const CreateProductCategory: React.FC<Props> = ({ parentCategories, isEditing = false }) => {
-    const { data, setData, errors, post, reset, processing } = useForm({
-        category_name: '',
-        category_code: '',
-        description: '',
-        parent_category_id: '',
+const ProductCategoryForm: React.FC<Props> = ({ parentCategories, isEditing = false, category }) => {
+    // Set up breadcrumbs based on whether we're editing or creating
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'All Categories',
+            href: '/categories',
+        },
+        {
+            title: isEditing ? 'Edit Category' : 'Create Category',
+            href: '/categories/create',
+        },
+        
+    ];
+
+    // Initialize form with either existing category data or empty values
+    const { data, setData, errors, post, put, reset, processing } = useForm({
+        id: category?.id || '',
+        category_name: category?.category_name || '',
+        category_code: category?.category_code || '',
+        description: category?.description || '',
+        parent_category_id: category?.parent_category_id?.toString() || '',
     });
 
+    // Handle form submission
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/categories/{category}', {
-            onSuccess: () => reset(),
-        });
+        
+        if (isEditing && category?.id) {
+            // Update existing category
+            put(`/categories/${category.id}`, {
+                onSuccess: () => {
+                    // Optionally reset or redirect
+                },
+            });
+        } else {
+            // Create new category
+            post('/categories', {
+                onSuccess: () => reset(),
+            });
+        }
     };
 
     return (
-        <AppLayout
-            breadcrumbs={breadcrumbs}
-        // header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Product Categories</h2>}
-        >
-            <Head title="Product Categories" />
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title={isEditing ? "Edit Product Category" : "Create Product Category"} />
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
+                        <h1 className="text-2xl font-bold mb-6">
+                            {isEditing ? 'Edit Category' : 'Create New Category'}
+                        </h1>
+                        
                         <form onSubmit={submit}>
                             {/* Category Name */}
                             <div className="mb-4">
@@ -173,9 +201,12 @@ const CreateProductCategory: React.FC<Props> = ({ parentCategories, isEditing = 
                                     onChange={(e) => setData('parent_category_id', e.target.value)}
                                 >
                                     <option value="">None (Top Level Category)</option>
-                                    {/* Map through your categories here */}
                                     {parentCategories.map((parentCategory) => (
-                                        <option key={parentCategory.id} value={parentCategory.id}>
+                                        <option 
+                                            key={parentCategory.id} 
+                                            value={parentCategory.id.toString()}
+                                            disabled={isEditing && category?.id === parentCategory.id}
+                                        >
                                             {parentCategory.category_name}
                                         </option>
                                     ))}
@@ -191,7 +222,7 @@ const CreateProductCategory: React.FC<Props> = ({ parentCategories, isEditing = 
                                 <button
                                     type="button"
                                     className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                    onClick={() => reset()}
+                                    onClick={() => window.history.back()}
                                     disabled={processing}
                                 >
                                     Cancel
@@ -201,16 +232,15 @@ const CreateProductCategory: React.FC<Props> = ({ parentCategories, isEditing = 
                                     className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     disabled={processing}
                                 >
-                                    {processing ? 'Saving...' : 'Save Category'}
+                                    {processing ? 'Saving...' : isEditing ? 'Update Category' : 'Save Category'}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
-
         </AppLayout>
     );
 };
 
-export default CreateProductCategory;
+export default ProductCategoryForm;
