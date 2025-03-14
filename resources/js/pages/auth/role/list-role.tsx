@@ -100,6 +100,12 @@ export default function ListRole({ roles, flash }: PageProps) {
                                                         itemId={role.id}
                                                         onSuccess={() => console.log("Role deleted successfully!")}
                                                     />
+                                                    <Link
+                                                        href={route('roles.permissions', role.id)}
+                                                        className="text-indigo-600 hover:text-indigo-900 mr-3 pl-4"
+                                                    >
+                                                        update permissions
+                                                    </Link>
 
                                                 </td>
                                             </tr>

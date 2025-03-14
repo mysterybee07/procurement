@@ -6,6 +6,7 @@ use App\Http\Requests\CategoryRequest;
 use App\Models\ProductCategory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class ProductCategoryController extends Controller
 {
@@ -89,7 +90,7 @@ class ProductCategoryController extends Controller
         $category->update($request->validated());
 
         return redirect()->route('categories.index')->with('message', 'Category updated successfully.');
-    }
+    }   
 
     /**
      * Remove the specified resource from storage.

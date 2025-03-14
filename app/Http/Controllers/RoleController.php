@@ -162,7 +162,31 @@ class RoleController extends Controller
             ]);
         }
     }
-    
+
+    public function assignPermissionsToRole(Role $role)
+    {
+        // Get all permissions
+        $permissions = Permission::all();
+        
+        return Inertia::render('auth/role/assign-permissions-to-role', [
+            'permissions' => $permissions,
+            'roleId' => $role->id, 
+            'selectedPermissions' => $role->permissions->pluck('id')->toArray(), 
+        ]);
+    }
+
+    public function updatePermissions(Request $request, Role $role)
+    {
+        $request->validate([
+            'selectedPermissions' => 'array|exists:permissions,id', 
+        ]);
+        
+        // Sync the permissions to the role
+        $role->permissions()->sync($request->selectedPermissions);
+
+        return redirect()->route('roles.index')
+            ->with('success', 'Permissions assigned successfully.');
+    }
 
     /**
      * Remove the specified role from storage.

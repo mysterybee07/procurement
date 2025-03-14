@@ -30,6 +30,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
     Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    Route::get('/roles/{role}/permissions', [RoleController::class, 'assignPermissionsToRole'])
+    ->name('roles.permissions');
+    Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])
+    ->name('roles.updatePermissions');
 });
 
 require __DIR__.'/settings.php';
