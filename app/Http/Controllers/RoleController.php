@@ -212,7 +212,7 @@ class RoleController extends Controller
             DB::commit();
             
             return redirect()->route('roles.index')
-                ->with('success', 'Role deleted successfully.');
+                ->with('message', 'Role deleted successfully.');
                 
         } catch (\Exception $e) {
             DB::rollBack();

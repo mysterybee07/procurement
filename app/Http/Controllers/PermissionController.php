@@ -130,7 +130,7 @@ class PermissionController extends Controller
             DB::commit();
             
             return redirect()->route('permissions.index')
-                ->with('success', 'Permission updated successfully.');
+                ->with('message', 'Permission updated successfully.');
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -164,7 +164,7 @@ class PermissionController extends Controller
             DB::commit();
             
             return redirect()->route('permissions.index')
-                ->with('success', 'Permission deleted successfully.');
+                ->with('message', 'Permission deleted successfully.');
                 
         } catch (\Exception $e) {
             DB::rollBack();
