@@ -40,10 +40,10 @@ class PermissionController extends Controller
      *
      * @return \Inertia\Response
      */
-    public function create()
-    {           
-        return Inertia::render('auth/permission/permission-form');
-    }
+    // public function create()
+    // {           
+    //     // return Inertia::render('auth/permission/permission-form');
+    // }
 
     /**
      * Store a newly created role in storage.
@@ -98,20 +98,20 @@ class PermissionController extends Controller
      * Show the form for editing the specified role.
      *
      */
-    public function edit(Permission $permission)
-    {
+    // public function edit(Permission $permission)
+    // {
       
-        // Format permission for the form
-        $permissionData = [
-            'id' => $permission->id,
-            'name' => $permission->name,
-        ];
+    //     // Format permission for the form
+    //     $permissionData = [
+    //         'id' => $permission->id,
+    //         'name' => $permission->name,
+    //     ];
         
-        return Inertia::render('auth/permission/permission-form', [
-            'isEditing' => true,
-            'permission' => $permissionData
-        ]);
-    }
+    //     return Inertia::render('auth/permission/permission-form', [
+    //         'isEditing' => true,
+    //         'permission' => $permissionData
+    //     ]);
+    // }
 
     /**
      * Update the specified role in storage.

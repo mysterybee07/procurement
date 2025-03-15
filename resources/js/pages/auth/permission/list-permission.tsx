@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import DeleteModal from '@/components/delete-modal';
+import PermissionFormModal from './permission-form';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'All Permissions', href: '/dashboard' },
@@ -16,8 +17,8 @@ interface Permission {
 interface PageProps {
     permissions: {
         data: Permission[];
-        current_page:number;
-        last_page:number;
+        current_page: number;
+        last_page: number;
     };
     flash: {
         message?: string;
@@ -49,12 +50,13 @@ export default function ListPermission({ permissions, flash }: PageProps) {
 
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <div className="flex justify-end mb-6">
-                            <Link
-                                href={route('permissions.create')}
-                                className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                            >
-                                Add New Permission
-                            </Link>
+                            <PermissionFormModal
+                                isEditing={false}
+                                buttonLabel="Add New Permission"
+                                onSuccess={() => {
+
+                                }}
+                            />
                         </div>
 
                         <div className="overflow-x-auto">
@@ -77,14 +79,14 @@ export default function ListPermission({ permissions, flash }: PageProps) {
                                             <tr key={permission.id}>
                                                 <td className="px-6 py-4 whitespace-nowrap">{permission.name}</td>
 
-                                                
+
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <Link
-                                                        href={route('permissions.edit', permission.id)}
-                                                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                                                    >
-                                                        Edit
-                                                    </Link>
+                                                    <PermissionFormModal
+                                                        isEditing={true}
+                                                        permission={permission}
+                                                        buttonLabel="Edit"
+                                                        // onSuccess={onSuccess}
+                                                    />
                                                     <DeleteModal
                                                         title="Delete Permission"
                                                         description="Are you sure you want to delete this permission? This action cannot be undone."
@@ -92,7 +94,7 @@ export default function ListPermission({ permissions, flash }: PageProps) {
                                                         itemId={permission.id}
                                                         onSuccess={() => console.log("Role deleted successfully!")}
                                                     />
-                                                    
+
                                                 </td>
                                             </tr>
                                         ))
