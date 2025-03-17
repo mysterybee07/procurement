@@ -28,11 +28,11 @@ const mainNavItems: NavItem[] = [
         href:'/eois',
         icon: LayoutGrid,
     },
-    {
-        title: 'Vendors',
-        href:'/product-categories',
-        icon: LayoutGrid,
-    },
+    // {
+    //     title: 'Vendors',
+    //     href:'/product-categories',
+    //     icon: LayoutGrid,
+    // },
     {
         title: 'Roles',
         href:'/roles',
@@ -41,6 +41,16 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Permissions',
         href:'/permissions',
+        icon: LayoutGrid,
+    },
+    {
+        title: 'Users',
+        href:'/users',
+        icon: LayoutGrid,
+    },
+    {
+        title: 'Vendors',
+        href:'/vendors',
         icon: LayoutGrid,
     },
 ];

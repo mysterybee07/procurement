@@ -128,7 +128,11 @@ class RoleController extends Controller
         return Inertia::render('auth/role/role-form', [
             'permissions' => $permissions,
             'isEditing' => true,
-            'role' => $roleData
+            'role' => $roleData,
+            'flash' => [
+            'message' => session('message'),
+            'error' => session('error'),
+            ]
         ]);
     }
 
@@ -152,7 +156,7 @@ class RoleController extends Controller
             DB::commit();
             
             return redirect()->route('roles.index')
-                ->with('success', 'Role updated successfully.');
+                ->with('message', 'Role updated successfully.');
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -185,7 +189,7 @@ class RoleController extends Controller
         $role->permissions()->sync($request->selectedPermissions);
 
         return redirect()->route('roles.index')
-            ->with('success', 'Permissions assigned successfully.');
+            ->with('message', 'Permissions assigned successfully.');
     }
 
     /**
