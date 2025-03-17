@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Requisition;
+use App\Models\EOI;
 use Illuminate\Http\Request;
 
-class RequisitionController extends Controller
+class EOIController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -20,7 +20,7 @@ class RequisitionController extends Controller
      */
     public function create()
     {
-        
+        //
     }
 
     /**
@@ -34,7 +34,7 @@ class RequisitionController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Requisition $requisition)
+    public function show(EOI $eOI)
     {
         //
     }
@@ -42,7 +42,7 @@ class RequisitionController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Requisition $requisition)
+    public function edit(EOI $eOI)
     {
         //
     }
@@ -50,7 +50,7 @@ class RequisitionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Requisition $requisition)
+    public function update(Request $request, EOI $eOI)
     {
         //
     }
@@ -58,7 +58,7 @@ class RequisitionController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Requisition $requisition)
+    public function destroy(EOI $eOI)
     {
         //
     }

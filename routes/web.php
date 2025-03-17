@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\RequisitionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Models\Requisition;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -37,6 +40,16 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/categories/{category}', [ProductCategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [ProductCategoryController::class, 'destroy'])->name('categories.destroy');
 });
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/procurements', [ProcurementController::class, 'index'])->name('procurements.index');
+    Route::get('/procurements/create', [ProcurementController::class, 'create'])->name('procurements.create');
+    Route::post('/procurements', [ProcurementController::class, 'store'])->name('procurements.store');
+    Route::get('/procurements/{procurement}/edit', [ProcurementController::class, 'edit'])->name('procurements.edit');
+    Route::put('/procurements/{procurement}', [ProcurementController::class, 'update'])->name('procurements.update');
+    Route::delete('/procurements/{procurement}', [ProcurementController::class, 'destroy'])->name('procurements.destroy');
+});
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
