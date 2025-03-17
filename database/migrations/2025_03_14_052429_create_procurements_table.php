@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->date('required_date');
             $table->unsignedBigInteger('requester');
-            $table->string('status');
+            $table->string('status')->default('draft');
             $table->string('urgency');
             $table->unsignedBigInteger('eoi_id')->nullable();
             $table->timestamps();

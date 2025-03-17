@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->decimal('estimated_budget', 15, 2)->nullable();
             $table->date('submission_date');
-            $table->string('status');
+            $table->string('status')->default('draft');
             $table->string('current_approval_step')->nullable();
             $table->unsignedBigInteger('approval_workflow_id')->nullable();
             $table->date('submission_deadline')->nullable();
@@ -27,10 +27,9 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by');
             $table->timestamps();
             
-            // Foreign key relationship for created_by (assuming users table)
+            // Foreign keys
             $table->foreign('created_by')->references('id')->on('users');
             
-            // Foreign key relationship for approval_workflow_id (assuming approval_workflows table)
             // $table->foreign('approval_workflow_id')->references('id')->on('approval_workflows');
         });
     }

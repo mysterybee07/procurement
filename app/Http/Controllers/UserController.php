@@ -68,7 +68,7 @@ class UserController extends Controller
      */
     public function store(Request $request): RedirectResponse
 {
-    $validated = $request->validate([
+    $requestData = $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|string|email|max:255|unique:users',
         'address' => 'required|string|max:255',
@@ -76,13 +76,12 @@ class UserController extends Controller
         'selectedRoles' => 'sometimes|array',
     ]);
     
-    // dd($validated);
-    // Now start the transaction
+    // dd($requestData);
     DB::beginTransaction();
     
     try {
         
-        $baseUsername = explode('@', $validated['email'])[0];
+        $baseUsername = explode('@', $requestData['email'])[0];
         $username = $baseUsername . rand(100, 999);
         
         
@@ -91,17 +90,17 @@ class UserController extends Controller
         
         // Create the user
         $user = User::create([
-            'name' => $validated['name'],
+            'name' => $requestData['name'],
             'username' => $username,
-            'address' => $validated['address'],
-            'phone' => $validated['phone'],
-            'email' => $validated['email'],
+            'address' => $requestData['address'],
+            'phone' => $requestData['phone'],
+            'email' => $requestData['email'],
             'password' => $hashedPassword,
         ]);
         
         // Handle roles if present
-        if (isset($validated['selectedRoles'])) {
-            $user->roles()->attach($validated['selectedRoles']);
+        if (isset($requestData['selectedRoles'])) {
+            $user->roles()->attach($requestData['selectedRoles']);
         }
         
         DB::commit();

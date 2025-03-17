@@ -90,12 +90,12 @@ class PermissionController extends Controller
         
         try {
             
-            $validated = $request->validated();
+            $data = $request->validated();
             
             // Create the new role
-            $permission = Permission::create(['name' => $validated['name']]);
+            $permission = Permission::create(['name' => $data['name']]);
 
-            //assign the permission
+            //assign every permission to superadmin
             $superAdminRole = Role::where('name', 'superadmin')->first();
             if ($superAdminRole) {
                 $superAdminRole->givePermissionTo($permission);
@@ -144,10 +144,10 @@ class PermissionController extends Controller
         
         try {
             // Get validated data from the request
-            $validated = $request->validated();
+            $requestData = $request->validated();
             
             // Update permission name
-            $permission->update(['name' => $validated['name']]);
+            $permission->update(['name' => $requestData['name']]);
                         
             DB::commit();
             

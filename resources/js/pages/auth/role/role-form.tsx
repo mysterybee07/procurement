@@ -19,7 +19,6 @@ interface Props {
 }
 
 const RoleForm: React.FC<Props> = ({ permissions, isEditing, role }) => {
-  // Set up breadcrumbs based on whether we're editing or creating
   const breadcrumbs: BreadcrumbItem[] = [
     {
       title: 'All Roles',
@@ -31,7 +30,6 @@ const RoleForm: React.FC<Props> = ({ permissions, isEditing, role }) => {
     },
   ];
 
-  // Initialize form with either existing role data or empty values
   const { data, setData, errors, post, put, reset, processing } = useForm({
     id: role?.id || '',
     name: role?.name || '',

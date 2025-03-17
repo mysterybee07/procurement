@@ -101,13 +101,13 @@ class RoleController extends Controller
         
         try {
             
-            $validated = $request->validated();
+            $requestData = $request->validated();
             
             // Create the new role
-            $role = Role::create(['name' => $validated['name']]);
+            $role = Role::create(['name' => $requestData['name']]);
             
             // Assign permissions to the role
-            $role->givePermissionTo($validated['selectedPermissions']);
+            $role->givePermissionTo($requestData['selectedPermissions']);
 
             // dd($role);
             
@@ -161,13 +161,13 @@ class RoleController extends Controller
         
         try {
             // Get validated data from the request
-            $validated = $request->validated();
+            $requestData = $request->validated();
             
             // Update role name
-            $role->update(['name' => $validated['name']]);
+            $role->update(['name' => $requestData['name']]);
             
             //selected permissions
-            $role->permissions()->sync($validated['selectedPermissions']);
+            $role->permissions()->sync($requestData['selectedPermissions']);
             
             DB::commit();
             

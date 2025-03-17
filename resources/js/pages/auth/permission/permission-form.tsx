@@ -31,8 +31,7 @@ export default function PermissionFormModal({ isEditing, permission, buttonLabel
         id: permission.id?.toString() || '',
         name: permission.name || '',
       });
-    } else {
-      // Reset form when creating new
+    } else {      
       reset('id', 'name');
     }
   }, [permission, isEditing, open]);

@@ -18,11 +18,11 @@ return new class extends Migration
             $table->integer('quantity');
             $table->string('unit');
             $table->decimal('estimated_unit_price', 10, 2);
-            $table->text('core_specifications')->nullable();
-            $table->unsignedBigInteger('category_id')->nullable();
+            $table->text('core_specifications');
+            $table->unsignedBigInteger('category_id');
                        
             $table->timestamps();
-            // Foreign key relationships
+            
             $table->foreign('procurement_id')->references('id')->on('procurements')->onDelete('cascade');
             
         });
