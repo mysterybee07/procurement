@@ -16,12 +16,12 @@ interface Props {
         name: string;
         email: string;
         address: string;
-        phone: number;
+        phone: string;
         selectedRoles: number[];
     };
 }
 
-const RoleForm: React.FC<Props> = ({ roles, isEditing, user }) => {
+const UserForm: React.FC<Props> = ({ roles, isEditing, user }) => {
     // Set up breadcrumbs based on whether we're editing or creating
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -34,7 +34,7 @@ const RoleForm: React.FC<Props> = ({ roles, isEditing, user }) => {
         },
     ];
 
-    // Initialize form with either existing role data or empty values
+    // Initialize form with either existing user data or empty values
     const { data, setData, errors, post, put, reset, processing } = useForm({
         id: user?.id || '',
         name: user?.name || '',
@@ -53,14 +53,14 @@ const RoleForm: React.FC<Props> = ({ roles, isEditing, user }) => {
                 onFinish: () => reset(),
             });
         } else {
-            post('/register', {
+            post('/users', {
                 onFinish: () => reset(),
             });
         }
     };
 
     // Handle checkbox changes
-    const handlePermissionToggle = (roleId: number) => {
+    const handleRoleToggle = (roleId: number) => {
         setData('selectedRoles',
             data.selectedRoles.includes(roleId)
                 ? data.selectedRoles.filter(id => id !== roleId)
@@ -70,16 +70,16 @@ const RoleForm: React.FC<Props> = ({ roles, isEditing, user }) => {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={isEditing ? 'Edit Role' : 'Create Role'} />
+            <Head title={isEditing ? 'Edit User' : 'Create User'} />
 
             <div className="max-w-4xl mx-auto py-6">
-                <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+                <div className="bg-white shadow-xl rounded-lg overflow-hidden p-6">
 
-                    <h2 className="text-xl">
-                        {isEditing ? 'Edit Role' : 'Create New Role'}
+                    <h2 className="text-xl font-semibold mb-6">
+                        {isEditing ? 'Edit User' : 'Create New User'}
                     </h2>
 
-                    <form onSubmit={submit} className="px-6 py-4">
+                    <form onSubmit={submit}>
                         <div className="mb-6">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                                 Name
@@ -101,12 +101,13 @@ const RoleForm: React.FC<Props> = ({ roles, isEditing, user }) => {
                                 Email
                             </label>
                             <input
-                                type="text"
+                                type="email"
                                 id="email"
                                 placeholder="Enter employee email"
                                 className="mt-1 block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
+                                disabled={isEditing} // Email cannot be changed when editing
                             />
                             {errors.email && (
                                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -129,11 +130,11 @@ const RoleForm: React.FC<Props> = ({ roles, isEditing, user }) => {
                             )}
                         </div>
                         <div className="mb-6">
-                            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                                 Phone
                             </label>
                             <input
-                                type="number"
+                                type="text"
                                 id="phone"
                                 placeholder="Enter employee phone"
                                 className="mt-1 block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150"
@@ -159,18 +160,18 @@ const RoleForm: React.FC<Props> = ({ roles, isEditing, user }) => {
                                         <div
                                             key={role.id}
                                             className={`
-                        p-3 rounded-md border transition-all duration-200
-                        ${data.selectedRoles.includes(role.id)
+                                                p-3 rounded-md border transition-all duration-200
+                                                ${data.selectedRoles.includes(role.id)
                                                     ? 'bg-indigo-50 border-indigo-300'
                                                     : 'bg-white border-gray-200 hover:bg-gray-50'}
-                      `}
+                                            `}
                                         >
                                             <label className="flex items-start cursor-pointer">
                                                 <div className="flex items-center h-5">
                                                     <input
                                                         type="checkbox"
                                                         checked={data.selectedRoles.includes(role.id)}
-                                                        onChange={() => handlePermissionToggle(role.id)}
+                                                        onChange={() => handleRoleToggle(role.id)}
                                                         className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                     />
                                                 </div>
@@ -213,7 +214,7 @@ const RoleForm: React.FC<Props> = ({ roles, isEditing, user }) => {
                                         Processing...
                                     </span>
                                 ) : (
-                                    <>{isEditing ? 'Update' : 'Create'} Role</>
+                                    <>{isEditing ? 'Update User' : 'Create User'}</>
                                 )}
                             </button>
                         </div>
@@ -224,4 +225,4 @@ const RoleForm: React.FC<Props> = ({ roles, isEditing, user }) => {
     );
 };
 
-export default RoleForm;
+export default UserForm;

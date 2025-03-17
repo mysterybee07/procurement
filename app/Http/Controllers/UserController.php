@@ -4,9 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use DB;
+use Dotenv\Exception\ValidationException;
+use Hash;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
+use Str;
+use Validator;
 use function Termwind\render;
 
 class UserController extends Controller
@@ -26,9 +31,21 @@ class UserController extends Controller
                 ->from('model_has_roles')
                 ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
                 ->where('roles.name', 'vendor');
-            })->get();
+            })->paginate(10);
 
-        dd($users);
+            // dd($users);
+        // dd($users);
+        return Inertia::render('auth/user/list-users', [
+            'users'=> $users,
+            // 'users' => [
+            //     'data' => $users->items(),
+            //     'links' => $users->links()->elements,
+            // ],
+            'flash'=>[
+                'message'=>session('message'),
+                'error'=>session('error'),
+            ]
+        ]);
     }
 
     /**
@@ -48,10 +65,53 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        //
+    public function store(Request $request): RedirectResponse
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'address' => 'required|string|max:255',
+        'phone' => 'required|string',
+        'selectedRoles' => 'sometimes|array',
+    ]);
+    
+    // dd($validated);
+    // Now start the transaction
+    DB::beginTransaction();
+    
+    try {
+        
+        $baseUsername = explode('@', $validated['email'])[0];
+        $username = $baseUsername . rand(100, 999);
+        
+        
+        $password = Str::random(10);
+        $hashedPassword = Hash::make($password);
+        
+        // Create the user
+        $user = User::create([
+            'name' => $validated['name'],
+            'username' => $username,
+            'address' => $validated['address'],
+            'phone' => $validated['phone'],
+            'email' => $validated['email'],
+            'password' => $hashedPassword,
+        ]);
+        
+        // Handle roles if present
+        if (isset($validated['selectedRoles'])) {
+            $user->roles()->attach($validated['selectedRoles']);
+        }
+        
+        DB::commit();
+        return redirect()->route('users.index')->with('success', 'User created successfully!');
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        // Return with error
+        return back()->withErrors(['error' => 'Failed to create user: ' . $e->getMessage()]);
     }
+}
 
     /**
      * Display the specified resource.
@@ -66,7 +126,21 @@ class UserController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        // $roles = Role::all();
+        // $selectedRoles = $user->roles->pluck('id')->toArray();
+        
+        // return Inertia::render('Users/Edit', [
+        //     'roles' => $roles,
+        //     'user' => [
+        //         'id' => $user->id,
+        //         'name' => $user->name,
+        //         'email' => $user->email,
+        //         'address' => $user->address,
+        //         'phone' => $user->phone,
+        //         'selectedRoles' => $selectedRoles
+        //     ],
+        //     'isEditing' => true
+        // ]);
     }
 
     /**
@@ -83,5 +157,31 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function assignRoleToUser(User $user)
+    {
+        // Get all permissions
+        $roles = Role::all();
+        
+        return Inertia::render('auth/user/assign-roles-to-user', [
+            'roles' => $roles,
+            'userId' => $user->id, 
+            'selectedRoles' => $user->roles->pluck('id')->toArray(), 
+        ]);
+    }
+
+    public function updateUserRoles(Request $request, User $user)
+    {
+        $request->validate([
+            'selectedRoles' => 'array|exists:roles,id', 
+        ]);
+        // dd($request);
+        
+        // sync role of user
+        $user->roles()->sync($request->selectedRoles);
+
+        return redirect()->route('users.index')
+            ->with('message', 'Role assigned successfully.');
     }
 }

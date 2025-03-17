@@ -24,6 +24,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::get('/users/{user}/role', [UserController::class, 'assignRoleToUser'])
+    ->name('users.assignRoles');
+    Route::put('/users/{user}/roles', [UserController::class, 'updateUserRoles'])
+    ->name('users.updateRole');
 });
 Route::middleware(['auth'])->group(function () {
     Route::get('/categories', [ProductCategoryController::class, 'index'])->name('categories.index');

@@ -156,7 +156,6 @@ class PermissionController extends Controller
         DB::beginTransaction();
         
         try {
-            // Delete permission permissions
             $permission->permissions()->detach();
             
             $permission->delete();
