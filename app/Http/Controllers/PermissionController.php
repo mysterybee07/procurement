@@ -77,7 +77,13 @@ class PermissionController extends Controller
             $validated = $request->validated();
             
             // Create the new role
-            Permission::create(['name' => $validated['name']]);
+            $permission = Permission::create(['name' => $validated['name']]);
+
+            //assign the permission
+            $superAdminRole = Role::where('name', 'superadmin')->first();
+            if ($superAdminRole) {
+                $superAdminRole->givePermissionTo($permission);
+            }
                         
             DB::commit();
             
