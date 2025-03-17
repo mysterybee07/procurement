@@ -6,14 +6,30 @@ use App\Http\Requests\PermissionRequest;
 use App\Http\Requests\RoleRequest;
 use Illuminate\Auth\Events\Validated;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
+// class PermissionController extends Controller implements HasMiddleware
 class PermissionController extends Controller
 {
+
+    // public static function middleware(): array
+    // {
+    //     return [
+    //         'auth',
+    //         new Middleware('permission:permissions.view', only: ['index']),
+    //         new Middleware('permission:permissions.create', only: ['store']),
+    //         new Middleware('permission:permissions.update', only: ['update']),
+    //         new Middleware('permission:permissions.delete', only: ['destroy']),
+    //         // new Middleware('permission:permissions.view', only: ['index']),
+    //         // new Middleware('subscribed', except: ['store']),
+    //     ];
+    // }
     /**
      * Display a listing of the roles.
      *

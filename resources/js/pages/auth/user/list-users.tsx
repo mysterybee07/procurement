@@ -17,15 +17,15 @@ interface Role {
 interface User {
     id: number;
     name: string;
-    roles:Role[];
+    roles: Role[];
     // permissions: Permission[];
 }
 
 interface PageProps {
     users: {
         data: User[];
-        current_page:number;
-        last_page:number;
+        current_page: number;
+        last_page: number;
     };
     flash: {
         message?: string;
@@ -92,28 +92,31 @@ export default function ListUser({ users, flash }: PageProps) {
                                                 <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
 
                                                 <td className="table-cell">{user.roles.map(p => p.name).join(', ') || 'No Roles'}</td>
-                                                
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <Link
-                                                        href={route('users.edit', user.id)}
-                                                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                                                    >
-                                                        Edit
-                                                    </Link>
-                                                    <DeleteModal
-                                                        title="Delete User"
-                                                        description="Are you sure you want to delete this user? This action cannot be undone."
-                                                        deleteRoute="users.destroy"
-                                                        itemId={user.id}
-                                                        onSuccess={() => console.log("User deleted successfully!")}
-                                                    />
-                                                    <Link
-                                                        href={route('users.assignRoles', user.id)}
-                                                        className="text-indigo-600 hover:text-indigo-900 mr-3 pl-4"
-                                                    >
-                                                        Assign/Remove Roles
-                                                    </Link>
 
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                    {!user.roles.some(role => role.name === "superadmin") && (
+                                                        <>
+                                                            <Link
+                                                                href={route("users.edit", user.id)}
+                                                                className="text-indigo-600 hover:text-indigo-900 mr-3"
+                                                            >
+                                                                Edit
+                                                            </Link>
+                                                            <DeleteModal
+                                                                title="Delete User"
+                                                                description="Are you sure you want to delete this user? This action cannot be undone."
+                                                                deleteRoute="users.destroy"
+                                                                itemId={user.id}
+                                                                onSuccess={() => console.log("User deleted successfully!")}
+                                                            />
+                                                            <Link
+                                                                href={route("users.assignRoles", user.id)}
+                                                                className="text-indigo-600 hover:text-indigo-900 mr-3 pl-4"
+                                                            >
+                                                                Assign/Remove Roles
+                                                            </Link>
+                                                        </>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))

@@ -22,8 +22,8 @@ interface Role {
 interface PageProps {
     roles: {
         data: Role[];
-        current_page:number;
-        last_page:number;
+        current_page: number;
+        last_page: number;
     };
     flash: {
         message?: string;
@@ -85,29 +85,33 @@ export default function ListRole({ roles, flash }: PageProps) {
                                                 <td className="px-6 py-4 whitespace-nowrap">{role.name}</td>
 
                                                 <td className="table-cell">{role.permissions.map(p => p.name).join(', ') || 'No Permissions'}</td>
-                                                
+
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                    {role.name !== "superadmin" && (
+                                                        <>
+                                                            <Link
+                                                                href={route("roles.edit", role.id)}
+                                                                className="text-indigo-600 hover:text-indigo-900 mr-3"
+                                                            >
+                                                                Edit
+                                                            </Link>
+                                                            <DeleteModal
+                                                                title="Delete Role"
+                                                                description="Are you sure you want to delete this role? This action cannot be undone."
+                                                                deleteRoute="roles.destroy"
+                                                                itemId={role.id}
+                                                                onSuccess={() => console.log("Role deleted successfully!")}
+                                                            />
+                                                        </>
+                                                    )}
                                                     <Link
-                                                        href={route('roles.edit', role.id)}
-                                                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                                                    >
-                                                        Edit
-                                                    </Link>
-                                                    <DeleteModal
-                                                        title="Delete Role"
-                                                        description="Are you sure you want to delete this role? This action cannot be undone."
-                                                        deleteRoute="roles.destroy"
-                                                        itemId={role.id}
-                                                        onSuccess={() => console.log("Role deleted successfully!")}
-                                                    />
-                                                    <Link
-                                                        href={route('roles.permissions', role.id)}
+                                                        href={route("roles.permissions", role.id)}
                                                         className="text-indigo-600 hover:text-indigo-900 mr-3 pl-4"
                                                     >
-                                                        update permissions
+                                                        Assign/Remove Permissions
                                                     </Link>
-
                                                 </td>
+
                                             </tr>
                                         ))
                                     )}

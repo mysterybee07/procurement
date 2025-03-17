@@ -26,13 +26,25 @@ class DatabaseSeeder extends Seeder
             'status'=>'active',
             // 'role_id'=>'1'
         ]);
+
+        User::factory()->create([
+            'name' => 'Admin',
+            'username'=>'admin123',
+            'email' => 'admin1@example.com',
+            'password'=>'password123',
+            'address'=>'abc xyz',
+            'phone'=>'9840380476',
+            'status'=>'active',
+            // 'role_id'=>'1'
+        ]);
+
         User::factory()->create([
             'name' => 'Seeded Vendor',
             'username'=>'vendor123',
             'email' => 'vendor@example.com',
             'password'=>'password123',
             'address'=>'abc xyz',
-            'phone'=>'9840380476',
+            'phone'=>'9840380477',
             'status'=>'active',
         ]);
 
