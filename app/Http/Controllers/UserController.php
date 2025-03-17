@@ -25,7 +25,8 @@ class UserController extends Controller
         //     $query->where('name', 'vendor');
         // })
         // ->get();
-        $users = DB::table('users')
+        // $users = DB::table('users')
+        $users = User::with('roles')
         ->whereNotIn('id', function ($query) {
             $query->select('model_id')
                 ->from('model_has_roles')

@@ -17,7 +17,7 @@ interface Role {
 interface User {
     id: number;
     name: string;
-    role:Role[];
+    roles:Role[];
     // permissions: Permission[];
 }
 
@@ -91,7 +91,7 @@ export default function ListUser({ users, flash }: PageProps) {
                                                 {/* console.log(user) */}
                                                 <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
 
-                                                {/* <td className="table-cell">{user.permissions.map(p => p.name).join(', ') || 'No Permissions'}</td> */}
+                                                <td className="table-cell">{user.roles.map(p => p.name).join(', ') || 'No Roles'}</td>
                                                 
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                     <Link
