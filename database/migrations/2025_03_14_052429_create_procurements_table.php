@@ -24,7 +24,6 @@ return new class extends Migration
 
             $table->foreign('requester')->references('id')->on('users');
             $table->foreign('eoi_id')->references('id')->on('eois');
-
         });
     }
 

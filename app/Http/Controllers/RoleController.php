@@ -146,8 +146,8 @@ class RoleController extends Controller
             'isEditing' => true,
             'role' => $roleData,
             'flash' => [
-            'message' => session('message'),
-            'error' => session('error'),
+                'message' => session('message'),
+                'error' => session('error'),
             ]
         ]);
     }

@@ -47,6 +47,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/procurements/create', [ProcurementController::class, 'create'])->name('procurements.create');
     Route::post('/procurements', [ProcurementController::class, 'store'])->name('procurements.store');
     Route::get('/procurements/{procurement}/edit', [ProcurementController::class, 'edit'])->name('procurements.edit');
+    Route::get('/procurements/{procurement}', [ProcurementController::class, 'edit'])->name('procurements.show');
     Route::put('/procurements/{procurement}', [ProcurementController::class, 'update'])->name('procurements.update');
     Route::delete('/procurements/{procurement}', [ProcurementController::class, 'destroy'])->name('procurements.destroy');
 });

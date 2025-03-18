@@ -8,7 +8,7 @@ interface Category {
   id: number;
   category_name: string;
 }
-
+// const requestItems= request_items;
 interface RequestItem {
   name: string;
   quantity: string;
@@ -28,7 +28,7 @@ interface Props {
     required_date?: string;
     urgency?: string;
     status?: string;
-    requestItems?: RequestItem[];
+    request_items?: RequestItem[];
   }
 }
 
@@ -38,7 +38,6 @@ interface SimpleRichTextEditorProps {
   placeholder?: string;
 }
 
-// Define the form data structure to match FormDataConvertible requirements
 interface ProcurementFormData {
   id: number;
   title: string;
@@ -48,14 +47,7 @@ interface ProcurementFormData {
   status: string;
   urgency: string;
   eoi_id: number;
-  requestItems: {
-    name: string;
-    quantity: string;
-    unit: string;
-    estimated_unit_price: string;
-    core_specifications: string;
-    category_id: number;
-  }[];
+  requestItems: RequestItem[];
   [key: string]: any;
 }
 
@@ -90,7 +82,15 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onCh
 };
 
 const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }) => {
-  // console.log(categories)
+  const defaultItem: RequestItem = {
+    name: '',
+    quantity: '',
+    unit: '',
+    estimated_unit_price: '',
+    core_specifications: '',
+    category_id: 0,
+  };
+
   const breadcrumbs: BreadcrumbItem[] = [
     {
       title: 'Procurements',
@@ -102,32 +102,74 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
     },
   ];
 
-  // Create default empty item
-  const defaultItem = {
-    name: '',
-    quantity: '',
-    unit: '',
-    estimated_unit_price: '',
-    core_specifications: '',
-    category_id: 0,
-  };
-
-  // Initialize form data
+  // Form initialization
   const { data, setData, post, errors, processing, reset } = useForm<ProcurementFormData>({
-    id: procurement?.id || 0,
-    title: procurement?.title || '',
-    description: procurement?.description || '',
-    required_date: procurement?.required_date || '',
+    id: 0,
+    title: '',
+    description: '',
+    required_date: '',
     requester: '',
     status: '',
-    urgency: procurement?.urgency || 'Normal',
+    urgency: 'Normal',
     eoi_id: 0,
-    requestItems: procurement?.requestItems?.length
-      ? [...procurement.requestItems]
-      : [{ ...defaultItem }],
+    requestItems: [{ ...defaultItem }],
   });
-  console.log(errors);
 
+  // Load procurement data when editing
+  useEffect(() => {
+    if (isEditing && procurement) {
+      // console.log('Procurement data:', procurement);
+      // console.log('Request items:', procurement.request_items);
+    
+      setData({
+        id: procurement.id || 0,
+        title: procurement.title || '',
+        description: procurement.description || '',
+        required_date: procurement.required_date || '',
+        requester: data.requester || '',
+        status: procurement.status || '',
+        urgency: procurement.urgency || 'Normal',
+        eoi_id: data.eoi_id || 0,
+        requestItems: procurement.request_items?.length
+          ? procurement.request_items.map(item => ({
+              name: item.name || '',
+              quantity: item.quantity || '',
+              unit: item.unit || '',
+              estimated_unit_price: item.estimated_unit_price || '',
+              core_specifications: item.core_specifications || '',
+              category_id: item.category_id || 0,
+            }))
+          : [{ ...defaultItem }],
+      });
+    }
+  }, [isEditing, procurement]);
+
+  // Form submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionType, setSubmissionType] = useState<'draft' | 'submitted' | 'updated'>('draft');
+
+  // Handle form submission
+  useEffect(() => {
+    if (isSubmitting) {
+      if (isEditing) {
+        post(`/procurements/${data.id}?_method=PUT`, {
+          onSuccess: () => {
+            reset();
+            setIsSubmitting(false);
+          },
+        });
+      } else {
+        post('/procurements', {
+          onSuccess: () => {
+            reset();
+            setIsSubmitting(false);
+          },
+        });
+      }
+    }
+  }, [isSubmitting]);
+
+  // Form input handlers
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -156,36 +198,32 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
   };
 
   const removeItem = (index: number) => {
-    setData('requestItems', data.requestItems.filter((_, i) => i !== index));
+    if (data.requestItems.length > 1) {
+      setData('requestItems', data.requestItems.filter((_, i) => i !== index));
+    }
   };
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  useEffect(() => {
-    if (isSubmitting) {
-      post('/procurements', {
-        onSuccess: () => {
-          reset();
-          setIsSubmitting(false);
-        },
-      });
-    }
-  }, [isSubmitting]);
-
+  // Form submission handlers
   const saveAsDraft = (e: React.FormEvent) => {
     e.preventDefault();
-
-    setData((prevData) => ({ ...prevData, status: 'draft' }));
-    setIsSubmitting(true); // Trigger the effect
+    setData('status', 'draft');
+    setSubmissionType('draft');
+    setIsSubmitting(true);
   };
 
   const submitForApproval = (e: React.FormEvent) => {
     e.preventDefault();
-
-    setData((prevData) => ({ ...prevData, status: 'submitted' }));
-    setIsSubmitting(true); // Trigger the effect
+    setData('status', 'submitted');
+    setSubmissionType('submitted');
+    setIsSubmitting(true);
   };
 
-
+  const updateProcurement = (e: React.FormEvent) => {
+    e.preventDefault();
+    setData('status', 'updated');
+    setSubmissionType('updated');
+    setIsSubmitting(true);
+  };
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -194,6 +232,7 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
           <h1 className="text-2xl font-bold mb-6">{isEditing ? 'Edit Procurement' : 'Create New Procurement'}</h1>
 
           <form>
+            {/* Procurement Details Section */}
             <div className="mb-8 p-6 border rounded-lg bg-gray-50">
               <h2 className="text-xl font-semibold mb-4">Procurement Details</h2>
 
@@ -208,7 +247,7 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
                   required
                 />
                 {errors.title && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                  <p className="mt-1 text-sm text-red-600">{errors.title}</p>
                 )}
               </div>
 
@@ -259,10 +298,12 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
               </div>
             </div>
 
+            {/* Request Items Section */}
             <div className="mb-8 p-6 border rounded-lg bg-gray-50">
               <h2 className="text-xl font-semibold mb-4">Request Items</h2>
+              
               {data.requestItems.map((item, index) => (
-                <div key={index} className="mb-6">
+                <div key={index} className="mb-6 p-4 border rounded bg-white">
                   <div className="flex justify-between mb-2">
                     <h3 className="font-medium">Item #{index + 1}</h3>
                     {data.requestItems.length > 1 && (
@@ -300,11 +341,10 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
                         className="w-full p-2 border rounded"
                         required
                       >
-                        <option>Select a category</option>
+                        <option value={0}>Select a category</option>
                         {categories.map((category) => (
                           <option key={category.id} value={category.id}>
                             {category.category_name}
-                            {/* Biraj Pudasaini */}
                           </option>
                         ))}
                       </select>
@@ -383,21 +423,37 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
                 <PlusCircle size={16} /> Add New Item
               </button>
 
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={saveAsDraft}
-                  className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                >
-                  Save as Draft
-                </button>
-                <button
-                  type="button"
-                  onClick={submitForApproval}
-                  className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Submit for Approval
-                </button>
+              {/* Action Buttons */}
+              <div className="flex gap-4 mt-6">
+                {isEditing ? (
+                  <button
+                    type="button"
+                    onClick={updateProcurement}
+                    disabled={processing}
+                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {processing ? 'Updating...' : 'Update Procurement'}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={saveAsDraft}
+                      disabled={processing}
+                      className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
+                    >
+                      {processing ? 'Saving...' : 'Save as Draft'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={submitForApproval}
+                      disabled={processing}
+                      className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {processing ? 'Submitting...' : 'Submit for Approval'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </form>

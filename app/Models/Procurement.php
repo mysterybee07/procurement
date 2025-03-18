@@ -30,4 +30,8 @@ class Procurement extends Model
     {
         return $this->hasMany(RequestItem::class, 'procurement_id');
     }
+
+    public function requester(){
+        return $this->belongsTo(User::class, 'requester');
+    }
 }
