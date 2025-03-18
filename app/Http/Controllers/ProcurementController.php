@@ -9,6 +9,7 @@ use App\Models\RequestItem;
 use DB;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use function Termwind\render;
 
 class ProcurementController extends Controller
 {
@@ -98,9 +99,9 @@ class ProcurementController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Procurement $requisition)
+    public function show(Procurement $request)
     {
-        //
+       return Inertia::render('procurement/procurement-details');
     }
 
     /**
@@ -111,6 +112,10 @@ class ProcurementController extends Controller
      */
     public function edit(Procurement $procurement)
     {
+        // if ($procurement->status !== 'draft' || $procurement->status !== 'rejected') {
+        //     return redirect()->route('procurements.index')->with('error', 'Procurement has already been submitted. Now you cannot edit it');
+        // }
+
         $categories = ProductCategory::all();
         $procurement->load('requestItems');
         // dd($procurement->requestItems());
@@ -129,12 +134,13 @@ class ProcurementController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Procurement $procurement)
+    public function update(ProcurementRequest $request, Procurement $procurement)
     {
 
-        // dd($request);
+    // dd($request);
         try {
-            $requestData = $request;
+            $requester = auth()->user()->id;
+            $requestData = $request->validated();
             
             DB::beginTransaction();
 
@@ -142,6 +148,7 @@ class ProcurementController extends Controller
                 'title' => $requestData['title'],
                 'description' => $requestData['description'],
                 'required_date' => $requestData['required_date'],
+                'requester'=>$requester,
                 'status' => $requestData['status'],
                 'urgency' => $requestData['urgency'],
             ]);
@@ -172,6 +179,28 @@ class ProcurementController extends Controller
      */
     public function destroy(Procurement $procurement)
     {
+        if ($procurement->status !== 'draft' || $procurement->status !== 'rejected') {
+            return redirect()->route('procurements.index')->with(
+                'error', 'Procurement has already been submitted. Now you cannot delete it'
+            );
+        } 
+        DB::beginTransaction();
         
+        try{    
+            // Delete procurement
+            $procurement->delete();
+            
+            DB::commit();
+            
+            return redirect()->route('procurements.index')
+                ->with('message', 'Procurement deleted successfully.');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return back()->withErrors([
+                'error' => 'There was a problem deleting the procurement. ' . $e->getMessage()
+            ]);
+        }
     }
 }

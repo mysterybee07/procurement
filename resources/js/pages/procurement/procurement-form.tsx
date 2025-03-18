@@ -104,6 +104,7 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
 
   // Form initialization
   const { data, setData, post, errors, processing, reset } = useForm<ProcurementFormData>({
+   
     id: 0,
     title: '',
     description: '',
@@ -114,6 +115,7 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
     eoi_id: 0,
     requestItems: [{ ...defaultItem }],
   });
+  console.log(errors);
 
   // Load procurement data when editing
   useEffect(() => {
@@ -220,8 +222,8 @@ const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }
 
   const updateProcurement = (e: React.FormEvent) => {
     e.preventDefault();
-    setData('status', 'updated');
-    setSubmissionType('updated');
+    setData('status', 'draft');
+    setSubmissionType('draft');
     setIsSubmitting(true);
   };
 
