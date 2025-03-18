@@ -1,26 +1,12 @@
-import React, { useState } from 'react';
-import { PlusCircle, Trash2, Save, Send, Bold, Italic, List, Link, Image } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-
-
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'All Users', href: '/dashboard' },
-];
+import { Bold, Italic, List, Link, Image, PlusCircle, Trash2 } from 'lucide-react';
 
 interface Category {
   id: number;
-  name: string;
-}
-
-interface ProcurementData {
-  title: string;
-  description: string;
-  required_date: string;
-  requester: string;
-  status: string;
-  urgency: string;
-  eoi_id: number;
+  category_name: string;
 }
 
 interface RequestItem {
@@ -32,10 +18,45 @@ interface RequestItem {
   category_id: number;
 }
 
+interface Props {
+  categories: Category[];
+  isEditing: boolean;
+  procurement?: {
+    id?: number;
+    title?: string;
+    description?: string;
+    required_date?: string;
+    urgency?: string;
+    status?: string;
+    requestItems?: RequestItem[];
+  }
+}
+
 interface SimpleRichTextEditorProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  placeholder: string;
+  placeholder?: string;
+}
+
+// Define the form data structure to match FormDataConvertible requirements
+interface ProcurementFormData {
+  id: number;
+  title: string;
+  description: string;
+  required_date: string;
+  requester: string;
+  status: string;
+  urgency: string;
+  eoi_id: number;
+  requestItems: {
+    name: string;
+    quantity: string;
+    unit: string;
+    estimated_unit_price: string;
+    core_specifications: string;
+    category_id: number;
+  }[];
+  [key: string]: any;
 }
 
 const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onChange, placeholder }) => {
@@ -68,280 +89,318 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onCh
   );
 };
 
-// Complete ProcurementForm Component
-const ProcurementForm: React.FC = () => {
-  const [procurementData, setProcurementData] = useState<ProcurementData>({
-    title: '',
-    description: '',
-    required_date: '',
-    requester: '',
-    status: 'Draft',
-    urgency: 'Normal',
-    eoi_id: 0,
-  });
-
-  const [requestItems, setRequestItems] = useState<RequestItem[]>([
+const ProcurementForm: React.FC<Props> = ({ categories, isEditing, procurement }) => {
+  // console.log(categories)
+  const breadcrumbs: BreadcrumbItem[] = [
     {
-      name: '',
-      quantity: '',
-      unit: '',
-      estimated_unit_price: '',
-      core_specifications: '',
-      category_id: 0,
+      title: 'Procurements',
+      href: '/procurements',
     },
-  ]);
+    {
+      title: isEditing ? 'Edit Procurement' : 'Create Procurement',
+      href: isEditing ? `/procurement/${procurement?.id}/edit` : '/procurements/create',
+    },
+  ];
 
-  const [categories, setCategories] = useState<Category[]>([
-    { id: 1, name: 'Hardware' },
-    { id: 2, name: 'Software' },
-    { id: 3, name: 'Consulting Services' },
-    { id: 4, name: 'Office Supplies' },
-  ]);
+  // Create default empty item
+  const defaultItem = {
+    name: '',
+    quantity: '',
+    unit: '',
+    estimated_unit_price: '',
+    core_specifications: '',
+    category_id: 0,
+  };
 
-  const handleProcurementChange = (
+  // Initialize form data
+  const { data, setData, post, errors, processing, reset } = useForm<ProcurementFormData>({
+    id: procurement?.id || 0,
+    title: procurement?.title || '',
+    description: procurement?.description || '',
+    required_date: procurement?.required_date || '',
+    requester: '',
+    status: '',
+    urgency: procurement?.urgency || 'Normal',
+    eoi_id: 0,
+    requestItems: procurement?.requestItems?.length
+      ? [...procurement.requestItems]
+      : [{ ...defaultItem }],
+  });
+  console.log(errors);
+
+  const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setProcurementData({
-      ...procurementData,
-      [name]: value,
-    });
+    setData(name as keyof ProcurementFormData, value);
   };
-
 
   const handleItemChange = (
     index: number,
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    const updatedItems = [...requestItems];
-    updatedItems[index] = { ...updatedItems[index], [name]: value };
-    setRequestItems(updatedItems);
+    const updatedItems = [...data.requestItems];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      [name]: name === 'category_id' ? Number(value) : value
+    };
+    setData('requestItems', updatedItems);
   };
 
   const addNewItem = () => {
-    setRequestItems([
-      ...requestItems,
-      {
-        name: '',
-        quantity: '',
-        unit: '',
-        estimated_unit_price: '',
-        core_specifications: '',
-        category_id: 0,
-      },
+    setData('requestItems', [
+      ...data.requestItems,
+      { ...defaultItem },
     ]);
   };
 
   const removeItem = (index: number) => {
-    const updatedItems = requestItems.filter((_, i) => i !== index);
-    setRequestItems(updatedItems);
+    setData('requestItems', data.requestItems.filter((_, i) => i !== index));
   };
 
-  const saveAsDraft = () => {
-    console.log('Saving EOI as draft:', { procurementData, requestItems });
-    // apicall
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => {
+    if (isSubmitting) {
+      post('/procurements', {
+        onSuccess: () => {
+          reset();
+          setIsSubmitting(false);
+        },
+      });
+    }
+  }, [isSubmitting]);
+
+  const saveAsDraft = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setData((prevData) => ({ ...prevData, status: 'draft' }));
+    setIsSubmitting(true); // Trigger the effect
   };
 
-  const submitForApproval = () => {
-    console.log('Submitting EOI for approval:', { procurementData, requestItems });
-    // apicall
+  const submitForApproval = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setData((prevData) => ({ ...prevData, status: 'submitted' }));
+    setIsSubmitting(true); // Trigger the effect
   };
+
+
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="w-full max-w-4xl p-6 bg-white rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold mb-6">Create New Requests</h1>
+          <h1 className="text-2xl font-bold mb-6">{isEditing ? 'Edit Procurement' : 'Create New Procurement'}</h1>
 
-
-          <div className="mb-8 p-6 border rounded-lg bg-gray-50">
-            <h2 className="text-xl font-semibold mb-4">Procurement Details</h2>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Procurement Title*</label>
-              <input
-                type="text"
-                name="title"
-                value={procurementData.title}
-                onChange={handleProcurementChange}
-                className="w-full p-2 border rounded"
-                required
-              />
-            </div>
-
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Description*</label>
-              <SimpleRichTextEditor
-                value={procurementData.description}
-                onChange={(e) => setProcurementData({ ...procurementData, description: e.target.value })}
-                placeholder="Enter a detailed description of this Procurement..."
-              />
-            </div>
-
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form>
+            <div className="mb-8 p-6 border rounded-lg bg-gray-50">
+              <h2 className="text-xl font-semibold mb-4">Procurement Details</h2>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Required Date*</label>
+                <label className="block text-sm font-medium mb-1">Procurement Title*</label>
                 <input
-                  type="date"
-                  name="required_date"
-                  value={procurementData.required_date}
-                  onChange={handleProcurementChange}
+                  type="text"
+                  name="title"
+                  value={data.title}
+                  onChange={handleChange}
                   className="w-full p-2 border rounded"
                   required
                 />
+                {errors.title && (
+                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                )}
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Urgency</label>
-                <select
-                  name="urgency"
-                  value={procurementData.urgency}
-                  onChange={handleProcurementChange}
-                  className="w-full p-2 border rounded"
-                >
-                  <option value="Normal">Normal</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
-                </select>
+                <label className="block text-sm font-medium mb-1">Description*</label>
+                <SimpleRichTextEditor
+                  value={data.description}
+                  onChange={(e) => setData('description', e.target.value)}
+                  placeholder="Enter a detailed description of this Procurement..."
+                />
+                {errors.description && (
+                  <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                )}
               </div>
-            </div>
-          </div>
 
-
-          <div className="mb-8 p-6 border rounded-lg bg-gray-50">
-            <h2 className="text-xl font-semibold mb-4">Request Items</h2>
-            {requestItems.map((item, index) => (
-              <div key={index} className="mb-6">
-                <div className="flex justify-between mb-2">
-                  <h3 className="font-medium">Item #{index + 1}</h3>
-                  {requestItems.length > 1 && (
-                    <button
-                      onClick={() => removeItem(index)}
-                      className="text-red-500 flex items-center text-sm"
-                    >
-                      <Trash2 size={16} className="mr-1" /> Remove
-                    </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">Required Date*</label>
+                  <input
+                    type="date"
+                    name="required_date"
+                    value={data.required_date}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded"
+                    required
+                  />
+                  {errors.required_date && (
+                    <p className="mt-1 text-sm text-red-600">{errors.required_date}</p>
                   )}
                 </div>
 
-                <div className="flex gap-4 mb-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium mb-1">Item Name*</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={item.name}
-                      onChange={(e) => handleItemChange(index, e)}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium mb-1">Category*</label>
-                    <select
-                      name="category_id"
-                      value={item.category_id}
-                      onChange={(e) => handleItemChange(index, e)}
-                      className="w-full p-2 border rounded"
-                      required
-                    >
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Description*</label>
-                  <SimpleRichTextEditor
-                    value={item.description}
-                    onChange={(e) => setRequestItems(requestItems.map((i, idx) => (idx === index ? { ...i, description: e.target.value } : i)))}
-                    placeholder="Enter a detailed description for the item..."
-                  />
-                </div> */}
-
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Core Specifications</label>
-                  <textarea
-                    name="core_specifications"
-                    value={item.core_specifications}
-                    onChange={(e) => handleItemChange(index, e)}
-                    className="w-full p-2 border rounded h-20"
-                  />
-                </div>
-
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Quantity*</label>
-                    <input
-                      type="number"
-                      name="quantity"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(index, e)}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Unit*</label>
-                    <input
-                      type="text"
-                      name="unit"
-                      value={item.unit}
-                      onChange={(e) => handleItemChange(index, e)}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Estimated Unit Price*</label>
-                    <input
-                      type="number"
-                      name="estimated_unit_price"
-                      value={item.estimated_unit_price}
-                      onChange={(e) => handleItemChange(index, e)}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
+                  <label className="block text-sm font-medium mb-1">Urgency</label>
+                  <select
+                    name="urgency"
+                    value={data.urgency}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                  {errors.urgency && (
+                    <p className="mt-1 text-sm text-red-600">{errors.urgency}</p>
+                  )}
                 </div>
               </div>
-            ))}
-
-            <button
-              type="button"
-              onClick={addNewItem}
-              className="flex items-center gap-2 text-blue-600 mb-4"
-            >
-              <PlusCircle size={16} /> Add New Item
-            </button>
-
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={saveAsDraft}
-                className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-              >
-                Save as Draft
-              </button>
-              <button
-                type="button"
-                onClick={submitForApproval}
-                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Submit for Approval
-              </button>
             </div>
-          </div>
+
+            <div className="mb-8 p-6 border rounded-lg bg-gray-50">
+              <h2 className="text-xl font-semibold mb-4">Request Items</h2>
+              {data.requestItems.map((item, index) => (
+                <div key={index} className="mb-6">
+                  <div className="flex justify-between mb-2">
+                    <h3 className="font-medium">Item #{index + 1}</h3>
+                    {data.requestItems.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeItem(index)}
+                        className="text-red-500 flex items-center text-sm"
+                      >
+                        <Trash2 size={16} className="mr-1" /> Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex gap-4 mb-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium mb-1">Item Name*</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={item.name}
+                        onChange={(e) => handleItemChange(index, e)}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                      {errors[`requestItems.${index}.name`] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[`requestItems.${index}.name`]}</p>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium mb-1">Category*</label>
+                      <select
+                        name="category_id"
+                        value={item.category_id}
+                        onChange={(e) => handleItemChange(index, e)}
+                        className="w-full p-2 border rounded"
+                        required
+                      >
+                        <option>Select a category</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.category_name}
+                            {/* Biraj Pudasaini */}
+                          </option>
+                        ))}
+                      </select>
+                      {errors[`requestItems.${index}.category_id`] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[`requestItems.${index}.category_id`]}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1">Core Specifications</label>
+                    <textarea
+                      name="core_specifications"
+                      value={item.core_specifications}
+                      onChange={(e) => handleItemChange(index, e)}
+                      className="w-full p-2 border rounded h-20"
+                    />
+                    {errors[`requestItems.${index}.core_specifications`] && (
+                      <p className="mt-1 text-sm text-red-600">{errors[`requestItems.${index}.core_specifications`]}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-1">Quantity*</label>
+                      <input
+                        type="number"
+                        name="quantity"
+                        value={item.quantity}
+                        onChange={(e) => handleItemChange(index, e)}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                      {errors[`requestItems.${index}.quantity`] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[`requestItems.${index}.quantity`]}</p>
+                      )}
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-1">Unit*</label>
+                      <input
+                        type="text"
+                        name="unit"
+                        value={item.unit}
+                        onChange={(e) => handleItemChange(index, e)}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                      {errors[`requestItems.${index}.unit`] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[`requestItems.${index}.unit`]}</p>
+                      )}
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-1">Estimated Unit Price*</label>
+                      <input
+                        type="number"
+                        name="estimated_unit_price"
+                        value={item.estimated_unit_price}
+                        onChange={(e) => handleItemChange(index, e)}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                      {errors[`requestItems.${index}.estimated_unit_price`] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[`requestItems.${index}.estimated_unit_price`]}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addNewItem}
+                className="flex items-center gap-2 text-blue-600 mb-4"
+              >
+                <PlusCircle size={16} /> Add New Item
+              </button>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={saveAsDraft}
+                  className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                  Save as Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={submitForApproval}
+                  className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Submit for Approval
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
     </AppLayout>

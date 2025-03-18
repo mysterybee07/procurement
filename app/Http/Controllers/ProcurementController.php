@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProcurementRequest;
 use App\Models\Procurement;
+use App\Models\ProductCategory;
 use App\Models\RequestItem;
+use DB;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -23,7 +25,12 @@ class ProcurementController extends Controller
      */
     public function create()
     {
-        return Inertia::render('procurement/procurement-form');
+        $categories= ProductCategory::all();
+        // dd($categories);
+        return Inertia::render('procurement/procurement-form',[
+            'categories'=> $categories,
+            'isEditing'=>false,
+        ]);
     }
 
     /**
@@ -31,31 +38,47 @@ class ProcurementController extends Controller
      */
     public function store(ProcurementRequest $request)
     {
-        $requestData = $request->validated();
 
-        // dd($requestData);
+        try{
+            // dd($request);
+            $requestData = $request->validated();
+            // dd($requestData);
 
-        $procurement = Procurement::create([
-            'title'=>$requestData['title'],
-            'description'=>$requestData['description'],
-            'request_date'=>$requestData['request_date'],
-            'requester'=>$requestData['requester'],
-            'status'=>$requestData['status'],
-            'urgency'=>$requestData['urgency'],
-            'eoi_id'=>$requestData['eoi_id'],
-        ]);
+            // dd($requestData->json());
+            $requester = auth()->user()->id;
+            // dd($requester);
+                DB::beginTransaction();
 
-        foreach ($requestData['request_items'] as $item) {
-            RequestItem::create([
-                'procurement_id' => $procurement->id,
-                'name' => $item['name'],
-                'quantity' => $item['quantity'],
-                'unit' => $item['unit'],
-                'estimated_unit_price' => $item['estimated_unit_price'],
-                'core_specifications' => $item['core_specifications'],
-                'category_id' => $item['category_id'],
+            $procurement = Procurement::create([
+                'title'=>$requestData['title'],
+                'description'=>$requestData['description'],
+                'required_date'=>$requestData['required_date'],
+                'requester'=>$requester,
+                'status'=>$requestData['status'],
+                'urgency'=>$requestData['urgency'],
+                // 'eoi_id'=>$requestData['eoi_id'],
             ]);
+
+            foreach ($requestData['requestItems'] as $item) {
+                RequestItem::create([
+                    'procurement_id' => $procurement->id,
+                    'name' => $item['name'],
+                    'quantity' => $item['quantity'],
+                    'unit' => $item['unit'],
+                    'estimated_unit_price' => $item['estimated_unit_price'],
+                    'core_specifications' => $item['core_specifications'],
+                    'category_id' => $item['category_id'],
+                ]);
+            }
+        }catch(\Exception){
+
+        }finally{
+
         }
+        
+        
+
+        
 
     }
 

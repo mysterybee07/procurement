@@ -21,25 +21,26 @@ class ProcurementRequest extends FormRequest
      */
     public function rules(): array
     {
+        // dd($this);
         return [
             // Procurement request validation
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'required_date' => 'required|date|after_or_equal:today',
-            'requester' => 'required|exists:users,id',
-            'status' => 'required|string|in:pending,approved,rejected',
+            // 'requester' => 'required|exists:users,id',
+            'status' => 'required|string|in:draft,submitted',
             'urgency' => 'required|string|in:low,medium,high',
-            'eoi_id' => 'nullable|exists:eois,id',
+            // 'eoi_id' => 'nullable|exists:eois,id',
 
             // Request Items validation (Array)
-            'request_items' => 'required|array|min:1',
-            'request_items.*.procurement_id' => 'required|exists:procurements,id',
-            'request_items.*.name' => 'required|string|max:255',
-            'request_items.*.quantity' => 'required|integer|min:1',
-            'request_items.*.unit' => 'required|string|max:50',
-            'request_items.*.estimated_unit_price' => 'required|numeric|min:0',
-            'request_items.*.core_specifications' => 'required|string',
-            'request_items.*.category_id' => 'required|exists:categories,id',
+            'requestItems' => 'array|min:1',
+            'request_items.*.procurement_id' => 'required',
+            'requestItems.*.name' => 'required|string|max:255',
+            'requestItems.*.quantity' => 'required|integer|min:1',
+            'requestItems.*.unit' => 'required|string|max:50',
+            'requestItems.*.estimated_unit_price' => 'required|numeric|min:0',
+            'requestItems.*.core_specifications' => 'required|string',
+            'requestItems.*.category_id' => 'required|exists:product_categories,id',
         ];
     }
 
@@ -61,13 +62,13 @@ class ProcurementRequest extends FormRequest
             'requester.required' => 'The requester field is required.',
             'requester.exists' => 'The selected requester does not exist.',
 
-            'status.required' => 'The status is required.',
-            'status.in' => 'The status must be pending, approved, or rejected.',
+            // 'status.required' => 'The status is required.',
+            // 'status.in' => 'The status must be pending, approved, or rejected.',
 
             'urgency.required' => 'The urgency is required.',
             'urgency.in' => 'The urgency must be low, medium, or high.',
 
-            'eoi_id.exists' => 'The selected EOI does not exist.',
+            // 'eoi_id.exists' => 'The selected EOI does not exist.',
 
             // request_items messages
             'request_items.required' => 'At least one request item is required.',

@@ -32,6 +32,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/users/{user}/roles', [UserController::class, 'updateUserRoles'])
     ->name('users.updateRole');
 });
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/categories', [ProductCategoryController::class, 'index'])->name('categories.index');
     Route::get('/categories/create', [ProductCategoryController::class, 'create'])->name('categories.create');

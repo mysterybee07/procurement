@@ -23,7 +23,8 @@ return new class extends Migration
                        
             $table->timestamps();
             
-            $table->foreign('procurement_id')->references('id')->on('procurements')->onDelete('cascade');
+            $table->foreign('procurement_id')->references(columns: 'id')->on('procurements')->onDelete('cascade');
+            $table->foreign('category_id')->references(columns: 'id')->on('product_categories')->onDelete('cascade');
             
         });
     }
