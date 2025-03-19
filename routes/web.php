@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\EOIController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ProductCategoryController;
@@ -50,6 +51,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/procurements/{procurement}', [ProcurementController::class, 'show'])->name('procurements.show');
     Route::put('/procurements/{procurement}', [ProcurementController::class, 'update'])->name('procurements.update');
     Route::delete('/procurements/{procurement}', [ProcurementController::class, 'destroy'])->name('procurements.destroy');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/eois', [EOIController::class, 'index'])->name('eois.index');
+    Route::get('/eois/create', [EOIController::class, 'create'])->name('eois.create');
+    Route::post('/eois', [EOIController::class, 'store'])->name('eois.store');
+    Route::get('/eois/{eoi}/edit', [EOIController::class, 'edit'])->name('eois.edit');
+    Route::get('/eois/{eoi}', [EOIController::class, 'show'])->name('eois.show');
+    Route::put('/eois/{eoi}', [EOIController::class, 'update'])->name('eois.update');
+    Route::delete('/eois/{eoi}', [EOIController::class, 'destroy'])->name('eois.destroy');
 });
 
 Route::middleware(['auth'])->group(function () {

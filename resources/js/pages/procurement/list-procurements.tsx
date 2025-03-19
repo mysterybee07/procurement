@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -9,7 +9,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     title: 'All Procurements',
     href: '/dashboard',
   },
-
 ];
 
 interface Procurement {
@@ -17,7 +16,6 @@ interface Procurement {
   title: string;
   description: string;
   required_date: string;
-  // requester: string;
   status: string;
   urgency: string;
   eoi_id: number;
@@ -29,12 +27,11 @@ interface Procurement {
     core_specifications: string;
     category:{
       category_name:string,
-  }
+    }
   }
   requester: {
     name: string;
   }
-
 }
 
 interface IndexProps {
@@ -50,14 +47,22 @@ interface IndexProps {
 }
 
 export default function ListProcurement({ procurements, flash }: IndexProps) {
-  console.log(procurements);
+  const [selectedProcurements, setSelectedProcurements] = useState<number[]>([]);
+
+  const toggleProcurementSelection = (id: number) => {
+    if (selectedProcurements.includes(id)) {
+      setSelectedProcurements(selectedProcurements.filter(procurementId => procurementId !== id));
+    } else {
+      setSelectedProcurements([...selectedProcurements, id]);
+    }
+  };
+
+  const createEOI = () => {
+    router.visit(route('eois.create', { procurement_ids: selectedProcurements }));
+  };
 
   return (
-    // <h1>Category Page</h1>
-    <AppLayout
-      breadcrumbs={breadcrumbs}
-    // header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Product Procurements</h2>}
-    >
+    <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Procurements" />
 
       <div className="py-12">
@@ -75,80 +80,118 @@ export default function ListProcurement({ procurements, flash }: IndexProps) {
           )}
 
           <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-            <div className="flex justify-end mb-6">
-              <Link
-                href={route('procurements.create')}
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-              >
-                Add New Procurement
-              </Link>
+            <div className="flex justify-between mb-6">
+              <div>
+                {selectedProcurements.length > 0 && (
+                  <button
+                    onClick={createEOI}
+                    className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                  >
+                    Create EOI for Selected ({selectedProcurements.length})
+                  </button>
+                )}
+              </div>
+              <div>
+                <Link
+                  href={route('procurements.create')}
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                >
+                  Add New Procurement
+                </Link>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <div className="flex items-center">
+                        <span>Select</span>
+                      </div>
+                    </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requister</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                    {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th> */}
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Item</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Item Category</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Required Date</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {procurements.data.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                         No procurements found
                       </td>
                     </tr>
                   ) : (
                     procurements.data.map((procurement) => (
                       <tr key={procurement.id}>
-
-                        {/* <td className="px-6 py-4 whitespace-nowrap">{procurement.requester}</td> */}
+                        <td className="px-4 py-4 whitespace-nowrap text-sm">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            checked={selectedProcurements.includes(procurement.id)}
+                            onChange={() => toggleProcurementSelection(procurement.id)}
+                            disabled={procurement.eoi_id !== undefined && procurement.eoi_id !== null}
+                          />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">{procurement?.requester ? procurement.requester.name : 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap">{procurement.title}</td>
-                        {/* <td className="px-6 py-4 whitespace-nowrap">{procurement.description}</td> */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           {Array.isArray(procurement.request_items)
                             ? procurement.request_items.map((item) => item.name).join(', ')
                             : procurement.request_items.name}
                         </td>
-
                         <td className="px-6 py-4 whitespace-nowrap">
                           {Array.isArray(procurement.request_items)
                             ? procurement.request_items.map((item) => item.category?.category_name || 'N/A').join(', ')
                             : procurement.request_items?.category?.category_name || 'N/A'}
                         </td>
-
                         <td className="px-6 py-4 whitespace-nowrap">{procurement.required_date}</td>
-
-                                              
-                        {/* <td className="px-6 py-4 whitespace-nowrap">{procurement.description}</td> */}
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            ${procurement.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                              procurement.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                              procurement.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {procurement.status || 'N/A'}
+                          </span>
+                          {procurement.eoi_id && (
+                            <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                              In EOI
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm flex space-x-2">
+                          <Link
+                            href={route('procurements.show', procurement.id)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            View
+                          </Link>
                           <Link
                             href={route('procurements.edit', procurement.id)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-3"
+                            className="text-indigo-600 hover:text-indigo-900"
                           >
                             Edit
                           </Link>
-
+                          {procurement.eoi_id && (
+                            <Link
+                              href={route('eoi.show', procurement.eoi_id)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              View EOI
+                            </Link>
+                          )}
                           <DeleteModal
-                            title="Delete Category"
+                            title="Delete Procurement"
                             description="Are you sure you want to delete this procurement? This action cannot be undone."
                             deleteRoute="procurements.destroy"
                             itemId={procurement.id}
-                            onSuccess={() => console.log("Category deleted successfully!")}
+                            onSuccess={() => console.log("Procurement deleted successfully!")}
                           />
-                          <Link
-                            href={route('procurements.show', procurement.id)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-3"
-                          >
-                            View Details
-                          </Link>
                         </td>
                       </tr>
                     ))
@@ -194,7 +237,6 @@ export default function ListProcurement({ procurements, flash }: IndexProps) {
                 </div>
               </div>
             )}
-
           </div>
         </div>
       </div>

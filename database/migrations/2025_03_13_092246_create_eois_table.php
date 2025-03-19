@@ -30,7 +30,7 @@ return new class extends Migration
             // Foreign keys
             $table->foreign('created_by')->references('id')->on('users');
             
-            // $table->foreign('approval_workflow_id')->references('id')->on('approval_workflows');
+            $table->foreign('approval_workflow_id')->references('id')->on('approval_workflows');
         });
     }
 

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\EOI;
+use App\Models\Procurement;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class EOIController extends Controller
 {
@@ -12,7 +14,7 @@ class EOIController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('eoi/list-eois');
     }
 
     /**
@@ -20,7 +22,8 @@ class EOIController extends Controller
      */
     public function create()
     {
-        //
+        $procurement = Procurement::with('requestItems', 'requestItems.category', 'requester')->get();
+        return Inertia::render('eoi/eoi-form');
     }
 
     /**

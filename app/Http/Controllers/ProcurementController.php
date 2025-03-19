@@ -99,15 +99,18 @@ class ProcurementController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Procurement $request)
+    public function show(Procurement $procurement)
     {
-       return Inertia::render('procurement/procurement-details');
+        // $categories = ProductCategory::all();
+        $procurement->load('requestItems', 'requestItems.category', 'requester');
+        dd($procurement);
+       return Inertia::render('procurement/procurement-details',[
+        'procurement'=>$procurement,
+        // 'categories'=>$categories,
+       ]);
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-        /**
      * Show the form for editing the specified resource.
      */
     public function edit(Procurement $procurement)
