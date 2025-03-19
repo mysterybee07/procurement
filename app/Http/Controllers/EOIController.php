@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EOI;
 use App\Models\Procurement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class EOIController extends Controller
@@ -20,18 +21,43 @@ class EOIController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
-    {
-        $procurement = Procurement::with('requestItems', 'requestItems.category', 'requester')->get();
-        return Inertia::render('eoi/eoi-form');
-    }
+    public function create(Request $request)
+{
+    $procurementIds = $request->procurement_ids;
+    $procurements = Procurement::whereIn('id', $procurementIds)->get();
+    
+    return Inertia::render('eoi/eoi-form', [
+        'procurements' => $procurements
+    ]);
+}
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $requester = auth()->user()->id;
+            $requestData = $request->validated();
+            
+            DB::beginTransaction();
+
+            $eoi = EOI::create([
+                'title'=>$requestData['title'],
+                'description'=>$requestData['description'],
+                'required_date'=>$requestData['required_date'],
+                'requester'=>$requester,
+                'status'=>$requestData['status'],
+                'urgency'=>$requestData['urgency'],
+                // 'eoi_id'=>$requestData['eoi_id'],
+            ]);
+            DB::commit();
+            return redirect()->route('procurements.index')->with('message', 'Procurement updated successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'There was a problem updating the procurement. ' . $e->getMessage()]);
+        }
+        
     }
 
     /**

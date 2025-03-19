@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EOIController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProcurementController;
@@ -60,6 +61,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/requisitions/{requisition}', [ProcurementController::class, 'show'])->name('requisitions.show');
     Route::put('/requisitions/{requisition}', [ProcurementController::class, 'update'])->name('requisitions.update');
     Route::delete('/requisitions/{requisition}', [ProcurementController::class, 'destroy'])->name('requisitions.destroy');
+});
+Route::middleware(['auth'])->group(function () {
+    Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
+    // Route::get('/documents/create', [DocumentController::class, 'create'])->name('documents.create');
+    Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
+    // Route::get('/documents/{document}/edit', [DocumentController::class, 'edit'])->name('documents.edit');
+    // Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
+    Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
+    Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 });
 
 Route::middleware(['auth'])->group(function () {

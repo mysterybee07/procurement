@@ -24,6 +24,11 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
+        title: 'Document',
+        href:'/documents',
+        icon: LayoutGrid,
+    },
+    {
         title: 'EOI',
         href:'/eois',
         icon: LayoutGrid,

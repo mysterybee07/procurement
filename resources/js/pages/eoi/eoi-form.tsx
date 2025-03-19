@@ -13,7 +13,7 @@ interface EOIFormData {
   id: number;
   title: string;
   description: string;
-  estimated_budget: string;
+  // estimated_budget: string;
   submission_date: string;
   status: string;
   current_approval_step: string;
@@ -38,7 +38,7 @@ interface Props {
     id?: number;
     title?: string;
     description?: string;
-    estimated_budget?: string;
+    // estimated_budget?: string;
     submission_date?: string;
     status?: string;
     current_approval_step?: string;
@@ -97,7 +97,6 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
     id: 0,
     title: '',
     description: '',
-    estimated_budget: '',
     submission_date: '',
     status: 'draft',
     current_approval_step: '',
@@ -122,7 +121,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
         id: eoi.id || 0,
         title: eoi.title || '',
         description: eoi.description || '',
-        estimated_budget: eoi.estimated_budget || '',
+        // estimated_budget: eoi.estimated_budget || '',
         submission_date: eoi.submission_date || '',
         status: eoi.status || 'draft',
         current_approval_step: eoi.current_approval_step || '',
@@ -235,7 +234,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="mb-4">
+                {/* <div className="mb-4">
                   <label className="block text-sm font-medium mb-1">Estimated Budget</label>
                   <input
                     type="number"
@@ -248,7 +247,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
                   {errors.estimated_budget && (
                     <p className="mt-1 text-sm text-red-600">{errors.estimated_budget}</p>
                   )}
-                </div>
+                </div> */}
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium mb-1">Approval Workflow</label>

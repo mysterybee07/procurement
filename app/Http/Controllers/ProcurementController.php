@@ -111,19 +111,19 @@ class ProcurementController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Procurement $procurement)
+    public function edit(Procurement $requisition)
     {
         // if ($procurement->status !== 'draft' || $procurement->status !== 'rejected') {
         //     return redirect()->route('procurements.index')->with('error', 'Procurement has already been submitted. Now you cannot edit it');
         // }
 
-        $categories = ProductCategory::all();
-        $procurement->load('requestItems');
+        $products = Product::all();
+        $requisition->load('requestItems');
         // dd($procurement->requestItems());
         
         return Inertia::render('procurement/procurement-form', [
-            'procurement' => $procurement,
-            'categories' => $categories,
+            'requisition' => $requisition,
+            'products' => $products,
             'isEditing' => true,
             'flash' => [
                 'message' => session('message'),
@@ -145,13 +145,14 @@ class ProcurementController extends Controller
             
             DB::beginTransaction();
 
-            $procurement->update([
-                'title' => $requestData['title'],
-                'description' => $requestData['description'],
-                'required_date' => $requestData['required_date'],
+            $procurement = Procurement::create([
+                'title'=>$requestData['title'],
+                'description'=>$requestData['description'],
+                'required_date'=>$requestData['required_date'],
                 'requester'=>$requester,
-                'status' => $requestData['status'],
-                'urgency' => $requestData['urgency'],
+                'status'=>$requestData['status'],
+                'urgency'=>$requestData['urgency'],
+                // 'eoi_id'=>$requestData['eoi_id'],
             ]);
 
             // Sync request items
@@ -159,12 +160,9 @@ class ProcurementController extends Controller
             foreach ($requestData['requestItems'] as $item) {
                 RequestItem::create([
                     'procurement_id' => $procurement->id,
-                    'name' => $item['name'],
-                    'quantity' => $item['quantity'],
-                    'unit' => $item['unit'],
-                    'estimated_unit_price' => $item['estimated_unit_price'],
-                    'core_specifications' => $item['core_specifications'],
-                    'category_id' => $item['category_id'],
+                    'required_quantity' => $item['required_quantity'],
+                    'additional_specifications' => $item['additional_specifications'],
+                    'product_id' => $item['product_id'],
                 ]);
             }
 
