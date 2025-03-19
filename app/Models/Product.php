@@ -5,15 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RequestItem extends Model
+class Product extends Model
 {
     use HasFactory;
     
     protected $fillable = [
-        'procurement_id',
-        'product_id',
-        'required_quantity',
-        'additional_specifications',
+        'name',
+        'category_id',
+        'in_stock_quantity',
+        'unit',
+        'specifications',
     ];
     
     // procurement relationship
@@ -21,8 +22,10 @@ class RequestItem extends Model
     {
         return $this->belongsTo(Procurement::class, 'procurement_id');
     }
-    public function products()
+    
+    // category relationship
+    public function category()
     {
-        return $this->hasMany(Product::class, 'id');
+        return $this->hasMany(ProductCategory::class, 'category_id');
     }
 }

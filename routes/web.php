@@ -4,6 +4,7 @@ use App\Http\Controllers\EOIController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RequisitionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -42,15 +43,23 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/categories/{category}', [ProductCategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [ProductCategoryController::class, 'destroy'])->name('categories.destroy');
 });
+Route::middleware(['auth'])->group(function () {
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+    Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+    Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+});
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/procurements', [ProcurementController::class, 'index'])->name('procurements.index');
-    Route::get('/procurements/create', [ProcurementController::class, 'create'])->name('procurements.create');
-    Route::post('/procurements', [ProcurementController::class, 'store'])->name('procurements.store');
-    Route::get('/procurements/{procurement}/edit', [ProcurementController::class, 'edit'])->name('procurements.edit');
-    Route::get('/procurements/{procurement}', [ProcurementController::class, 'show'])->name('procurements.show');
-    Route::put('/procurements/{procurement}', [ProcurementController::class, 'update'])->name('procurements.update');
-    Route::delete('/procurements/{procurement}', [ProcurementController::class, 'destroy'])->name('procurements.destroy');
+    Route::get('/requisitions', [ProcurementController::class, 'index'])->name('requisitions.index');
+    Route::get('/requisitions/create', [ProcurementController::class, 'create'])->name('requisitions.create');
+    Route::post('/requisitions', [ProcurementController::class, 'store'])->name('requisitions.store');
+    Route::get('/requisitions/{requisition}/edit', [ProcurementController::class, 'edit'])->name('requisitions.edit');
+    Route::get('/requisitions/{requisition}', [ProcurementController::class, 'show'])->name('requisitions.show');
+    Route::put('/requisitions/{requisition}', [ProcurementController::class, 'update'])->name('requisitions.update');
+    Route::delete('/requisitions/{requisition}', [ProcurementController::class, 'destroy'])->name('requisitions.destroy');
 });
 
 Route::middleware(['auth'])->group(function () {

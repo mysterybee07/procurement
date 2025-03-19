@@ -1,0 +1,95 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ProductRequest;
+use App\Models\Product;
+use App\Models\ProductCategory;
+use DB;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class ProductController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        return Inertia::render('product/list-products');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        $categories = ProductCategory::all();
+        return Inertia::render('product/product-form',[
+            'categories'=>$categories,
+        ]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(ProductRequest $request)
+    {
+
+        // dd($requestData);
+        try {
+            DB::beginTransaction();
+        
+            $requestData = $request->validated(); 
+        
+            Product::create($requestData);
+        
+            DB::commit(); 
+            return redirect()->route('products.index')->with('message', 'Product created successfully');
+        
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors([
+                'error' => 'There was a problem creating the product. ' . $e->getMessage()
+            ]);
+        }
+        
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Product $product)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Product $product)
+    {
+        $categories= ProductCategory::all();
+        return Inertia::render('product/product-form',[
+            'categories'=>$categories,
+            'product'=>$product,
+            'isEditing'=>true,
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Product $product)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Product $product)
+    {
+        //
+    }
+}

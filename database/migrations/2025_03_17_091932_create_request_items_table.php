@@ -14,17 +14,14 @@ return new class extends Migration
         Schema::create('request_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('procurement_id');
-            $table->string('name');
-            $table->integer('quantity');
-            $table->string('unit');
-            $table->decimal('estimated_unit_price', 10, 2);
-            $table->text('core_specifications');
-            $table->unsignedBigInteger('category_id');
+            $table->unsignedBigInteger('product_id');
+            $table->integer('required_quantity');
+            $table->text('additional_specifications');
                        
             $table->timestamps();
             
             $table->foreign('procurement_id')->references(columns: 'id')->on('procurements')->onDelete('cascade');
-            $table->foreign('category_id')->references(columns: 'id')->on('product_categories')->onDelete('cascade');
+            $table->foreign('product_id')->references(columns: 'id')->on('products')->onDelete('cascade');
             
         });
     }

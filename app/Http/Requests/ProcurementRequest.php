@@ -20,73 +20,59 @@ class ProcurementRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
-{
-    $procurementId = $this->route('procurements') ? $this->route('procurements')->id : null;
-    
-    return [
-        'title' => [
-            'required', 
-            'string', 
-            'max:255', 
-            'unique:procurements,title,' . $this->id,
-        ],
-        'description' => [
-            'nullable', 
-            'string'
-        ],
-        'required_date' => [
-            'required', 
-            'date', 
-            'after_or_equal:today'
-        ],
-        'status' => [
-            'required', 
-            'string', 
-            'in:draft,submitted,updated'
-        ],
-        'urgency' => [
-            'required', 
-            'string', 
-            'in:low,medium,high'
-        ],
-        'requestItems' => [
-            'required', 
-            'array', 
-            'min:1'
-        ],
-        // 'requestItems.*.procurement_id' => [
-        //     'required', 
-        //     'exists:procurements,id'
-        // ],
-        'requestItems.*.name' => [
-            'required', 
-            'string', 
-            'max:255'
-        ],
-        'requestItems.*.quantity' => [
-            'required', 
-            'integer', 
-            'min:1'
-        ],
-        'requestItems.*.unit' => [
-            'required', 
-            'string', 
-            'max:50'
-        ],
-        'requestItems.*.estimated_unit_price' => [
-            'required', 
-            'numeric', 
-            'min:0'
-        ],
-        'requestItems.*.core_specifications' => [
-            'required', 
-            'string'
-        ],
-        'requestItems.*.category_id' => [
-            'required', 
-            'exists:product_categories,id'
-        ],
-    ];
+    {
+        // dd($this);
+        $procurementId = $this->route('requisitions') ? $this->route('requisitions')->id : null;
+        
+        return [
+            'title' => [
+                'required', 
+                'string', 
+                'max:255', 
+                'unique:procurements,title,' . $this->id,
+            ],
+            'description' => [
+                'nullable', 
+                'string'
+            ],
+            'required_date' => [
+                'required', 
+                'date', 
+                'after_or_equal:today'
+            ],
+            'status' => [
+                'required', 
+                'string', 
+                'in:draft,submitted,updated'
+            ],
+            'urgency' => [
+                'required', 
+                'string', 
+                'in:low,medium,high'
+            ],
+            'requestItems' => [
+                'required', 
+                'array', 
+                'min:1'
+            ],
+            // 'requestItems.*.procurement_id' => [
+            //     'required', 
+            //     'exists:procurements,id'
+            // ],
+            'requestItems.*.product_id' => [
+                'exists:products,id',
+                'required', 
+            ],
+            'requestItems.*.required_quantity' => [
+                'required', 
+                'integer', 
+                'min:1'
+            ],
+            'requestItems.*.additional_specifications' => [
+                'required', 
+                'string'
+            ],
+        ];
     }
 
 /**
@@ -94,6 +80,7 @@ class ProcurementRequest extends FormRequest
  */
     public function messages(): array
     {
+        // dd($this);
         return [
             'title.required' => 'The title is required.',
             'title.string' => 'The title must be a string.',
@@ -117,27 +104,16 @@ class ProcurementRequest extends FormRequest
             'requestItems.*.procurement_id.required' => 'Each request item must have a procurement ID.',
             'requestItems.*.procurement_id.exists' => 'Invalid procurement ID.',
 
-            'requestItems.*.name.required' => 'Each request item must have a name.',
-            'requestItems.*.name.string' => 'Each request item name must be a string.',
-            'requestItems.*.name.max' => 'Each request item name must not exceed 255 characters.',
 
-            'requestItems.*.quantity.required' => 'Each request item must have a quantity.',
-            'requestItems.*.quantity.integer' => 'Quantity must be an integer.',
-            'requestItems.*.quantity.min' => 'Quantity must be at least 1.',
+            'requestItems.*.required_quantity.required' => 'Each request item must have a required_quantity.',
+            'requestItems.*.required_quantity.integer' => 'Quantity must be an integer.',
+            'requestItems.*.required_quantity.min' => 'Quantity must be at least 1.',
 
-            'requestItems.*.unit.required' => 'Each request item must have a unit.',
-            'requestItems.*.unit.string' => 'Unit must be a valid string.',
-            'requestItems.*.unit.max' => 'Unit must not exceed 50 characters.',
+            'requestItems.*.additional_specifications.required' => 'Core specifications are required for each item.',
+            'requestItems.*.additional_specifications.string' => 'Core specifications must be a valid string.',
 
-            'requestItems.*.estimated_unit_price.required' => 'Each request item must have an estimated unit price.',
-            'requestItems.*.estimated_unit_price.numeric' => 'The estimated unit price must be a number.',
-            'requestItems.*.estimated_unit_price.min' => 'The estimated unit price must be at least 0.',
-
-            'requestItems.*.core_specifications.required' => 'Core specifications are required for each item.',
-            'requestItems.*.core_specifications.string' => 'Core specifications must be a valid string.',
-
-            'requestItems.*.category_id.required' => 'Each request item must have a category ID.',
-            'requestItems.*.category_id.exists' => 'Invalid category ID.',
+            'requestItems.*.product_id.required' => 'Each request item must have a category ID.',
+            'requestItems.*.product_id.exists' => 'Invalid category ID.',
         ];
     }
 

@@ -36,7 +36,7 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        dd($request);
+        // dd($request);
         $input = $request->all();
         // dd($input);
         DB::beginTransaction();

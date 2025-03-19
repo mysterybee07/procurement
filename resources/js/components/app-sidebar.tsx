@@ -19,8 +19,8 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Procurement',
-        href:'/procurements',
+        title: 'Requisition',
+        href:'/requisitions',
         icon: LayoutGrid,
     },
     {
@@ -51,6 +51,11 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Vendors',
         href:'/vendors',
+        icon: LayoutGrid,
+    },
+    {
+        title: 'Products',
+        href:'/products',
         icon: LayoutGrid,
     },
 ];
