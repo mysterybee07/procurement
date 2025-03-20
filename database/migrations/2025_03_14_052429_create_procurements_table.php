@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('procurements', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->text('description')->nullable();
+            // $table->text('description')->nullable();
             $table->date('required_date');
             $table->unsignedBigInteger('requester');
             $table->string('status')->default('draft');

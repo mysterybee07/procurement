@@ -67,7 +67,7 @@ class ProcurementController extends Controller
 
             $procurement = Procurement::create([
                 'title'=>$requestData['title'],
-                'description'=>$requestData['description'],
+                // 'description'=>$requestData['description'],
                 'required_date'=>$requestData['required_date'],
                 'requester'=>$requester,
                 'status'=>$requestData['status'],

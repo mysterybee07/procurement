@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('procurement_id');
             $table->unsignedBigInteger('product_id');
             $table->integer('required_quantity');
-            $table->text('additional_specifications');
+            $table->text('additional_specifications')->nullable();
                        
             $table->timestamps();
             

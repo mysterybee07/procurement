@@ -31,10 +31,10 @@ class ProcurementRequest extends FormRequest
                 'max:255', 
                 'unique:procurements,title,' . $this->id,
             ],
-            'description' => [
-                'nullable', 
-                'string'
-            ],
+            // 'description' => [
+            //     'nullable', 
+            //     'string'
+            // ],
             'required_date' => [
                 'required', 
                 'date', 
@@ -68,8 +68,8 @@ class ProcurementRequest extends FormRequest
                 'integer', 
                 'min:1'
             ],
-            'requestItems.*.additional_specifications' => [
-                'required', 
+            'requestItems.*.additional_specifications' => [ 
+                'nullable',
                 'string'
             ],
         ];
@@ -109,8 +109,8 @@ class ProcurementRequest extends FormRequest
             'requestItems.*.required_quantity.integer' => 'Quantity must be an integer.',
             'requestItems.*.required_quantity.min' => 'Quantity must be at least 1.',
 
-            'requestItems.*.additional_specifications.required' => 'Core specifications are required for each item.',
-            'requestItems.*.additional_specifications.string' => 'Core specifications must be a valid string.',
+            // 'requestItems.*.additional_specifications.required' => 'Core specifications are required for each item.',
+            // 'requestItems.*.additional_specifications.string' => 'Core specifications must be a valid string.',
 
             'requestItems.*.product_id.required' => 'Each request item must have a category ID.',
             'requestItems.*.product_id.exists' => 'Invalid category ID.',
