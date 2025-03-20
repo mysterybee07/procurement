@@ -53,7 +53,7 @@ class DocumentController extends Controller
                         
             DB::commit();
             
-            return redirect()->route('documents.index')->with(
+            return redirect()->back()->with(
                 'message', 'Document created successfully'
             );
         } catch (\Exception $e) {
@@ -97,7 +97,7 @@ class DocumentController extends Controller
                         
             DB::commit();
             
-            return redirect()->route('documents.index')
+            return redirect()->back()
                 ->with('message', 'Document updated successfully.');
                 
         } catch (\Exception $e) {
@@ -114,6 +114,10 @@ class DocumentController extends Controller
      */
     public function destroy(Document $document)
     {
-        //
+        // dd($document);
+        $document->delete();
+        return redirect()->route('documents.index')->with(
+            'message', "Document Deleted successfully",
+        );
     }
 }

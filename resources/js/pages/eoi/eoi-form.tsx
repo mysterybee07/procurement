@@ -2,9 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Bold, Italic, List, Link, Image, PlusCircle, Calendar } from 'lucide-react';
+import { Bold, Italic, List, Link, Image, Calendar } from 'lucide-react';
+import DocumentModalForm from '../document/document-form'
+import DirectRequisitionModal from '../procurement/procurement-modal';
 
 interface ApprovalWorkflow {
+  id: number;
+  name: string;
+}
+
+interface Document {
+  id: number;
+  name: string;
+}
+interface Product {
   id: number;
   name: string;
 }
@@ -13,15 +24,16 @@ interface EOIFormData {
   id: number;
   title: string;
   description: string;
-  // estimated_budget: string;
   submission_date: string;
   status: string;
   current_approval_step: string;
   approval_workflow_id: number;
+  document_id: number;
   submission_deadline: string;
   evaluation_criteria: string;
   eoi_number: string;
   allow_partial_item_submission: boolean;
+  selected_documents: number[];
   [key: string]: any;
 }
 
@@ -33,12 +45,14 @@ interface SimpleRichTextEditorProps {
 
 interface Props {
   approvalWorkflows: ApprovalWorkflow[];
+  requiredDocuments: Document[];
+  products: Product[],
   isEditing: boolean;
   eoi?: {
     id?: number;
     title?: string;
     description?: string;
-    // estimated_budget?: string;
+    document_id?: number;
     submission_date?: string;
     status?: string;
     current_approval_step?: string;
@@ -47,6 +61,7 @@ interface Props {
     evaluation_criteria?: string;
     eoi_number?: string;
     allow_partial_item_submission?: boolean;
+    selected_documents?: number[];
   }
 }
 
@@ -80,7 +95,10 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onCh
   );
 };
 
-const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
+const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocuments: initialDocuments, isEditing, eoi }) => {
+  // State for managing documents (including newly created ones)
+  const [documents, setDocuments] = useState<Document[]>(initialDocuments || []);
+
   const breadcrumbs: BreadcrumbItem[] = [
     {
       title: 'Expressions of Interest',
@@ -101,18 +119,13 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
     status: 'draft',
     current_approval_step: '',
     approval_workflow_id: 0,
+    document_id: 0,
     submission_deadline: '',
     evaluation_criteria: '',
     eoi_number: '',
     allow_partial_item_submission: false,
+    selected_documents: [],
   });
-
-  // Generate EOI number
-  useEffect(() => {
-    if (!isEditing) {
-
-    }
-  }, [isEditing]);
 
   // Load EOI data when editing
   useEffect(() => {
@@ -121,7 +134,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
         id: eoi.id || 0,
         title: eoi.title || '',
         description: eoi.description || '',
-        // estimated_budget: eoi.estimated_budget || '',
+        document_id: eoi.document_id || 0,
         submission_date: eoi.submission_date || '',
         status: eoi.status || 'draft',
         current_approval_step: eoi.current_approval_step || '',
@@ -130,34 +143,10 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
         evaluation_criteria: eoi.evaluation_criteria || '',
         eoi_number: eoi.eoi_number || '',
         allow_partial_item_submission: eoi.allow_partial_item_submission || false,
+        selected_documents: eoi.selected_documents || [],
       });
     }
   }, [isEditing, eoi]);
-
-  // Form submission state
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionType, setSubmissionType] = useState<'draft' | 'submitted' | 'updated'>('draft');
-
-  // Handle form submission
-  useEffect(() => {
-    if (isSubmitting) {
-      if (isEditing) {
-        post(`/eois/${data.id}?_method=PUT`, {
-          onSuccess: () => {
-            reset();
-            setIsSubmitting(false);
-          },
-        });
-      } else {
-        post('/eois', {
-          onSuccess: () => {
-            reset();
-            setIsSubmitting(false);
-          },
-        });
-      }
-    }
-  }, [isSubmitting]);
 
   // Form input handlers
   const handleChange = (
@@ -174,26 +163,38 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
     setData(name as keyof EOIFormData, checked);
   };
 
+  const handleDocumentToggle = (documentId: number) => {
+    setData('selected_documents',
+      data.selected_documents.includes(documentId)
+        ? data.selected_documents.filter(id => id !== documentId)
+        : [...data.selected_documents, documentId]
+    );
+  };
+
+  // Handle new document creation success
+  const handleDocumentCreated = (newDocument: Document) => {
+    // Add the new document to the list
+    setDocuments([...documents, newDocument]);
+
+    // Automatically select the newly created document
+    setData('selected_documents', [...data.selected_documents, newDocument.id]);
+  };
+
   // Form submission handlers
-  const saveAsDraft = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent, status: 'draft' | 'submitted') => {
     e.preventDefault();
-    setData('status', 'draft');
-    setSubmissionType('draft');
-    setIsSubmitting(true);
+    setData('status', status);
+
+    const url = isEditing ? `/eois/${data.id}?_method=PUT` : '/eois';
+
+    post(url, {
+      onSuccess: () => {
+        reset();
+      },
+    });
   };
 
-  const submitForApproval = (e: React.FormEvent) => {
-    e.preventDefault();
-    setData('status', 'submitted');
-    setSubmissionType('submitted');
-    setIsSubmitting(true);
-  };
-
-  const updateEOI = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmissionType('updated');
-    setIsSubmitting(true);
-  };
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -234,21 +235,6 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Estimated Budget</label>
-                  <input
-                    type="number"
-                    name="estimated_budget"
-                    value={data.estimated_budget}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded"
-                    step="0.01"
-                  />
-                  {errors.estimated_budget && (
-                    <p className="mt-1 text-sm text-red-600">{errors.estimated_budget}</p>
-                  )}
-                </div> */}
-
                 <div className="mb-4">
                   <label className="block text-sm font-medium mb-1">Approval Workflow</label>
                   <select
@@ -257,13 +243,13 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
                     onChange={handleChange}
                     className="w-full p-2 border rounded"
                   >
-                    <option value={0}>Select a workflow</option>
+                    <option>Select a workflow</option>
+                    <option>high value workflow</option>
                     {/* {approvalWorkflows.map((workflow) => (
                       <option key={workflow.id} value={workflow.id}>
                         {workflow.name}
                       </option>
                     ))} */}
-                    <option value="high value workflow">high value workflow</option>
                   </select>
                   {errors.approval_workflow_id && (
                     <p className="mt-1 text-sm text-red-600">{errors.approval_workflow_id}</p>
@@ -321,18 +307,83 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
               </div>
 
               <div className="mb-4">
-                <div className="flex items-center">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium">Required Documents</h3>
+                  <DocumentModalForm
+                    isEditing={false}
+                    buttonLabel="Add New Document"
+                  // onSuccess={handleDocumentCreated}
+                  />
+                </div>
+                <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                  <div className="h-32 overflow-y-auto">
+                    {documents.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {documents.map((document) => (
+                          <div
+                            key={document.id}
+                            className={`
+                              p-3 rounded-md border transition-all duration-200
+                              ${data.selected_documents.includes(document.id)
+                                ? 'bg-indigo-50 border-indigo-300'
+                                : 'bg-white border-gray-200 hover:bg-gray-50'}
+                            `}
+                          >
+                            <label className="flex items-start cursor-pointer">
+                              <div className="flex items-center h-5">
+                                <input
+                                  type="checkbox"
+                                  checked={data.selected_documents.includes(document.id)}
+                                  onChange={() => handleDocumentToggle(document.id)}
+                                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                              </div>
+                              <div className="ml-3 text-sm">
+                                <span className={`font-medium ${data.selected_documents.includes(document.id) ? 'text-indigo-700' : 'text-gray-700'}`}>
+                                  {document.name}
+                                </span>
+                              </div>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center p-4">
+                        <p className="text-gray-500 text-sm">Ask For Documents.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="mb-4">
+
+                <div className="flex justify-between">
+                  <div>
+                  {/* <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+
+                  >Add Products
+                  </button> */}
+
+                  <DirectRequisitionModal
+                    onSuccess={() => { }}
+                    products={products}
+                  />
+                  </div>
+                  <div className='flex justify-between'>
                   <input
                     type="checkbox"
                     id="allow_partial_item_submission"
                     name="allow_partial_item_submission"
                     checked={data.allow_partial_item_submission}
                     onChange={handleCheckboxChange}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                    className="w-4 text-blue-600 border-gray-300 rounded"
                   />
-                  <label htmlFor="allow_partial_item_submission" className="ml-2 block text-sm text-gray-900">
+                  <label htmlFor="allow_partial_item_submission" className="ml-2 pt-2 block text-l text-gray-900">
                     Allow Partial Item Submission
                   </label>
+                </div>
                 </div>
                 {errors.allow_partial_item_submission && (
                   <p className="mt-1 text-sm text-red-600">{errors.allow_partial_item_submission}</p>
@@ -345,7 +396,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
               {isEditing ? (
                 <button
                   type="button"
-                  onClick={updateEOI}
+                  onClick={(e) => handleSubmit(e, data.status as 'draft' | 'submitted')}
                   disabled={processing}
                   className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                 >
@@ -355,7 +406,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
                 <>
                   <button
                     type="button"
-                    onClick={saveAsDraft}
+                    onClick={(e) => handleSubmit(e, 'draft')}
                     disabled={processing}
                     className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
                   >
@@ -363,7 +414,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, isEditing, eoi }) => {
                   </button>
                   <button
                     type="button"
-                    onClick={submitForApproval}
+                    onClick={(e) => handleSubmit(e, 'submitted')}
                     disabled={processing}
                     className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                   >

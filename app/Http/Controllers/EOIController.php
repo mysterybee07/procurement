@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Document;
 use App\Models\EOI;
 use App\Models\Procurement;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -22,14 +24,23 @@ class EOIController extends Controller
      * Show the form for creating a new resource.
      */
     public function create(Request $request)
-{
-    $procurementIds = $request->procurement_ids;
-    $procurements = Procurement::whereIn('id', $procurementIds)->get();
-    
-    return Inertia::render('eoi/eoi-form', [
-        'procurements' => $procurements
-    ]);
-}
+    {
+        $procurements = [];
+        $products = Product::all();
+        $requiredDocuments = Document::all();
+
+        if ($request->has('procurement_ids') && !empty($request->procurement_ids)) {
+            $procurementIds = $request->procurement_ids;
+            $procurements = Procurement::whereIn('id', $procurementIds)->get();
+        }
+
+        return Inertia::render('eoi/eoi-form', [
+            'products'=>$products,
+            'procurements' => $procurements,
+            'requiredDocuments'=>$requiredDocuments
+        ]);
+    }
+
 
     /**
      * Store a newly created resource in storage.
@@ -37,7 +48,7 @@ class EOIController extends Controller
     public function store(Request $request)
     {
         try {
-            $requester = auth()->user()->id;
+            $created_by = auth()->user()->id;
             $requestData = $request->validated();
             
             DB::beginTransaction();
@@ -46,7 +57,7 @@ class EOIController extends Controller
                 'title'=>$requestData['title'],
                 'description'=>$requestData['description'],
                 'required_date'=>$requestData['required_date'],
-                'requester'=>$requester,
+                'created_by'=>$created_by,
                 'status'=>$requestData['status'],
                 'urgency'=>$requestData['urgency'],
                 // 'eoi_id'=>$requestData['eoi_id'],

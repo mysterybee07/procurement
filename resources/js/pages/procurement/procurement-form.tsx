@@ -228,7 +228,7 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
                 )}
               </div>
 
-              <div className="mb-4">
+              {/* <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">Description*</label>
                 <SimpleRichTextEditor
                   value={data.description}
@@ -238,7 +238,7 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
                 {errors.description && (
                   <p className="mt-1 text-sm text-red-600">{errors.description}</p>
                 )}
-              </div>
+              </div> */}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="mb-4">

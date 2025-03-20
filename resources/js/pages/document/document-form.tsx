@@ -14,7 +14,7 @@ interface DocumentModalProps {
   onSuccess?: () => void;
 }
 
-export default function DocumentFormModal({ isEditing, document, buttonLabel = "Add New Permission", onSuccess }: DocumentModalProps) {
+export default function DocumentFormModal({ isEditing, document, buttonLabel = "Add New Document", onSuccess }: DocumentModalProps) {
   const nameInput = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   
@@ -81,14 +81,14 @@ export default function DocumentFormModal({ isEditing, document, buttonLabel = "
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Permission' : 'Create New Permission'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Document' : 'Create New Document'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <div className="py-4">
             <div className="mb-4">
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Permission Name
+                Document Name
               </label>
               <input
                 type="text"
@@ -124,7 +124,7 @@ export default function DocumentFormModal({ isEditing, document, buttonLabel = "
                   Processing...
                 </span>
               ) : (
-                <>{isEditing ? 'Update' : 'Create'} Permission</>
+                <>{isEditing ? 'Update' : 'Create'} Document</>
               )}
             </Button>
           </DialogFooter>
