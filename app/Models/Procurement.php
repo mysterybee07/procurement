@@ -16,7 +16,7 @@ class Procurement extends Model
         'requester',
         'status',
         'urgency',
-        'eoi_id',
+        // 'eoi_id',
     ];
     
     // Relationship with EOI

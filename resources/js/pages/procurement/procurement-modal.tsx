@@ -1,4 +1,4 @@
-import React, { useState, useRef, FormEventHandler } from 'react';
+import React, { useState, useRef, FormEventHandler, useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,15 +26,20 @@ interface RequisitionFormData {
 interface Props {
     products: Product[];
     buttonLabel?: string;
-    onSuccess?: () => void;
+    onSuccess?: (selectedIds: number[]) => void;
+    onClose?: () => void;
+    initialSelectedIds?: number[];
+    isOpen: boolean;
 }
 
-export default function RequisitionCreationModal({
+export default function DirectRequisitionModal({
     products,
     buttonLabel = "Create Requisition",
-    onSuccess
+    onSuccess,
+    onClose,
+    initialSelectedIds = [],
+    isOpen
 }: Props) {
-    const [open, setOpen] = useState(false);
     const dateInput = useRef<HTMLInputElement>(null);
 
     const defaultItem: RequestItem = {
@@ -51,19 +56,28 @@ export default function RequisitionCreationModal({
         requestItems: [{ ...defaultItem }],
     });
 
-    // Reset form when modal opens
-    const handleOpenChange = (newOpen: boolean) => {
-        setOpen(newOpen);
-        if (newOpen) {
+    // Initialize form when modal opens or initialSelectedIds changes
+    useEffect(() => {
+        if (isOpen) {
             reset();
+            
+            // Initialize with initial selected IDs if available
+            const initialItems = initialSelectedIds && initialSelectedIds.length > 0
+                ? initialSelectedIds.map(id => ({
+                    product_id: id,
+                    required_quantity: '',
+                    additional_specifications: '',
+                }))
+                : [{ ...defaultItem }];
+                
             setData({
                 required_date: '',
                 status: '',
                 urgency: 'medium',
-                requestItems: [{ ...defaultItem }],
+                requestItems: initialItems,
             });
         }
-    };
+    }, [isOpen, initialSelectedIds]);
 
     const handleItemChange = (
         index: number,
@@ -102,14 +116,22 @@ export default function RequisitionCreationModal({
             preserveScroll: true,
             onSuccess: () => {
                 handleClose();
-                if (onSuccess) onSuccess();
+                if (onSuccess) {
+                    const selectedIds = data.requestItems
+                        .filter(item => item.product_id > 0)
+                        .map(item => item.product_id);
+                    onSuccess(selectedIds);
+                }
             },
             onError: () => dateInput.current?.focus(),
         });
     };
 
     const handleClose = () => {
-        setOpen(false);
+        if (onClose) {
+            onClose();
+        }
+        
         setTimeout(() => {
             clearErrors();
         }, 100);
@@ -121,14 +143,7 @@ export default function RequisitionCreationModal({
     };
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <Button
-                className="bg-indigo-600 hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:ring-indigo-500"
-                onClick={() => setOpen(true)}
-            >
-                {buttonLabel}
-            </Button>
-
+        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold">
@@ -139,6 +154,7 @@ export default function RequisitionCreationModal({
                         className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
                         onClick={handleClose}
                     >
+                        {/* <X size={16} /> */}
                     </Button>
                 </DialogHeader>
 
@@ -273,7 +289,7 @@ export default function RequisitionCreationModal({
                             <button
                                 type="button"
                                 onClick={addNewItem}
-                                className="flex items-center gap-2 text-blue-600 mb-4"
+                                className="flex items-center gap-2 text-blue-600 mt-4"
                             >
                                 <PlusCircle size={16} /> Add New Item
                             </button>

@@ -27,20 +27,28 @@ class EOI extends Model
     ];
     
     // Relationship with user who created the EOI
-    public function creator()
+    public function documents()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsToMany(Document::class, 'eoi_documents', 'eoi_id', 'document_id');
     }
-    
-    // Relationship with approval workflow
+    public function requisitions()
+    {
+        return $this->belongsToMany(Document::class, 'eoi_requisitions', 'eoi_id', 'requisition_id');
+    }
+
+    /**
+     * Get the approval workflow for this EOI.
+     */
     // public function approvalWorkflow()
     // {
-    //     return $this->belongsTo(ApprovalWorkflow::class, 'approval_workflow_id');
+    //     return $this->belongsTo(ApprovalWorkflow::class);
     // }
-    
-    // Relationship with procurements
-    public function procurements()
+
+    /**
+     * Get the user who created this EOI.
+     */
+    public function createdBy()
     {
-        return $this->hasMany(Procurement::class, 'eoi_id');
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

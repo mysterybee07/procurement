@@ -9,6 +9,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Validator;
 
 class EOIController extends Controller
 {
@@ -47,28 +48,52 @@ class EOIController extends Controller
      */
     public function store(Request $request)
     {
-        try {
-            $created_by = auth()->user()->id;
-            $requestData = $request->validated();
-            
-            DB::beginTransaction();
 
-            $eoi = EOI::create([
-                'title'=>$requestData['title'],
-                'description'=>$requestData['description'],
-                'required_date'=>$requestData['required_date'],
-                'created_by'=>$created_by,
-                'status'=>$requestData['status'],
-                'urgency'=>$requestData['urgency'],
-                // 'eoi_id'=>$requestData['eoi_id'],
-            ]);
-            DB::commit();
-            return redirect()->route('procurements.index')->with('message', 'Procurement updated successfully');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'There was a problem updating the procurement. ' . $e->getMessage()]);
+        // dd($request);
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'submission_date' => 'required|date',
+            'submission_deadline' => 'nullable|date',
+            'evaluation_criteria' => 'nullable|string',
+            'allow_partial_item_submission' => 'boolean',
+            // 'approval_workflow_id' => 'nullable|exists:approval_workflows,id',
+            'documents' => 'nullable|array',
+            'documents.*' => 'exists:documents,id',
+            'procurement_ids'=>'nullable | array',
+            'procurement_ids.*' => 'exists:procurements,id',
+        ]);
+        // dd($validator);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
         }
-        
+              
+        $eoiNumber = 'EOI-' . date('Y') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+
+        // Create the EOI
+        $eoi = EOI::create([
+            'title' => $request->title,
+            'description' => $request->description,
+            'submission_date' => $request->submission_date,
+            'submission_deadline' => $request->submission_deadline,
+            'evaluation_criteria' => $request->evaluation_criteria,
+            'allow_partial_item_submission' => $request->allow_partial_item_submission ?? false,
+            'approval_workflow_id' => $request->approval_workflow_id,
+            'status' => $request->status ?? 'draft',
+            'eoi_number' => $eoiNumber,
+            'created_by' => auth()->id(),
+        ]);
+        // $documents = Document::all();
+
+        if ($request->has('documents') && !empty($request->documents)) {
+            $eoi->documents()->sync($request->documents);
+        }
+        if ($request->has('procurement_ids') && !empty($request->procurement_ids)) {
+            $eoi->requisitions()->sync($request->procurement_ids);
+        }
+
+        return redirect()->route('eois.index', $eoi->id)->with('success', 'Expression of Interest created successfully.');
     }
 
     /**

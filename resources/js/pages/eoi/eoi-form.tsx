@@ -26,14 +26,14 @@ interface EOIFormData {
   description: string;
   submission_date: string;
   status: string;
-  current_approval_step: string;
   approval_workflow_id: number;
   document_id: number;
   submission_deadline: string;
   evaluation_criteria: string;
   eoi_number: string;
   allow_partial_item_submission: boolean;
-  selected_documents: number[];
+  documents: number[];
+  procurement_ids: number[]; // Added procurement_ids field
   [key: string]: any;
 }
 
@@ -55,13 +55,13 @@ interface Props {
     document_id?: number;
     submission_date?: string;
     status?: string;
-    current_approval_step?: string;
     approval_workflow_id?: number;
     submission_deadline?: string;
     evaluation_criteria?: string;
     eoi_number?: string;
     allow_partial_item_submission?: boolean;
-    selected_documents?: number[];
+    documents?: number[];
+    procurement_ids?: number[];
   }
 }
 
@@ -96,8 +96,17 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onCh
 };
 
 const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocuments: initialDocuments, isEditing, eoi }) => {
+  // State for procurement IDs
+  const [procurementIds, setProcurementIds] = useState<number[]>([]);
+  
+  // State for modal visibility
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   // State for managing documents (including newly created ones)
   const [documents, setDocuments] = useState<Document[]>(initialDocuments || []);
+  
+  // State for document modal
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
 
   const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -110,22 +119,39 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
     },
   ];
 
-  // Form initialization
+  // Form initialization with documents array and procurement_ids
   const { data, setData, post, errors, processing, reset } = useForm<EOIFormData>({
     id: 0,
     title: '',
     description: '',
     submission_date: '',
     status: 'draft',
-    current_approval_step: '',
     approval_workflow_id: 0,
     document_id: 0,
     submission_deadline: '',
     evaluation_criteria: '',
     eoi_number: '',
     allow_partial_item_submission: false,
-    selected_documents: [],
+    documents: [],
+    procurement_ids: [], // Initialize procurement_ids
   });
+
+  // Get procurement IDs from URL on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const ids: number[] = [];
+
+    for (const [key, value] of urlParams.entries()) {
+      if (key.startsWith("procurement_ids[")) {
+        ids.push(Number(value));
+      }
+    }
+
+    setProcurementIds(ids);
+    
+    // Also set in form data
+    setData('procurement_ids', ids);
+  }, []);
 
   // Load EOI data when editing
   useEffect(() => {
@@ -137,16 +163,21 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
         document_id: eoi.document_id || 0,
         submission_date: eoi.submission_date || '',
         status: eoi.status || 'draft',
-        current_approval_step: eoi.current_approval_step || '',
         approval_workflow_id: eoi.approval_workflow_id || 0,
         submission_deadline: eoi.submission_deadline || '',
         evaluation_criteria: eoi.evaluation_criteria || '',
         eoi_number: eoi.eoi_number || '',
         allow_partial_item_submission: eoi.allow_partial_item_submission || false,
-        selected_documents: eoi.selected_documents || [],
+        documents: eoi.documents || [],
+        procurement_ids: eoi.procurement_ids || procurementIds, // Use existing or from URL
       });
+      
+      // Set the procurement IDs in the state too
+      if (eoi.procurement_ids) {
+        setProcurementIds(eoi.procurement_ids);
+      }
     }
-  }, [isEditing, eoi]);
+  }, [isEditing, eoi, procurementIds]);
 
   // Form input handlers
   const handleChange = (
@@ -163,21 +194,46 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
     setData(name as keyof EOIFormData, checked);
   };
 
+  // Updated to handle document toggle with documents array
   const handleDocumentToggle = (documentId: number) => {
-    setData('selected_documents',
-      data.selected_documents.includes(documentId)
-        ? data.selected_documents.filter(id => id !== documentId)
-        : [...data.selected_documents, documentId]
+    setData('documents',
+      data.documents.includes(documentId)
+        ? data.documents.filter(id => id !== documentId)
+        : [...data.documents, documentId]
     );
   };
 
-  // Handle new document creation success
-  const handleDocumentCreated = (newDocument: Document) => {
-    // Add the new document to the list
-    setDocuments([...documents, newDocument]);
+  // Handle selection of all documents
+  const handleSelectAllDocuments = () => {
+    const allDocumentIds = documents.map(doc => doc.id);
+    setData('documents', allDocumentIds);
+  };
 
-    // Automatically select the newly created document
-    setData('selected_documents', [...data.selected_documents, newDocument.id]);
+  // Handle deselection of all documents
+  const handleDeselectAllDocuments = () => {
+    setData('documents', []);
+  };
+
+  const handleDocumentCreated = (newDocument: Document) => {
+    setDocuments([...documents, newDocument]);
+    setData('documents', [...data.documents, newDocument.id]);
+    setIsDocumentModalOpen(false);
+  };
+
+  // Handle procurement selection from modal
+  const handleProcurementSelected = (selectedIds: number[]) => {
+    setProcurementIds(selectedIds);
+    setData('procurement_ids', selectedIds);
+  };
+
+  // Handle opening the requisition modal
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  // Handle closing the requisition modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
   };
 
   // Form submission handlers
@@ -193,8 +249,6 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
       },
     });
   };
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -243,13 +297,12 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                     onChange={handleChange}
                     className="w-full p-2 border rounded"
                   >
-                    <option>Select a workflow</option>
-                    <option>high value workflow</option>
-                    {/* {approvalWorkflows.map((workflow) => (
+                    <option value="">Select a workflow</option>
+                    {approvalWorkflows && approvalWorkflows.map((workflow) => (
                       <option key={workflow.id} value={workflow.id}>
                         {workflow.name}
                       </option>
-                    ))} */}
+                    ))}
                   </select>
                   {errors.approval_workflow_id && (
                     <p className="mt-1 text-sm text-red-600">{errors.approval_workflow_id}</p>
@@ -316,6 +369,30 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                   />
                 </div>
                 <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                  {/* Document selection controls */}
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-gray-600">
+                      {data.documents.length} of {documents.length} selected
+                    </span>
+                    <div className="space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllDocuments}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeselectAllDocuments}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Deselect All
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Document list */}
                   <div className="h-32 overflow-y-auto">
                     {documents.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -324,7 +401,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                             key={document.id}
                             className={`
                               p-3 rounded-md border transition-all duration-200
-                              ${data.selected_documents.includes(document.id)
+                              ${data.documents.includes(document.id)
                                 ? 'bg-indigo-50 border-indigo-300'
                                 : 'bg-white border-gray-200 hover:bg-gray-50'}
                             `}
@@ -333,13 +410,13 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                               <div className="flex items-center h-5">
                                 <input
                                   type="checkbox"
-                                  checked={data.selected_documents.includes(document.id)}
+                                  checked={data.documents.includes(document.id)}
                                   onChange={() => handleDocumentToggle(document.id)}
                                   className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                 />
                               </div>
                               <div className="ml-3 text-sm">
-                                <span className={`font-medium ${data.selected_documents.includes(document.id) ? 'text-indigo-700' : 'text-gray-700'}`}>
+                                <span className={`font-medium ${data.documents.includes(document.id) ? 'text-indigo-700' : 'text-gray-700'}`}>
                                   {document.name}
                                 </span>
                               </div>
@@ -349,46 +426,74 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                       </div>
                     ) : (
                       <div className="flex items-center justify-center p-4">
-                        <p className="text-gray-500 text-sm">Ask For Documents.</p>
+                        <p className="text-gray-500 text-sm">No documents available. Add documents using the button above.</p>
                       </div>
                     )}
                   </div>
+                  {errors.documents && (
+                    <p className="mt-1 text-sm text-red-600">{errors.documents}</p>
+                  )}
                 </div>
               </div>
-              <div className="mb-4">
 
+              <div className="mb-4">
                 <div className="flex justify-between">
                   <div>
-                  {/* <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-
-                  >Add Products
-                  </button> */}
-
-                  <DirectRequisitionModal
-                    onSuccess={() => { }}
-                    products={products}
-                  />
+                    {/* Custom button to open modal */}
+                    <button
+                      type="button"
+                      onClick={handleOpenModal}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      {procurementIds.length > 0 ? 'Edit Procurements' : 'Add Procurements'}
+                    </button>
+                    
+                    {/* Render the modal only when isModalOpen is true */}
+                    {isModalOpen && (
+                      <DirectRequisitionModal
+                        onSuccess={handleProcurementSelected}
+                        onClose={handleCloseModal}
+                        products={products}
+                        initialSelectedIds={procurementIds}
+                        isOpen={isModalOpen}
+                      />
+                    )}
                   </div>
-                  <div className='flex justify-between'>
-                  <input
-                    type="checkbox"
-                    id="allow_partial_item_submission"
-                    name="allow_partial_item_submission"
-                    checked={data.allow_partial_item_submission}
-                    onChange={handleCheckboxChange}
-                    className="w-4 text-blue-600 border-gray-300 rounded"
-                  />
-                  <label htmlFor="allow_partial_item_submission" className="ml-2 pt-2 block text-l text-gray-900">
-                    Allow Partial Item Submission
-                  </label>
-                </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="allow_partial_item_submission"
+                      name="allow_partial_item_submission"
+                      checked={data.allow_partial_item_submission}
+                      onChange={handleCheckboxChange}
+                      className="w-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="allow_partial_item_submission" className="ml-2 block text-sm text-gray-900">
+                      Allow Partial Item Submission
+                    </label>
+                  </div>
                 </div>
                 {errors.allow_partial_item_submission && (
                   <p className="mt-1 text-sm text-red-600">{errors.allow_partial_item_submission}</p>
                 )}
               </div>
+              
+              {/* Display selected procurement IDs */}
+              {procurementIds.length > 0 && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">Selected Procurement IDs ({procurementIds.length})</label>
+                  <div className="p-2 border rounded bg-white">
+                    {procurementIds.join(', ')}
+                  </div>
+                </div>
+              )}
+              
+              {/* Hidden field to ensure procurement_ids is sent with the form */}
+              <input 
+                type="hidden" 
+                name="procurement_ids" 
+                value={JSON.stringify(procurementIds)} 
+              />
             </div>
 
             {/* Action Buttons */}

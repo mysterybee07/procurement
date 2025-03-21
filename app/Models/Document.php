@@ -12,4 +12,9 @@ class Document extends Model
     protected $fillable = [
         'name',
     ];
+
+    public function eois()
+    {
+        return $this->belongsToMany(EOI::class, 'eoi_documents', 'document_id', 'eoi_id');
+    }
 }
