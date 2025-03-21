@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EOIRequest;
 use App\Models\Document;
 use App\Models\EOI;
 use App\Models\Procurement;
@@ -18,7 +19,16 @@ class EOIController extends Controller
      */
     public function index()
     {
-        return Inertia::render('eoi/list-eois');
+        $eois = EOI::with( 'createdBy', 'requisitions.requestItems.product')->paginate(10);
+        // dd($eois);
+
+        return Inertia::render('eoi/list-eois',[
+            'eois'=>$eois,
+            'flash'=>[
+                'message'=>session('message'),
+                'error'=>session('error'),
+            ]
+        ]);
     }
 
     /**
@@ -46,54 +56,48 @@ class EOIController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(EOIRequest $request)
     {
 
         // dd($request);
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'submission_date' => 'required|date',
-            'submission_deadline' => 'nullable|date',
-            'evaluation_criteria' => 'nullable|string',
-            'allow_partial_item_submission' => 'boolean',
-            // 'approval_workflow_id' => 'nullable|exists:approval_workflows,id',
-            'documents' => 'nullable|array',
-            'documents.*' => 'exists:documents,id',
-            'procurement_ids'=>'nullable | array',
-            'procurement_ids.*' => 'exists:procurements,id',
-        ]);
-        // dd($validator);
+        
+        $requestData= $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
+        // dd($requestData);
+
+        // if ($requestData->fails()) {
+        //     return redirect()->back()->withErrors($requestData)->withInput();
+        // }
               
         $eoiNumber = 'EOI-' . date('Y') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
 
         // Create the EOI
         $eoi = EOI::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'submission_date' => $request->submission_date,
-            'submission_deadline' => $request->submission_deadline,
-            'evaluation_criteria' => $request->evaluation_criteria,
-            'allow_partial_item_submission' => $request->allow_partial_item_submission ?? false,
-            'approval_workflow_id' => $request->approval_workflow_id,
-            'status' => $request->status ?? 'draft',
+            'title' => $requestData['title'],
+            'description' => $requestData['description'],
+            'submission_date' => $requestData['submission_date'],
+            'submission_deadline' => $requestData['submission_deadline'],
+            'evaluation_criteria' => $requestData['evaluation_criteria'],
+            'allow_partial_item_submission' => $requestData['allow_partial_item_submission'] ?? false,
+            // 'approval_workflow_id' => $requestData['approval_workflow_id'],
+            'status' => $requestData['status'] ?? 'draft',
             'eoi_number' => $eoiNumber,
             'created_by' => auth()->id(),
         ]);
         // $documents = Document::all();
 
-        if ($request->has('documents') && !empty($request->documents)) {
-            $eoi->documents()->sync($request->documents);
-        }
-        if ($request->has('procurement_ids') && !empty($request->procurement_ids)) {
-            $eoi->requisitions()->sync($request->procurement_ids);
+        if (!empty($requestData['documents'] ?? null)) {
+            $eoi->documents()->sync($requestData['documents']);
+        }        
+
+        // Update eoi id on procurement table
+        if ($requestData['procurement_ids']&& !empty($requestData->procurement_ids)) {
+            Procurement::whereIn('id', $requestData->procurement_ids)
+            ->update(['eoi_id' => $eoi->id]);
         }
 
-        return redirect()->route('eois.index', $eoi->id)->with('success', 'Expression of Interest created successfully.');
+        return redirect()->route('eois.index', $eoi->id)
+        ->with('message', 'Expression of Interest created successfully.');
     }
 
     /**

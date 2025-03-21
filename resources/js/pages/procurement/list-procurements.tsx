@@ -24,10 +24,10 @@ interface Requisition {
   request_items: Array<{
     required_quantity: string;
     additional_specifications: string;
-    products: Array<{
+    product: {
       name: string;
       in_stock_quantity: number;
-    }>;
+    };
   }>;
   requester: {
     name: string;
@@ -50,6 +50,7 @@ interface IndexProps {
 
 export default function ListProcurement({ requisitions, flash }: IndexProps) {
   const [selectedRequisitions, setSelectedRequisitions] = useState<number[]>([]);
+  console.log(requisitions.data);
 
   const toggleRequisitionselection = (id: number) => {
     if (selectedRequisitions.includes(id)) {
@@ -171,12 +172,10 @@ export default function ListProcurement({ requisitions, flash }: IndexProps) {
                         <td className="px-6 py-4 whitespace-nowrap">
                           {procurement.request_items.length > 0
                             ? procurement.request_items
-                              .map((item) =>
-                                item.products.length > 0
-                                  ? item.products.map((product) => product.name).join(', ')
-                                  : 'N/A'
+                              .map((item) =>                               
+                                item.product.name                                  
                               )
-                              .join(', ') 
+                              .join(', ')
                             : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -188,9 +187,8 @@ export default function ListProcurement({ requisitions, flash }: IndexProps) {
                           {procurement.request_items.length > 0
                             ? procurement.request_items
                               .map((item) =>
-                                item.products.length > 0
-                                  ? item.products.map((product) => product.in_stock_quantity).join(', ')
-                                  : 'N/A'
+                        
+                                  item.product.in_stock_quantity
                               )
                               .join(', ')
                             : 'N/A'}

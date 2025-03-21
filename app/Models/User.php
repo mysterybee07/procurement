@@ -57,6 +57,6 @@ class User extends Authenticatable
     }
 
     public function procurement(){
-        return $this->hasMany(Procurement::class, 'requester');
+        return $this->hasOne(Procurement::class, 'requester');
     }
 }

@@ -16,7 +16,7 @@ class Procurement extends Model
         'requester',
         'status',
         'urgency',
-        // 'eoi_id',
+        'eoi_id',
     ];
     
     // Relationship with EOI
@@ -34,4 +34,8 @@ class Procurement extends Model
     public function requester(){
         return $this->belongsTo(User::class, 'requester');
     }
+
+    // public function documents(){
+    //     return $this-> hasMany(Document::class, 'document_id');
+    // }
 }

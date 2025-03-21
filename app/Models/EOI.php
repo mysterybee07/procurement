@@ -31,10 +31,6 @@ class EOI extends Model
     {
         return $this->belongsToMany(Document::class, 'eoi_documents', 'eoi_id', 'document_id');
     }
-    public function requisitions()
-    {
-        return $this->belongsToMany(Document::class, 'eoi_requisitions', 'eoi_id', 'requisition_id');
-    }
 
     /**
      * Get the approval workflow for this EOI.
@@ -50,5 +46,9 @@ class EOI extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function requisitions(){
+        return $this->hasMany(Procurement::class, 'eoi_id');
     }
 }

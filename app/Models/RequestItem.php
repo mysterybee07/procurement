@@ -21,8 +21,8 @@ class RequestItem extends Model
     {
         return $this->belongsTo(Procurement::class, 'procurement_id');
     }
-    public function products()
+    public function product()
     {
-        return $this->hasMany(Product::class, 'id');
+        return $this->belongsTo(Product::class);
     }
 }

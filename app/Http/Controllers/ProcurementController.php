@@ -20,7 +20,7 @@ class ProcurementController extends Controller
     public function index()
     {
         // $procurements = Procurement::with('requestItems');
-        $requisitions = Procurement::with( 'requester', 'requestItems', 'requestItems.products')->paginate(10);
+        $requisitions = Procurement::with( 'requester', 'requestItems', 'requestItems.product')->paginate(10);
         // dd($requisitions);
 
         return Inertia::render('procurement/list-procurements',[

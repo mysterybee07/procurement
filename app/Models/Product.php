@@ -18,14 +18,18 @@ class Product extends Model
     ];
     
     // procurement relationship
-    public function procurement()
-    {
-        return $this->belongsTo(Procurement::class, 'procurement_id');
-    }
+    // public function procurement()
+    // {
+    //     return $this->belongsTo(Procurement::class, 'procurement_id');
+    // }
     
     // category relationship
     public function category()
     {
-        return $this->hasMany(ProductCategory::class, 'id');
+        return $this->belongsTo(ProductCategory::class, 'category_id');
+    }
+
+    public function requestItem(){
+        return $this->belongsTo(RequestItem::class,'product_id');
     }
 }

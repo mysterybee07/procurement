@@ -19,11 +19,11 @@ return new class extends Migration
             $table->unsignedBigInteger('requester');
             $table->string('status')->default('draft');
             $table->string('urgency');
-            // $table->unsignedBigInteger('eoi_id')->nullable();
+            $table->unsignedBigInteger('eoi_id')->nullable();
             $table->timestamps();
 
             $table->foreign('requester')->references('id')->on('users');
-            // $table->foreign('eoi_id')->references('id')->on('eois');
+            $table->foreign('eoi_id')->references('id')->on('eois');
         });
     }
 
