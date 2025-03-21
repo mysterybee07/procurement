@@ -17,14 +17,14 @@ class EOIController extends Controller
      */
     public function index()
     {
-        $eois = EOI::with( 'createdBy','requisitions.requestItems.product')->paginate();
+        $eois = EOI::with('createdBy', 'requisitions.requestItems.product')->paginate();
         // dd($eois);
 
-        return Inertia::render('eoi/list-eois',[
-            'eois'=>$eois,
-            'flash'=>[
-                'message'=>session('message'),
-                'error'=>session('error'),
+        return Inertia::render('eoi/list-eois', [
+            'eois' => $eois,
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
             ]
         ]);
     }
@@ -44,9 +44,9 @@ class EOIController extends Controller
         // }
 
         return Inertia::render('eoi/eoi-form', [
-            'products'=>$products,
+            'products' => $products,
             'requisitions' => $requisitions,
-            'requiredDocuments'=>$requiredDocuments
+            'requiredDocuments' => $requiredDocuments
         ]);
     }
 
@@ -56,10 +56,9 @@ class EOIController extends Controller
      */
     public function store(EOIRequest $request)
     {
-
         // dd($request);
         
-        $requestData= $request->validated();
+        $requestData = $request->validated();
 
         // dd($requestData);
 
@@ -93,40 +92,97 @@ class EOIController extends Controller
                 ->update(['eoi_id' => $eoi->id]);
         }
         
-
         return redirect()->route('eois.index', $eoi->id)
-        ->with('message', 'Expression of Interest created successfully.');
+            ->with('message', 'Expression of Interest created successfully.');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(EOI $eOI)
+    public function show(EOI $eoi)
     {
-        //
+        $eoi->load('createdBy', 'documents', 'requisitions.requestItems.product');
+        
+        return Inertia::render('eoi/show-eoi', [
+            'eoi' => $eoi,
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
+            ]
+        ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(EOI $eOI)
+    public function edit(EOI $eoi)
     {
-        //
+        $eoi->load('documents', 'requisitions');
+        $products = Product::all();
+        $requiredDocuments = Document::all();
+        
+        return Inertia::render('eoi/eoi-form', [
+            'eoi' => $eoi,
+            'products' => $products,
+            'requisitions' => $eoi->requisitions,
+            'requiredDocuments' => $requiredDocuments,
+            'isEditing' => true
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, EOI $eOI)
+    public function update(EOIRequest $request, EOI $eoi)
     {
-        //
+        $requestData = $request->validated();
+        // dd($requestData);
+        
+        $eoi->update([
+            'title' => $requestData['title'],
+            'description' => $requestData['description'],
+            'submission_deadline' => $requestData['submission_deadline'],
+            'evaluation_criteria' => $requestData['evaluation_criteria'],
+            'allow_partial_item_submission' => $requestData['allow_partial_item_submission'] ?? false,
+            'status' => $requestData['status'] ?? $eoi->status,
+        ]);
+        
+        // Update documents
+        if (isset($requestData['documents'])) {
+            $eoi->documents()->sync($requestData['documents']);
+        }
+        
+        // Update requisitions
+        if (isset($requestData['requisition_ids'])) {
+            // First, clear existing requisitions
+            Requisition::where('eoi_id', $eoi->id)
+                ->update(['eoi_id' => null]);
+                
+            // Then, assign new requisitions
+            Requisition::whereIn('id', $requestData['requisition_ids'])
+                ->update(['eoi_id' => $eoi->id]);
+        }
+        
+        return redirect()->route('eois.show', $eoi->id)
+            ->with('message', 'Expression of Interest updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(EOI $eOI)
+    public function destroy(EOI $eoi)
     {
-        //
+        // First, remove EOI reference from requisitions
+        Requisition::where('eoi_id', $eoi->id)
+            ->update(['eoi_id' => null]);
+            
+        // Detach all documents
+        $eoi->documents()->detach();
+        
+        // Delete the EOI
+        $eoi->delete();
+        
+        return redirect()->route('eois.index')
+            ->with('message', 'Expression of Interest deleted successfully.');
     }
 }

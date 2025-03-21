@@ -26,10 +26,10 @@ class RequisitionRequest extends FormRequest
         
         return [
             'title' => [
-                'required', 
+                'nullable', 
                 'string', 
                 'max:255', 
-                'unique:requisitions,title,' . $this->id,
+                // 'unique:requisitions,title,' . $this->id,
             ],
             // 'description' => [
             //     'nullable', 
@@ -82,10 +82,10 @@ class RequisitionRequest extends FormRequest
     {
         // dd($this);
         return [
-            'title.required' => 'The title is required.',
+            // 'title.required' => 'The title is required.',
             'title.string' => 'The title must be a string.',
             'title.max' => 'The title must not exceed 255 characters.',
-            'title.unique' => 'This requisition title has already been used.',
+            // 'title.unique' => 'This requisition title has already been used.',
 
             'required_date.required' => 'The required date is required.',
             'required_date.date' => 'Please provide a valid date.',

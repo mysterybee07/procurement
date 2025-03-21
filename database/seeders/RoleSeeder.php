@@ -14,16 +14,10 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
-        $createUserPermission = Permission::create(['name' => 'create users']);
-
         $superAdminRole = Role::create(['name'=>'superadmin']);
         Role::create(['name'=>'vendor']);
         Role::create(['name'=>'user']);
 
-        $superAdminRole -> givePermissionTo($createUserPermission);
-
-        $user = User::find(1);
-
-        $user ->assignRole($superAdminRole);
+        $superAdminRole->syncPermissions(Permission::all());
     }
 }

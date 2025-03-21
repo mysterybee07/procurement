@@ -23,6 +23,27 @@ interface RequisitionFormData {
     [key: string]: any;
 }
 
+interface Requisition {
+    id: number;
+    title: string;
+    description: string;
+    required_date: string;
+    status: string;
+    urgency: string;
+    eoi_id: number;
+    request_items: Array<{
+      required_quantity: string;
+      additional_specifications: string;
+      product: {
+        name: string;
+        in_stock_quantity: number;
+      };
+    }>;
+    requester: {
+      name: string;
+    };
+}
+
 interface Props {
     products: Product[];
     buttonLabel?: string;
@@ -34,13 +55,13 @@ interface Props {
 
 export default function DirectRequisitionModal({
     products,
-    buttonLabel = "Create Requisition",
     onSuccess,
     onClose,
-    initialSelectedIds = [],
+    // initialSelectedIds = [],
     isOpen
 }: Props) {
     const dateInput = useRef<HTMLInputElement>(null);
+    const [initialized, setInitialized] = useState(false);
 
     const defaultItem: RequestItem = {
         product_id: 0,
@@ -55,29 +76,23 @@ export default function DirectRequisitionModal({
         urgency: 'medium',
         requestItems: [{ ...defaultItem }],
     });
-
-    // Initialize form when modal opens or initialSelectedIds changes
+    
+    // Reset the form completely when modal opens or closes
     useEffect(() => {
         if (isOpen) {
             reset();
-            
-            // Initialize with initial selected IDs if available
-            const initialItems = initialSelectedIds && initialSelectedIds.length > 0
-                ? initialSelectedIds.map(id => ({
-                    product_id: id,
-                    required_quantity: '',
-                    additional_specifications: '',
-                }))
-                : [{ ...defaultItem }];
-                
             setData({
                 required_date: '',
-                status: '',
+                status: 'submitted',
                 urgency: 'medium',
-                requestItems: initialItems,
+                requestItems: [{ ...defaultItem }], 
             });
+            setInitialized(true);
+        } else {
+            // Reset when modal closes
+            setInitialized(false);
         }
-    }, [isOpen, initialSelectedIds]);
+    }, [isOpen]);
 
     const handleItemChange = (
         index: number,
@@ -100,27 +115,37 @@ export default function DirectRequisitionModal({
     };
 
     const removeItem = (index: number) => {
-        if (data.requestItems.length > 1) {
-            setData('requestItems', data.requestItems.filter((_, i) => i !== index));
-        }
+        if (data.requestItems.length <= 1) return;
+        
+        setData('requestItems', data.requestItems.filter((_, i) => i !== index));
     };
 
     const submitForApproval: FormEventHandler = (e) => {
         e.preventDefault();
+        
         setData('status', 'submitted');
         submitForm();
     };
 
     const submitForm = () => {
+        // Use POST method for new requisitions
         post(route('requisitions.store'), {
             preserveScroll: true,
-            onSuccess: () => {
+            onSuccess: (page) => {
                 handleClose();
-                if (onSuccess) {
-                    const selectedIds = data.requestItems
-                        .filter(item => item.product_id > 0)
-                        .map(item => item.product_id);
-                    onSuccess(selectedIds);
+                const requisition = page.props.requisition as Requisition | undefined;
+                
+                if (requisition && requisition.id) {
+                    console.log(`New requisition created with ID: ${requisition.id}`);
+                    
+                    if (onSuccess) {
+                        const selectedIds = data.requestItems
+                            .filter(item => item.product_id > 0)
+                            .map(item => item.product_id);
+                        onSuccess(selectedIds);
+                    }
+                } else {
+                    console.error("Couldn't get requisition ID from response");
                 }
             },
             onError: () => dateInput.current?.focus(),
@@ -134,6 +159,15 @@ export default function DirectRequisitionModal({
         
         setTimeout(() => {
             clearErrors();
+            
+            // Reset form data when closing
+            reset();
+            setData({
+                required_date: '',
+                status: 'submitted',
+                urgency: 'medium',
+                requestItems: [{ ...defaultItem }],
+            });
         }, 100);
     };
 
@@ -154,7 +188,7 @@ export default function DirectRequisitionModal({
                         className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
                         onClick={handleClose}
                     >
-                        {/* <X size={16} /> */}
+                        <X size={16} />
                     </Button>
                 </DialogHeader>
 
@@ -268,7 +302,6 @@ export default function DirectRequisitionModal({
                                                         </p>
                                                     )}
                                                 </td>
-
                                                 <td className="border p-2 text-center">
                                                     {data.requestItems.length > 1 && (
                                                         <button
@@ -303,6 +336,7 @@ export default function DirectRequisitionModal({
                             Cancel
                         </Button>
                     </DialogClose>
+                    
                     <Button
                         type="button"
                         onClick={submitForApproval}

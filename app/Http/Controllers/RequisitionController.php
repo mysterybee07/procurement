@@ -53,46 +53,52 @@ class RequisitionController extends Controller
      */
     public function store(RequisitionRequest $request)
     {
-
-        // dd($request);
-        try{
-            // dd($request);
+        try {
             $requestData = $request->validated();
-            // dd($requestData);
-
-            // dd($requestData->json());
             $requester = auth()->user()->id;
-            // dd($requester);
+    
             DB::beginTransaction();
-
+    
+            // Fetch all product names in a single query
+            $productIds = array_column($requestData['requestItems'], 'product_id');
+            $products = Product::whereIn('id', $productIds)->pluck('name', 'id');
+    
+            // Determine the title
+            $title = $requestData['title'] ?? 'Required: ' . implode(', ', array_map(
+                fn($item) => $products[$item['product_id']] ?? 'Unknown Product',
+                $requestData['requestItems']
+            ));
+    
             $requisition = Requisition::create([
-                'title'=>$requestData['title'],
-                // 'description'=>$requestData['description'],
-                'required_date'=>$requestData['required_date'],
-                'requester'=>$requester,
-                'status'=>$requestData['status'],
-                'urgency'=>$requestData['urgency'],
-                // 'eoi_id'=>$requestData['eoi_id'],
+                'title' => $title,
+                'required_date' => $requestData['required_date'],
+                'requester' => $requester,
+                'status' => $requestData['status'],
+                'urgency' => $requestData['urgency'],
             ]);
-
-            foreach ($requestData['requestItems'] as $item) {
-                RequestItem::create([
-                    'requisition_id' => $requisition->id,
-                    'required_quantity' => $item['required_quantity'],
-                    'additional_specifications' => $item['additional_specifications'],
-                    'product_id' => $item['product_id'],
-                ]);
-            }
+    
+            $requestItems = array_map(fn($item) => [
+                'requisition_id' => $requisition->id,
+                'required_quantity' => $item['required_quantity'],
+                'additional_specifications' => $item['additional_specifications'],
+                'product_id' => $item['product_id'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ], $requestData['requestItems']);
+    
+            // Bulk insert for efficiency
+            RequestItem::insert($requestItems);
+    
             DB::commit();
-            return redirect()->route('requisitions.index')->with('message', 'requisition created successfully');
-        }catch(\Exception $e){
+            return redirect()->back()->with('message', 'Requisition created successfully');
+        } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors([
-                'error' => 'There was a problem creating the role. ' . $e->getMessage()
+                'error' => 'There was a problem creating the requisition. ' . $e->getMessage()
             ]);
-
         }
     }
+    
 
     /**
      * Display the specified resource.
@@ -178,11 +184,11 @@ class RequisitionController extends Controller
      */
     public function destroy(Requisition $requisition)
     {
-        if ($requisition->status !== 'draft' || $requisition->status !== 'rejected') {
-            return redirect()->route('requisitions.index')->with(
-                'error', 'Requisition has already been submitted. Now you cannot delete it'
-            );
-        } 
+        // if ($requisition->status !== 'draft' || $requisition->status !== 'rejected') {
+        //     return redirect()->route('requisitions.index')->with(
+        //         'error', 'Requisition has already been submitted. Now you cannot delete it'
+        //     );
+        // } 
         DB::beginTransaction();
         
         try{    

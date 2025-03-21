@@ -32,7 +32,7 @@ interface EOIFormData {
   eoi_number: string;
   allow_partial_item_submission: boolean;
   documents: number[];
-  requisition_ids: number[];
+  requisition_ids: number[]; 
   [key: string]: any;
 }
 
@@ -420,7 +420,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                       onClick={handleOpenModal}
                       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                      {requisitionIds.length > 0 ? 'Edit Requisitions' : 'Add Requisitions'}
+                       Add Requisitions
                     </button>
 
                     {/* Render the modal only when isModalOpen is true */}
@@ -433,6 +433,7 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                         isOpen={isModalOpen}
                       />
                     )}
+                    
                   </div>
                   <div className="flex items-center">
                     <input

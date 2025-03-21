@@ -68,7 +68,7 @@ export default function ListRole({ roles, flash }: PageProps) {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</th>
+                                        {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</th> */}
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -82,9 +82,10 @@ export default function ListRole({ roles, flash }: PageProps) {
                                     ) : (
                                         roles.data.map((role) => (
                                             <tr key={role.id}>
+                                                
                                                 <td className="px-6 py-4 whitespace-nowrap">{role.name}</td>
 
-                                                <td className="table-cell">{role.permissions.map(p => p.name).join(', ') || 'No Permissions'}</td>
+                                                {/* <td className="table-cell">{role.permissions.map(p => p.name).join(', ') || 'No Permissions'}</td> */}
 
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                     {role.name !== "superadmin" && (
