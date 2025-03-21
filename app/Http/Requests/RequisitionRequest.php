@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProcurementRequest extends FormRequest
+class RequisitionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,14 +22,14 @@ class ProcurementRequest extends FormRequest
     public function rules(): array
     {
         // dd($this);
-        $procurementId = $this->route('requisitions') ? $this->route('requisitions')->id : null;
+        $requisitionId = $this->route('requisitions') ? $this->route('requisitions')->id : null;
         
         return [
             'title' => [
                 'required', 
                 'string', 
                 'max:255', 
-                'unique:procurements,title,' . $this->id,
+                'unique:requisitions,title,' . $this->id,
             ],
             // 'description' => [
             //     'nullable', 
@@ -55,9 +55,9 @@ class ProcurementRequest extends FormRequest
                 'array', 
                 'min:1'
             ],
-            // 'requestItems.*.procurement_id' => [
+            // 'requestItems.*.requisition_id' => [
             //     'required', 
-            //     'exists:procurements,id'
+            //     'exists:requisitions,id'
             // ],
             'requestItems.*.product_id' => [
                 'exists:products,id',
@@ -85,7 +85,7 @@ class ProcurementRequest extends FormRequest
             'title.required' => 'The title is required.',
             'title.string' => 'The title must be a string.',
             'title.max' => 'The title must not exceed 255 characters.',
-            'title.unique' => 'This procurement title has already been used.',
+            'title.unique' => 'This requisition title has already been used.',
 
             'required_date.required' => 'The required date is required.',
             'required_date.date' => 'Please provide a valid date.',
@@ -101,8 +101,8 @@ class ProcurementRequest extends FormRequest
             'requestItems.array' => 'Request items must be an array.',
             'requestItems.min' => 'You must add at least one request item.',
 
-            'requestItems.*.procurement_id.required' => 'Each request item must have a procurement ID.',
-            'requestItems.*.procurement_id.exists' => 'Invalid procurement ID.',
+            'requestItems.*.requisition_id.required' => 'Each request item must have a requisition ID.',
+            'requestItems.*.requisition_id.exists' => 'Invalid requisition ID.',
 
 
             'requestItems.*.required_quantity.required' => 'Each request item must have a required_quantity.',

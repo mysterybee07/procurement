@@ -4,7 +4,7 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Bold, Italic, List, Link, Image, Calendar } from 'lucide-react';
 import DocumentModalForm from '../document/document-form'
-import DirectRequisitionModal from '../procurement/procurement-modal';
+import DirectRequisitionModal from '../requisition/requisition-modal';
 
 interface ApprovalWorkflow {
   id: number;
@@ -24,7 +24,6 @@ interface EOIFormData {
   id: number;
   title: string;
   description: string;
-  submission_date: string;
   status: string;
   approval_workflow_id: number;
   document_id: number;
@@ -33,7 +32,7 @@ interface EOIFormData {
   eoi_number: string;
   allow_partial_item_submission: boolean;
   documents: number[];
-  procurement_ids: number[]; // Added procurement_ids field
+  requisition_ids: number[];
   [key: string]: any;
 }
 
@@ -53,7 +52,6 @@ interface Props {
     title?: string;
     description?: string;
     document_id?: number;
-    submission_date?: string;
     status?: string;
     approval_workflow_id?: number;
     submission_deadline?: string;
@@ -61,7 +59,7 @@ interface Props {
     eoi_number?: string;
     allow_partial_item_submission?: boolean;
     documents?: number[];
-    procurement_ids?: number[];
+    requisition_ids?: number[];
   }
 }
 
@@ -96,15 +94,15 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onCh
 };
 
 const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocuments: initialDocuments, isEditing, eoi }) => {
-  // State for procurement IDs
-  const [procurementIds, setProcurementIds] = useState<number[]>([]);
-  
+  // State for requisition IDs
+  const [requisitionIds, setRequisitionIds] = useState<number[]>([]);
+
   // State for modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // State for managing documents (including newly created ones)
   const [documents, setDocuments] = useState<Document[]>(initialDocuments || []);
-  
+
   // State for document modal
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
 
@@ -119,12 +117,11 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
     },
   ];
 
-  // Form initialization with documents array and procurement_ids
+  // Form initialization with documents array and requisition_ids
   const { data, setData, post, errors, processing, reset } = useForm<EOIFormData>({
     id: 0,
     title: '',
     description: '',
-    submission_date: '',
     status: 'draft',
     approval_workflow_id: 0,
     document_id: 0,
@@ -133,24 +130,24 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
     eoi_number: '',
     allow_partial_item_submission: false,
     documents: [],
-    procurement_ids: [], // Initialize procurement_ids
+    requisition_ids: [], // Initialize requisition_ids
   });
 
-  // Get procurement IDs from URL on component mount
+  // Get requisition IDs from URL on component mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const ids: number[] = [];
 
     for (const [key, value] of urlParams.entries()) {
-      if (key.startsWith("procurement_ids[")) {
+      if (key.startsWith("requisition_ids[")) {
         ids.push(Number(value));
       }
     }
 
-    setProcurementIds(ids);
-    
+    setRequisitionIds(ids);
+
     // Also set in form data
-    setData('procurement_ids', ids);
+    setData('requisition_ids', ids);
   }, []);
 
   // Load EOI data when editing
@@ -161,7 +158,6 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
         title: eoi.title || '',
         description: eoi.description || '',
         document_id: eoi.document_id || 0,
-        submission_date: eoi.submission_date || '',
         status: eoi.status || 'draft',
         approval_workflow_id: eoi.approval_workflow_id || 0,
         submission_deadline: eoi.submission_deadline || '',
@@ -169,15 +165,15 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
         eoi_number: eoi.eoi_number || '',
         allow_partial_item_submission: eoi.allow_partial_item_submission || false,
         documents: eoi.documents || [],
-        procurement_ids: eoi.procurement_ids || procurementIds, // Use existing or from URL
+        requisition_ids: eoi.requisition_ids || requisitionIds, // Use existing or from URL
       });
-      
-      // Set the procurement IDs in the state too
-      if (eoi.procurement_ids) {
-        setProcurementIds(eoi.procurement_ids);
+
+      // Set the requisition IDs in the state too
+      if (eoi.requisition_ids) {
+        setRequisitionIds(eoi.requisition_ids);
       }
     }
-  }, [isEditing, eoi, procurementIds]);
+  }, [isEditing, eoi, requisitionIds]);
 
   // Form input handlers
   const handleChange = (
@@ -220,10 +216,10 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
     setIsDocumentModalOpen(false);
   };
 
-  // Handle procurement selection from modal
-  const handleProcurementSelected = (selectedIds: number[]) => {
-    setProcurementIds(selectedIds);
-    setData('procurement_ids', selectedIds);
+  // Handle requisition selection from modal
+  const handleRequisitionSelected = (selectedIds: number[]) => {
+    setRequisitionIds(selectedIds);
+    setData('requisition_ids', selectedIds);
   };
 
   // Handle opening the requisition modal
@@ -308,27 +304,6 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                     <p className="mt-1 text-sm text-red-600">{errors.approval_workflow_id}</p>
                   )}
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Submission Date*</label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      name="submission_date"
-                      value={data.submission_date}
-                      onChange={handleChange}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                    <Calendar size={16} className="absolute right-3 top-3 text-gray-400" />
-                  </div>
-                  {errors.submission_date && (
-                    <p className="mt-1 text-sm text-red-600">{errors.submission_date}</p>
-                  )}
-                </div>
-
                 <div className="mb-4">
                   <label className="block text-sm font-medium mb-1">Submission Deadline</label>
                   <div className="relative">
@@ -445,16 +420,16 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                       onClick={handleOpenModal}
                       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                      {procurementIds.length > 0 ? 'Edit Procurements' : 'Add Procurements'}
+                      {requisitionIds.length > 0 ? 'Edit Requisitions' : 'Add Requisitions'}
                     </button>
-                    
+
                     {/* Render the modal only when isModalOpen is true */}
                     {isModalOpen && (
                       <DirectRequisitionModal
-                        onSuccess={handleProcurementSelected}
+                        onSuccess={handleRequisitionSelected}
                         onClose={handleCloseModal}
                         products={products}
-                        initialSelectedIds={procurementIds}
+                        initialSelectedIds={requisitionIds}
                         isOpen={isModalOpen}
                       />
                     )}
@@ -477,22 +452,22 @@ const EOIForm: React.FC<Props> = ({ approvalWorkflows, products, requiredDocumen
                   <p className="mt-1 text-sm text-red-600">{errors.allow_partial_item_submission}</p>
                 )}
               </div>
-              
-              {/* Display selected procurement IDs */}
-              {procurementIds.length > 0 && (
+
+              {/* Display selected requisition IDs */}
+              {requisitionIds.length > 0 && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Selected Procurement IDs ({procurementIds.length})</label>
+                  <label className="block text-sm font-medium mb-1">Selected Requisition IDs ({requisitionIds.length})</label>
                   <div className="p-2 border rounded bg-white">
-                    {procurementIds.join(', ')}
+                    {requisitionIds.join(', ')}
                   </div>
                 </div>
               )}
-              
-              {/* Hidden field to ensure procurement_ids is sent with the form */}
-              <input 
-                type="hidden" 
-                name="procurement_ids" 
-                value={JSON.stringify(procurementIds)} 
+
+              {/* Hidden field to ensure requisition_ids is sent with the form */}
+              <input
+                type="hidden"
+                name="requisition_ids"
+                value={JSON.stringify(requisitionIds)}
               />
             </div>
 

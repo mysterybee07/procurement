@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Procurement extends Model
+class Requisition extends Model
 {
     use HasFactory;
     
@@ -22,13 +22,13 @@ class Procurement extends Model
     // Relationship with EOI
     public function eoi()
     {
-        return $this->belongsTo(EOI::class, 'eoi_id');
+        return $this->hasMany(EOI::class, 'eoi_id');
     }
     
     // Relationship with request items
     public function requestItems()
     {
-        return $this->hasMany(RequestItem::class, 'procurement_id');
+        return $this->hasMany(RequestItem::class, 'requisition_id');
     }
 
     public function requester(){

@@ -5,12 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\EOIRequest;
 use App\Models\Document;
 use App\Models\EOI;
-use App\Models\Procurement;
 use App\Models\Product;
+use App\Models\Requisition;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use Validator;
 
 class EOIController extends Controller
 {
@@ -19,7 +17,7 @@ class EOIController extends Controller
      */
     public function index()
     {
-        $eois = EOI::with( 'createdBy', 'requisitions.requestItems.product')->paginate(10);
+        $eois = EOI::with( 'createdBy','requisitions.requestItems.product')->paginate();
         // dd($eois);
 
         return Inertia::render('eoi/list-eois',[
@@ -36,18 +34,18 @@ class EOIController extends Controller
      */
     public function create(Request $request)
     {
-        $procurements = [];
+        $requisitions = [];
         $products = Product::all();
         $requiredDocuments = Document::all();
 
-        if ($request->has('procurement_ids') && !empty($request->procurement_ids)) {
-            $procurementIds = $request->procurement_ids;
-            $procurements = Procurement::whereIn('id', $procurementIds)->get();
-        }
+        // if ($request->has('requisition_ids') && !empty($request->requisition_ids)) {
+        //     $requisitionIds = $request->requisition_ids;
+        //     $requisitions = Requisition::whereIn('id', $requisitionIds)->get();
+        // }
 
         return Inertia::render('eoi/eoi-form', [
             'products'=>$products,
-            'procurements' => $procurements,
+            'requisitions' => $requisitions,
             'requiredDocuments'=>$requiredDocuments
         ]);
     }
@@ -75,7 +73,6 @@ class EOIController extends Controller
         $eoi = EOI::create([
             'title' => $requestData['title'],
             'description' => $requestData['description'],
-            'submission_date' => $requestData['submission_date'],
             'submission_deadline' => $requestData['submission_deadline'],
             'evaluation_criteria' => $requestData['evaluation_criteria'],
             'allow_partial_item_submission' => $requestData['allow_partial_item_submission'] ?? false,
@@ -90,11 +87,12 @@ class EOIController extends Controller
             $eoi->documents()->sync($requestData['documents']);
         }        
 
-        // Update eoi id on procurement table
-        if ($requestData['procurement_ids']&& !empty($requestData->procurement_ids)) {
-            Procurement::whereIn('id', $requestData->procurement_ids)
-            ->update(['eoi_id' => $eoi->id]);
+        // Update eoi id on requisition table
+        if (!empty($requestData['requisition_ids'])) {
+            Requisition::whereIn('id', $requestData['requisition_ids'])
+                ->update(['eoi_id' => $eoi->id]);
         }
+        
 
         return redirect()->route('eois.index', $eoi->id)
         ->with('message', 'Expression of Interest created successfully.');

@@ -190,7 +190,7 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
     setIsSubmitting(true);
   };
 
-  const updateProcurement = (e: React.FormEvent) => {
+  const updateRequisition = (e: React.FormEvent) => {
     e.preventDefault();
     setData('status', 'draft');
     setSubmissionType('draft');
@@ -366,11 +366,11 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
                 {isEditing ? (
                   <button
                     type="button"
-                    onClick={updateProcurement}
+                    onClick={updateRequisition}
                     disabled={processing}
                     className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {processing ? 'Updating...' : 'Update Procurement'}
+                    {processing ? 'Updating...' : 'Update Requisition'}
                   </button>
                 ) : (
                   <>

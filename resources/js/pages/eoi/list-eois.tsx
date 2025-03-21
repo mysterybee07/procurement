@@ -16,7 +16,7 @@ interface Eoi {
   id: number;
   eoi_number: number;
   title: string;
-  submission_date: string;
+  created_at: string;
   submission_deadline: string;
   status: string;
   requisitions: Array<{
@@ -25,12 +25,12 @@ interface Eoi {
     }
     request_items: Array<{
       required_quantity: number;
-      products: Array<{
+      product: {
         name: string;
-        category: Array<{
+        category: {
           category_name: string;
-        }>
-      }>
+        }
+      }
     }>;
   }>;
   created_by: {
@@ -88,7 +88,7 @@ export default function ListEOI({ eois, flash }: IndexProps) {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Items</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submission Date</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created On</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -108,26 +108,28 @@ export default function ListEOI({ eois, flash }: IndexProps) {
                         <td className="px-6 py-4 whitespace-nowrap">
                           {eoi.requisitions && eoi.requisitions.length > 0 ? (
                             <ul className="list-disc pl-5">
-                              {eoi.requisitions.flatMap((req, reqIndex) => 
+                              {eoi.requisitions.flatMap((req, reqIndex) =>
                                 req.request_items && req.request_items.length > 0 ? (
-                                  req.request_items.map((item, itemIndex) => (
-                                    item.products && item.products.length > 0 ? (
-                                      item.products.map((product, prodIndex) => (
-                                        <li key={`${reqIndex}-${itemIndex}-${prodIndex}`}>
-                                          {product.name} ({item.required_quantity} pcs)
-                                        </li>
-                                      ))
+                                  req.request_items.map((item, itemIndex) =>
+                                    item.product ? (
+                                      <li key={`${reqIndex}-${itemIndex}`}>
+                                        {item.product.name}
+                                      </li>
                                     ) : null
-                                  ))
+                                  )
                                 ) : null
                               )}
                             </ul>
                           ) : 'N/A'}
                         </td>
+
                         <td className="px-6 py-4 whitespace-nowrap">
                           {eoi.created_by ? eoi.created_by.name : 'N/A'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">{eoi.submission_date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {new Date(eoi.created_at).toLocaleDateString('en-CA')}
+                        </td>
+
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -159,7 +161,7 @@ export default function ListEOI({ eois, flash }: IndexProps) {
                             description="Are you sure you want to delete this EOI? This action cannot be undone."
                             deleteRoute="eois.destroy"
                             itemId={eoi.id}
-                            onSuccess={()=>{}}
+                            onSuccess={() => { }}
                           />
                         </td>
                       </tr>

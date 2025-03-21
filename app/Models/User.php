@@ -56,7 +56,7 @@ class User extends Authenticatable
         return $this->hasOne(Vendor::class, 'user_id');
     }
 
-    public function procurement(){
-        return $this->hasOne(Procurement::class, 'requester');
-    }
+    // public function procurement(){
+    //     return $this->belongsTo(Procurement::class, 'requester');
+    // }
 }

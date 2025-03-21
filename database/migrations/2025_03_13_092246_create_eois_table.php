@@ -16,8 +16,16 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             // $table->decimal('estimated_budget', 15, 2)->nullable();
-            $table->date('submission_date');
-            $table->string('status')->default('draft');
+            $table->date('publish_date')->nullable();
+            $table->enum('status', [
+                'draft',      
+                'submitted', 
+                'under_review', 
+                'approved',   
+                'rejected',   
+                'closed',     
+                'canceled'    
+            ])->default('draft');
             $table->string('current_approval_step')->nullable();
             $table->unsignedBigInteger('approval_workflow_id')->nullable();
             $table->date('submission_deadline')->nullable();

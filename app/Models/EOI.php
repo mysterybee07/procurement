@@ -49,6 +49,6 @@ class EOI extends Model
     }
 
     public function requisitions(){
-        return $this->hasMany(Procurement::class, 'eoi_id');
+        return $this->hasMany(Requisition::class, 'eoi_id');
     }
 }

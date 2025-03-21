@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('eoi_id')->references(columns: 'id')->on('eois')->onDelete('cascade');
-            $table->foreign('requisition_id')->references(columns: 'id')->on('procurements')->onDelete('cascade');
+            $table->foreign('requisition_id')->references(columns: 'id')->on('requisitions')->onDelete('cascade');
         });
     }
 

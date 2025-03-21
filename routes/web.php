@@ -54,13 +54,13 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/requisitions', [ProcurementController::class, 'index'])->name('requisitions.index');
-    Route::get('/requisitions/create', [ProcurementController::class, 'create'])->name('requisitions.create');
-    Route::post('/requisitions', [ProcurementController::class, 'store'])->name('requisitions.store');
-    Route::get('/requisitions/{requisition}/edit', [ProcurementController::class, 'edit'])->name('requisitions.edit');
-    Route::get('/requisitions/{requisition}', [ProcurementController::class, 'show'])->name('requisitions.show');
-    Route::put('/requisitions/{requisition}', [ProcurementController::class, 'update'])->name('requisitions.update');
-    Route::delete('/requisitions/{requisition}', [ProcurementController::class, 'destroy'])->name('requisitions.destroy');
+    Route::get('/requisitions', [RequisitionController::class, 'index'])->name('requisitions.index');
+    Route::get('/requisitions/create', [RequisitionController::class, 'create'])->name('requisitions.create');
+    Route::post('/requisitions', [RequisitionController::class, 'store'])->name('requisitions.store');
+    Route::get('/requisitions/{requisition}/edit', [RequisitionController::class, 'edit'])->name('requisitions.edit');
+    Route::get('/requisitions/{requisition}', [RequisitionController::class, 'show'])->name('requisitions.show');
+    Route::put('/requisitions/{requisition}', [RequisitionController::class, 'update'])->name('requisitions.update');
+    Route::delete('/requisitions/{requisition}', [RequisitionController::class, 'destroy'])->name('requisitions.destroy');
 });
 Route::middleware(['auth'])->group(function () {
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');

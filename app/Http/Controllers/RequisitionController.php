@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProcurementRequest;
-use App\Models\Procurement;
+use App\Http\Requests\RequisitionRequest;
+use App\Models\Requisition;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\RequestItem;
@@ -12,18 +12,18 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use function Termwind\render;
 
-class ProcurementController extends Controller
+class RequisitionController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        // $procurements = Procurement::with('requestItems');
-        $requisitions = Procurement::with( 'requester', 'requestItems', 'requestItems.product')->paginate(10);
+        // $requisitions = Requisition::with('requestItems');
+        $requisitions = Requisition::with( 'requester', 'requestItems', 'requestItems.product')->paginate(10);
         // dd($requisitions);
 
-        return Inertia::render('procurement/list-procurements',[
+        return Inertia::render('requisition/list-requisitions',[
             'requisitions'=>$requisitions,
             'flash'=>[
                 'message'=>session('message'),
@@ -39,7 +39,7 @@ class ProcurementController extends Controller
     {
         $products= Product::all();
         // dd($categories);
-        return Inertia::render('procurement/procurement-form',[
+        return Inertia::render('requisition/requisition-form',[
             'products'=> $products,
             'flash'=>[
                 'message'=>session('message'),
@@ -51,7 +51,7 @@ class ProcurementController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(ProcurementRequest $request)
+    public function store(RequisitionRequest $request)
     {
 
         // dd($request);
@@ -65,7 +65,7 @@ class ProcurementController extends Controller
             // dd($requester);
             DB::beginTransaction();
 
-            $procurement = Procurement::create([
+            $requisition = Requisition::create([
                 'title'=>$requestData['title'],
                 // 'description'=>$requestData['description'],
                 'required_date'=>$requestData['required_date'],
@@ -77,14 +77,14 @@ class ProcurementController extends Controller
 
             foreach ($requestData['requestItems'] as $item) {
                 RequestItem::create([
-                    'procurement_id' => $procurement->id,
+                    'requisition_id' => $requisition->id,
                     'required_quantity' => $item['required_quantity'],
                     'additional_specifications' => $item['additional_specifications'],
                     'product_id' => $item['product_id'],
                 ]);
             }
             DB::commit();
-            return redirect()->route('requisitions.index')->with('message', 'procurement created successfully');
+            return redirect()->route('requisitions.index')->with('message', 'requisition created successfully');
         }catch(\Exception $e){
             DB::rollBack();
             return back()->withErrors([
@@ -97,13 +97,13 @@ class ProcurementController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Procurement $procurement)
+    public function show(Requisition $requisition)
     {
         // $categories = ProductCategory::all();
-        $procurement->load('requester');
-        // dd($procurement);
-       return Inertia::render('procurement/procurement-details',[
-        'procurement'=>$procurement,
+        $requisition->load('requester');
+        // dd($requisition);
+       return Inertia::render('requisition/requisition-details',[
+        'requisition'=>$requisition,
         // 'categories'=>$categories,
        ]);
     }
@@ -111,17 +111,17 @@ class ProcurementController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Procurement $requisition)
+    public function edit(Requisition $requisition)
     {
-        // if ($procurement->status !== 'draft' || $procurement->status !== 'rejected') {
-        //     return redirect()->route('procurements.index')->with('error', 'Procurement has already been submitted. Now you cannot edit it');
+        // if ($requisition->status !== 'draft' || $requisition->status !== 'rejected') {
+        //     return redirect()->route('requisitions.index')->with('error', 'Requisition has already been submitted. Now you cannot edit it');
         // }
 
         $products = Product::all();
         $requisition->load('requestItems');
-        // dd($procurement->requestItems());
+        // dd($requisition->requestItems());
         
-        return Inertia::render('procurement/procurement-form', [
+        return Inertia::render('requisition/requisition-form', [
             'requisition' => $requisition,
             'products' => $products,
             'isEditing' => true,
@@ -135,7 +135,7 @@ class ProcurementController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(ProcurementRequest $request, Procurement $procurement)
+    public function update(RequisitionRequest $request, Requisition $requisition)
     {
 
     // dd($request);
@@ -145,7 +145,7 @@ class ProcurementController extends Controller
             
             DB::beginTransaction();
 
-            $procurement = Procurement::create([
+            $requisition = Requisition::create([
                 'title'=>$requestData['title'],
                 'description'=>$requestData['description'],
                 'required_date'=>$requestData['required_date'],
@@ -156,10 +156,10 @@ class ProcurementController extends Controller
             ]);
 
             // Sync request items
-            $procurement->requestItems()->delete();
+            $requisition->requestItems()->delete();
             foreach ($requestData['requestItems'] as $item) {
                 RequestItem::create([
-                    'procurement_id' => $procurement->id,
+                    'requisition_id' => $requisition->id,
                     'required_quantity' => $item['required_quantity'],
                     'additional_specifications' => $item['additional_specifications'],
                     'product_id' => $item['product_id'],
@@ -167,38 +167,38 @@ class ProcurementController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('procurements.index')->with('message', 'Procurement updated successfully');
+            return redirect()->route('requisitions.index')->with('message', 'Requisition updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'There was a problem updating the procurement. ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'There was a problem updating the requisition. ' . $e->getMessage()]);
         }
     }
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Procurement $procurement)
+    public function destroy(Requisition $requisition)
     {
-        if ($procurement->status !== 'draft' || $procurement->status !== 'rejected') {
+        if ($requisition->status !== 'draft' || $requisition->status !== 'rejected') {
             return redirect()->route('requisitions.index')->with(
-                'error', 'Procurement has already been submitted. Now you cannot delete it'
+                'error', 'Requisition has already been submitted. Now you cannot delete it'
             );
         } 
         DB::beginTransaction();
         
         try{    
-            // Delete procurement
-            $procurement->delete();
+            // Delete requisition
+            $requisition->delete();
             
             DB::commit();
             
             return redirect()->route('requisitions.index')
-                ->with('message', 'Procurement deleted successfully.');
+                ->with('message', 'Requisition deleted successfully.');
                 
         } catch (\Exception $e) {
             DB::rollBack();
             
             return back()->withErrors([
-                'error' => 'There was a problem deleting the procurement. ' . $e->getMessage()
+                'error' => 'There was a problem deleting the requisition. ' . $e->getMessage()
             ]);
         }
     }

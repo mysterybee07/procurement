@@ -48,24 +48,24 @@ interface IndexProps {
 }
 
 
-export default function ListProcurement({ requisitions, flash }: IndexProps) {
+export default function ListRequisition({ requisitions, flash }: IndexProps) {
   const [selectedRequisitions, setSelectedRequisitions] = useState<number[]>([]);
   console.log(requisitions.data);
 
   const toggleRequisitionselection = (id: number) => {
     if (selectedRequisitions.includes(id)) {
-      setSelectedRequisitions(selectedRequisitions.filter(procurementId => procurementId !== id));
+      setSelectedRequisitions(selectedRequisitions.filter(requisitionId => requisitionId !== id));
     } else {
       setSelectedRequisitions([...selectedRequisitions, id]);
     }
   };
 
   const createEOI = () => {
-    router.visit(route('eois.create', { procurement_ids: selectedRequisitions }));
+    router.visit(route('eois.create', { requisition_ids: selectedRequisitions }));
   };
 
   // const onEdit = () => {
-  //   router.visit(route('eois.edit', { procurement_ids: selectedRequisitions }));
+  //   router.visit(route('eois.edit', { requisition_ids: selectedRequisitions }));
   // };
 
   const showMessage = () => {
@@ -146,32 +146,32 @@ export default function ListProcurement({ requisitions, flash }: IndexProps) {
                       </td>
                     </tr>
                   ) : (
-                    requisitions.data.map((procurement) => (
-                      <tr key={procurement.id}>
+                    requisitions.data.map((requisition) => (
+                      <tr key={requisition.id}>
                         {/* Checkbox */}
                         <td className="px-4 py-4 whitespace-nowrap text-sm">
                           <input
                             type="checkbox"
                             className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                            checked={selectedRequisitions.includes(procurement.id)}
-                            onChange={() => toggleRequisitionselection(procurement.id)}
-                            disabled={!!procurement.eoi_id} // Disable if linked to an EOI
+                            checked={selectedRequisitions.includes(requisition.id)}
+                            onChange={() => toggleRequisitionselection(requisition.id)}
+                            disabled={!!requisition.eoi_id} // Disable if linked to an EOI
                           />
                         </td>
 
                         {/* Requester Name */}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {procurement?.requester ? procurement.requester.name : 'N/A'}
+                          {requisition?.requester ? requisition.requester.name : 'N/A'}
                         </td>
 
                         {/* Title */}
-                        <td className="px-6 py-4 whitespace-nowrap">{procurement.title}</td>
-                        {/* <td className="px-6 py-4 whitespace-nowrap">{procurement.request_items.required_quantity}</td> */}
+                        <td className="px-6 py-4 whitespace-nowrap">{requisition.title}</td>
+                        {/* <td className="px-6 py-4 whitespace-nowrap">{requisition.request_items.required_quantity}</td> */}
 
                         {/* Requested Products */}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {procurement.request_items.length > 0
-                            ? procurement.request_items
+                          {requisition.request_items.length > 0
+                            ? requisition.request_items
                               .map((item) =>                               
                                 item.product.name                                  
                               )
@@ -179,13 +179,13 @@ export default function ListProcurement({ requisitions, flash }: IndexProps) {
                             : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {Array.isArray(procurement.request_items) && procurement.request_items.length > 0
-                            ? procurement.request_items.map((item) => item.required_quantity).join(', ')
+                          {Array.isArray(requisition.request_items) && requisition.request_items.length > 0
+                            ? requisition.request_items.map((item) => item.required_quantity).join(', ')
                             : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {procurement.request_items.length > 0
-                            ? procurement.request_items
+                          {requisition.request_items.length > 0
+                            ? requisition.request_items
                               .map((item) =>
                         
                                   item.product.in_stock_quantity
@@ -195,32 +195,32 @@ export default function ListProcurement({ requisitions, flash }: IndexProps) {
                         </td>
 
                         {/* Required Date */}
-                        <td className="px-6 py-4 whitespace-nowrap">{procurement.required_date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">{requisition.required_date}</td>
 
                         {/* Status */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-              ${procurement.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                procurement.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                  procurement.status === 'rejected' ? 'bg-red-100 text-red-800' :
+              ${requisition.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                requisition.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                  requisition.status === 'rejected' ? 'bg-red-100 text-red-800' :
                                     'bg-gray-100 text-gray-800'}`}
                           >
-                            {procurement.status || 'N/A'}
+                            {requisition.status || 'N/A'}
                           </span>
                         </td>
 
                         {/* Actions */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm flex space-x-2">
                           <Button
-                            onClick={() => router.visit(route('requisitions.show', procurement.id))}
+                            onClick={() => router.visit(route('requisitions.show', requisition.id))}
                             className="text-indigo-600 hover:text-indigo-900"
                           >
                             View Details
                           </Button>
 
                           <Button
-                            onClick={() => router.visit(route('requisitions.edit', procurement.id))}
+                            onClick={() => router.visit(route('requisitions.edit', requisition.id))}
                             className="text-indigo-600 hover:text-indigo-900"
                           >
                             Edit
@@ -228,9 +228,9 @@ export default function ListProcurement({ requisitions, flash }: IndexProps) {
 
                           <DeleteModal
                             title="Delete Requisition"
-                            description="Are you sure you want to delete this procurement? This action cannot be undone."
+                            description="Are you sure you want to delete this requisition? This action cannot be undone."
                             deleteRoute="requisitions.destroy"
-                            itemId={procurement.id}
+                            itemId={requisition.id}
                             onSuccess={() => console.log("Requisition deleted successfully!")}
                           />
                         </td>

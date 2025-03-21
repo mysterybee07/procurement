@@ -10,16 +10,16 @@ class RequestItem extends Model
     use HasFactory;
     
     protected $fillable = [
-        'procurement_id',
+        'requisition_id',
         'product_id',
         'required_quantity',
         'additional_specifications',
     ];
     
     // procurement relationship
-    public function procurement()
+    public function requisition()
     {
-        return $this->belongsTo(Procurement::class, 'procurement_id');
+        return $this->belongsTo(Requisition::class, 'requisition_id');
     }
     public function product()
     {

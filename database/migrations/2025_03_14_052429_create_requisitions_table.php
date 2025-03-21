@@ -11,13 +11,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('procurements', function (Blueprint $table) {
+        Schema::create('requisitions', function (Blueprint $table) {
             $table->id();
             $table->string('title');
             // $table->text('description')->nullable();
             $table->date('required_date');
             $table->unsignedBigInteger('requester');
-            $table->string('status')->default('draft');
+
+            $table->enum('status', [
+                'draft',        
+                'submitted',    
+                'pending_approval', 
+                'approved',     
+                'rejected',     
+                'fulfilled',    
+                'closed',       
+                'canceled'      
+            ])->default('draft');
+
             $table->string('urgency');
             $table->unsignedBigInteger('eoi_id')->nullable();
             $table->timestamps();
@@ -32,6 +43,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('procurements');
+        Schema::dropIfExists('requisitions');
     }
 };
