@@ -8,10 +8,24 @@ use App\Models\EOI;
 use App\Models\Product;
 use App\Models\Requisition;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 
-class EOIController extends Controller
+class EOIController extends Controller implements HasMiddleware
 {
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view eois', only: ['index']),
+            new Middleware('permission:create eois', only: ['create']),
+            new Middleware('permission:edit eois', only: ['edit']),
+            new Middleware('permission:delete eois', only: ['destroy']),
+            // new Middleware('permission:assign permissions to eois', only: ['assignPermissionsToRole']),
+            // new Middleware('permission:update role permissions', only: ['updatePermissions']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */

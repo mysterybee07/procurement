@@ -17,7 +17,6 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
         $this->call(RoleSeeder::class);
-        $this->call(PermissionSeeder::class);
 
         $superadmin = User::factory()->create([
             'name' => 'Super Admin',
@@ -32,7 +31,7 @@ class DatabaseSeeder extends Seeder
 
         $superadmin->assignRole('superadmin');
          // OR Directly Assign All Permissions to the User
-         $superadmin->syncPermissions(Permission::all());
+        //  $superadmin->syncPermissions(Permission::all());
 
         User::factory()->create([
             'name' => 'Admin',
@@ -41,6 +40,17 @@ class DatabaseSeeder extends Seeder
             'password'=>'password123',
             'address'=>'abc xyz',
             'phone'=>'9840380476',
+            'status'=>'active',
+            // 'role_id'=>'1'
+        ]);
+
+        User::factory()->create([
+            'name' => 'Normal Employee',
+            'username'=>'employee123',
+            'email' => 'employee@example.com',
+            'password'=>'password123',
+            'address'=>'abc xyz',
+            'phone'=>'9840380480',
             'status'=>'active',
             // 'role_id'=>'1'
         ]);

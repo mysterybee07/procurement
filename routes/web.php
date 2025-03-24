@@ -55,6 +55,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/requisitions', [RequisitionController::class, 'index'])->name('requisitions.index');
+    // Route::get('/requisitions', [RequisitionController::class, 'index'])->name('requisitions.userRequisition');
     Route::get('/requisitions/create', [RequisitionController::class, 'create'])->name('requisitions.create');
     Route::post('/requisitions', [RequisitionController::class, 'store'])->name('requisitions.store');
     Route::get('/requisitions/{requisition}/edit', [RequisitionController::class, 'edit'])->name('requisitions.edit');

@@ -48,11 +48,11 @@ class PermissionSeeder extends Seeder
             'delete documents',
 
             // EOI management
-            'view EOIs',
-            'create EOIs',
-            'edit EOIs',
-            'delete EOIs',
-            'show EOIs',
+            'view eois',
+            'create eois',
+            'edit eois',
+            'delete eois',
+            'show eois',
 
             // Role management
             'view roles',

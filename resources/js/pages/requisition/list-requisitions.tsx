@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import DeleteModal from '@/components/delete-modal';
@@ -49,6 +49,10 @@ interface IndexProps {
 
 
 export default function ListRequisition({ requisitions, flash }: IndexProps) {
+  const { auth } = usePage().props as any;
+  const user = auth?.user;
+  // console.log(user.permission)
+
   const [selectedRequisitions, setSelectedRequisitions] = useState<number[]>([]);
   console.log(requisitions.data);
 
@@ -99,25 +103,28 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
           )}
 
           <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-            <div className="flex justify-between mb-6">
-              <div>
+            <div className="flex justify-between items-center mb-6">
+              {/* "Create EOI" aligned to the left */}
+              {user?.permissions?.includes('create eois') && (
                 <button
                   onClick={selectedRequisitions.length === 0 ? showMessage : createEOI}
                   className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
                 >
                   Create EOI (selected({selectedRequisitions.length}))
                 </button>
+              )}
 
-              </div>
-              <div>
+              {/* "Add New Requisition" aligned to the right */}
+              {user?.permissions?.includes('create requisitions') && (
                 <Link
                   href={route('requisitions.create')}
                   className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                 >
                   Add New Requisition
                 </Link>
-              </div>
+              )}
             </div>
+
 
             <div className="overflow-x-auto">
               <table className="w-full divide-y divide-gray-200">
@@ -172,8 +179,8 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                         <td className="px-6 py-4 whitespace-nowrap">
                           {requisition.request_items.length > 0
                             ? requisition.request_items
-                              .map((item) =>                               
-                                item.product.name                                  
+                              .map((item) =>
+                                item.product.name
                               )
                               .join(', ')
                             : 'N/A'}
@@ -187,8 +194,8 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                           {requisition.request_items.length > 0
                             ? requisition.request_items
                               .map((item) =>
-                        
-                                  item.product.in_stock_quantity
+
+                                item.product.in_stock_quantity
                               )
                               .join(', ')
                             : 'N/A'}

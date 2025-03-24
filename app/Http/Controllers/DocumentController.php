@@ -6,13 +6,27 @@ use App\Http\Requests\DocumentRequest;
 use App\Models\Document;
 use DB;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 
-class DocumentController extends Controller
+class DocumentController extends Controller implements HasMiddleware
 {
     /**
      * Display a listing of the resource.
      */
+
+     public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view documents', only: ['index']),
+            new Middleware('permission:create documents', only: ['create']),
+            new Middleware('permission:edit documents', only: ['edit']),
+            new Middleware('permission:delete documents', only: ['destroy']),
+            // new Middleware('permission:assign permissions to documents', only: ['assignPermissionsToRole']),
+            // new Middleware('permission:update role permissions', only: ['updatePermissions']),
+        ];
+    }
     public function index()
     {
         $documents = Document::paginate(10); 

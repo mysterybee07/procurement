@@ -7,30 +7,58 @@ use App\Models\Requisition;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\RequestItem;
+use App\Models\User;
 use DB;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use function Termwind\render;
 
-class RequisitionController extends Controller
+class RequisitionController extends Controller implements HasMiddleware
 {
     /**
      * Display a listing of the resource.
      */
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view requisitions', only: ['index']),
+            new Middleware('permission:create requisitions', only: ['create']),
+            new Middleware('permission:edit requisitions', only: ['edit']),
+            new Middleware('permission:delete requisitions', only: ['destroy']),
+            // new Middleware('permission:assign permissions to requisitions', only: ['assignPermissionsToRole']),
+            // new Middleware('permission:update role permissions', only: ['updatePermissions']),
+        ];
+    }
     public function index()
     {
-        // $requisitions = Requisition::with('requestItems');
-        $requisitions = Requisition::with( 'requester', 'requestItems', 'requestItems.product')->paginate(10);
-        // dd($requisitions);
+        $user = auth()->user();
 
-        return Inertia::render('requisition/list-requisitions',[
-            'requisitions'=>$requisitions,
-            'flash'=>[
-                'message'=>session('message'),
-                'error'=>session('error'),
+        if ($user->can('view requisitions')) {
+            $requisitions = Requisition::with('requester', 'requestItems', 'requestItems.product')
+                ->where(function ($query) use ($user) {
+                    $query->where('status', 'submitted')
+                        ->orWhere('requester', $user->id);
+                })
+                ->paginate(10);
+        } else {
+            // Show only requisitions created by the logged-in user (all statuses)
+            $requisitions = Requisition::where('requester_id', $user->id)
+                ->with('requester', 'requestItems', 'requestItems.product')
+                ->paginate(10);
+        }
+
+        return Inertia::render('requisition/list-requisitions', [
+            'requisitions' => $requisitions,
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
             ]
         ]);
     }
+
+
 
     /**
      * Show the form for creating a new resource.
@@ -207,5 +235,12 @@ class RequisitionController extends Controller
                 'error' => 'There was a problem deleting the requisition. ' . $e->getMessage()
             ]);
         }
+    }
+
+    public function requisitionByUser()
+    {
+        $userId = auth()->user()->id;
+        $requisitions = Requisition::where('requester', $userId)->get();
+        dd($requisitions);
     }
 }

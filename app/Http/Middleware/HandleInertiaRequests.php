@@ -35,21 +35,42 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>
      */
-    public function share(Request $request): array
-    {
-        [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+    // public function share(Request $request): array
+    // {
+    //     [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
-        return [
-            ...parent::share($request),
-            'name' => config('app.name'),
-            'quote' => ['message' => trim($message), 'author' => trim($author)],
+    //     return [
+    //         ...parent::share($request),
+    //         'name' => config('app.name'),
+    //         'quote' => ['message' => trim($message), 'author' => trim($author)],
+    //         'auth' => [
+    //             'user' => $request->user(),
+    //         ],
+    //         'ziggy' => fn (): array => [
+    //             ...(new Ziggy)->toArray(),
+    //             'location' => $request->url(),
+    //         ]
+    //     ];
+    // }
+    public function share(Request $request)
+    {
+        return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    // Get ALL permissions (both direct and via roles)
+                    'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+                    // Keep roles information if needed
+                    'roles' => $request->user()->roles->map(function($role) {
+                        return [
+                            'name' => $role->name,
+                            'permissions' => $role->permissions->pluck('name')
+                        ];
+                    }),
+                ] : null,
             ],
-            'ziggy' => fn (): array => [
-                ...(new Ziggy)->toArray(),
-                'location' => $request->url(),
-            ]
-        ];
+        ]);
     }
 }

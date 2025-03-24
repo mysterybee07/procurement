@@ -14,7 +14,10 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(PermissionSeeder::class);
+
         $superAdminRole = Role::create(['name'=>'superadmin']);
+        // Role::create(['name'=>'procurement officer']);
         Role::create(['name'=>'vendor']);
         Role::create(['name'=>'user']);
 

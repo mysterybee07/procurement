@@ -17,6 +17,7 @@ class RoleController extends Controller implements HasMiddleware
 // class RoleController extends Controller 
 {
 
+    
     public static function middleware(): array
     {
         return [
@@ -25,7 +26,7 @@ class RoleController extends Controller implements HasMiddleware
             new Middleware('permission:edit roles', only: ['edit']),
             new Middleware('permission:delete roles', only: ['destroy']),
             new Middleware('permission:assign permissions to roles', only: ['assignPermissionsToRole']),
-            new Middleware('permission:roles.update role permissions', only: ['updatePermissions']),
+            new Middleware('permission:update role permissions', only: ['updatePermissions']),
         ];
     }
     /**
