@@ -23,22 +23,13 @@ interface Eoi {
     requester: {
       name: string;
     }
-    request_items: Array<{
-      required_quantity: number;
-      product: {
-        name: string;
-        category: {
-          category_name: string;
-        }
-      }
-    }>;
   }>;
   created_by: {
     name: string;
   };
 }
 
-interface IndexProps {
+interface EoiProps {
   eois: {
     data: Eoi[];
     current_page: number;
@@ -51,8 +42,8 @@ interface IndexProps {
 }
 
 
-export default function ListEOI({ eois, flash }: IndexProps) {
-  console.log(eois);
+export default function ListEOI({ eois, flash }: EoiProps) {
+  // console.log(eois);
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="EOIs" />
@@ -86,7 +77,7 @@ export default function ListEOI({ eois, flash }: IndexProps) {
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EOI No.</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Items</th>
+                    {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Items</th> */}
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created On</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -105,23 +96,6 @@ export default function ListEOI({ eois, flash }: IndexProps) {
                       <tr key={eoi.id}>
                         <td className="px-6 py-4 whitespace-nowrap">{eoi.eoi_number || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap">{eoi.title}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {eoi.requisitions && eoi.requisitions.length > 0 ? (
-                            <ul className="list-disc pl-5">
-                              {eoi.requisitions.flatMap((req, reqIndex) =>
-                                req.request_items && req.request_items.length > 0 ? (
-                                  req.request_items.map((item, itemIndex) =>
-                                    item.product ? (
-                                      <li key={`${reqIndex}-${itemIndex}`}>
-                                        {item.product.name}
-                                      </li>
-                                    ) : null
-                                  )
-                                ) : null
-                              )}
-                            </ul>
-                          ) : 'N/A'}
-                        </td>
 
                         <td className="px-6 py-4 whitespace-nowrap">
                           {eoi.created_by ? eoi.created_by.name : 'N/A'}

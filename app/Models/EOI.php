@@ -25,6 +25,9 @@ class EOI extends Model
         'eoi_number',
         'allow_partial_item_submission',
     ];
+    protected $casts = [
+        'description' => 'string',
+    ];    
     
     // Relationship with user who created the EOI
     public function documents()

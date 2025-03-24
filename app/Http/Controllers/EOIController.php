@@ -100,17 +100,41 @@ class EOIController extends Controller
      * Display the specified resource.
      */
     public function show(EOI $eoi)
-    {
-        $eoi->load('createdBy', 'documents', 'requisitions.requestItems.product');
-        
-        return Inertia::render('eoi/show-eoi', [
-            'eoi' => $eoi,
-            'flash' => [
-                'message' => session('message'),
-                'error' => session('error'),
-            ]
-        ]);
+{
+    // Load required relationships
+    $eoi->load('createdBy', 'documents', 'requisitions.requestItems.product.category');
+
+    // Aggregate request items by product ID
+    $aggregatedItems = [];
+
+    foreach ($eoi->requisitions as $requisition) {
+        foreach ($requisition->requestItems as $item) {
+            $productId = $item->product->id;
+
+            if (!isset($aggregatedItems[$productId])) {
+                $aggregatedItems[$productId] = [
+                    'name' => $item->product->name,
+                    'unit' => $item->product->unit,
+                    'category' => $item->product->category->category_name,
+                    'required_quantity' => 0, 
+                ];
+            }
+
+            // Add the quantity
+            $aggregatedItems[$productId]['required_quantity'] += $item->required_quantity;
+        }
     }
+
+    return Inertia::render('eoi/eoi-details', [
+        'eoi' => $eoi,
+        'aggregatedItems' => array_values($aggregatedItems), 
+        'flash' => [
+            'message' => session('message'),
+            'error' => session('error'),
+        ]
+    ]);
+}
+
 
     /**
      * Show the form for editing the specified resource.
