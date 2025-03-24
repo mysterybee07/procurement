@@ -13,22 +13,21 @@ use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-// class RoleController extends Controller implements HasMiddleware
-class RoleController extends Controller 
+class RoleController extends Controller implements HasMiddleware
+// class RoleController extends Controller 
 {
 
-    // public static function middleware(): array
-    // {
-    //     return [
-    //         'auth',
-    //         new Middleware('permission:roles.view', only: ['index']),
-    //         new Middleware('permission:roles.create', only: ['store']),
-    //         new Middleware('permission:roles.update', only: ['update']),
-    //         new Middleware('permission:roles.delete', only: ['destroy']),
-    //         new Middleware('permission:roles.assignpermission', only: ['assignPermissionsToRole']),
-    //         new Middleware('permission:roles.updatepermission', only: ['updatePermissions']),
-    //     ];
-    // }
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view roles', only: ['index']),
+            new Middleware('permission:create roles', only: ['create']),
+            new Middleware('permission:edit roles', only: ['edit']),
+            new Middleware('permission:delete roles', only: ['destroy']),
+            new Middleware('permission:assign permissions to roles', only: ['assignPermissionsToRole']),
+            new Middleware('permission:roles.update role permissions', only: ['updatePermissions']),
+        ];
+    }
     /**
      * Display a listing of the roles.
      *

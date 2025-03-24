@@ -21,6 +21,7 @@ return new class extends Migration
             // $table->unsignedBigInteger('role_id')->nullable();
             // $table->unsignedBigInteger('department_code')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->unsignedTinyInteger('is_super_admin')->default(0);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

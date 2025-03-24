@@ -8,17 +8,32 @@ use Dotenv\Exception\ValidationException;
 use Hash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 use Str;
 use Validator;
 use function Termwind\render;
 
-class UserController extends Controller
+class UserController extends Controller implements HasMiddleware
 {
     /**
      * Display a listing of the resource.
      */
+
+     public static function middleware(): array
+    {
+        return [
+            'auth',
+            new Middleware('permission:view users', only: ['index']),
+            new Middleware('permission:create users', only: ['create']),
+            new Middleware('permission:edit users', only: ['edit']),
+            new Middleware('permission:delete users', only: ['destroy']),
+            new Middleware('permission:assign roles to users', only: ['assignPermissionsToRole']),
+            new Middleware('permission:update user roles', only: ['updatePermissions']),
+        ];
+    }
     public function index()
     {
         // $user = User::whereDoesntHave('model_has_roles', function($query){
@@ -67,7 +82,7 @@ class UserController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request): RedirectResponse
-{
+    {
     $requestData = $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|string|email|max:255|unique:users',

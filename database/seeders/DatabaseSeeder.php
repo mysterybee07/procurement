@@ -6,6 +6,7 @@ use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use DB;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,8 +16,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory(10)->create();
+        $this->call(RoleSeeder::class);
+        $this->call(PermissionSeeder::class);
 
-        User::factory()->create([
+        $superadmin = User::factory()->create([
             'name' => 'Super Admin',
             'username'=>'superadmin123',
             'email' => 'admin@example.com',
@@ -26,6 +29,10 @@ class DatabaseSeeder extends Seeder
             'status'=>'active',
             // 'role_id'=>'1'
         ]);
+
+        $superadmin->assignRole('superadmin');
+         // OR Directly Assign All Permissions to the User
+         $superadmin->syncPermissions(Permission::all());
 
         User::factory()->create([
             'name' => 'Admin',
