@@ -294,14 +294,18 @@ class RequisitionController extends Controller implements HasMiddleware
         return redirect()->back()
         ->with('message', 'Requisition fulfilled successfully.');
     }
-    public function receiveRequisitionItem(Request $request, $id)
+    public function receiveRequisitionItem($id)
     {
-        // Update the status to 'submitted'
-        $request_item = RequestItem::findOrFail($id);        
+        $request_item = RequestItem::findOrFail($id);
+        $requisition = $request_item->requisition;        
         $request_item->status = 'received';
-        $request_item->save();        
-
-        return redirect()->back()
-        ->with('message', 'Requisition submitted successfully.');
+        $request_item->save();
+        
+        if ($requisition->requestItems()->where('status', '!=', 'received')->count() === 0) {
+            $requisition->status = 'fulfilled';
+            $requisition->save();
+        }
+        return redirect()->back()->with('message', 'Requisition submitted successfully.');
     }
+
 }

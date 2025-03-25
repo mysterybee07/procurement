@@ -3,6 +3,7 @@ import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import FulfillRequisitionModal from '@/components/fulfill-requisition-modal';
 import { type BreadcrumbItem } from '@/types';
+import ReceiveRequisitionModal from '@/components/receive-requisition-modal';
 
 interface Product {
   id: number;
@@ -111,11 +112,11 @@ export default function RequisitionDetails({ requisition, flash }: RequisitionPr
                       <th className="p-2 border">Unit</th>
                       <th className="p-2 border">Specifications</th>
                       {(user?.id === requisition.requester.id ||
-                        requisition.request_items.some(item => item.status === "provided")) && (
+                        requisition.request_items.some(item => item.status !== "provided")) && (
                           <th className="p-2 border">Status</th>
                         )}
                       {user?.permissions?.includes('fulfill requisitionItem') &&
-                        requisition.request_items.some(item=>item.provided_quantity !== item.required_quantity) && (
+                        requisition.request_items.some(item => item.provided_quantity !== item.required_quantity) && (
                           <th className="p-2 border">Action</th>
                         )}
                     </tr>
@@ -131,17 +132,25 @@ export default function RequisitionDetails({ requisition, flash }: RequisitionPr
                           )}
                           <td className="p-2 border text-center">{requestItem.product.unit}</td>
                           <td className="p-2 border">{requestItem.product.specifications}</td>
-                          {(user?.id === requisition.requester.id 
+                          {(user?.id === requisition.requester.id
                             || requestItem.provided_quantity === requestItem.required_quantity
-                          )&& (
-                            <td className="p-2 border">{requestItem.status}</td>
-                          )}
-                          {user?.permissions?.includes('fulfill requisitionItem') &&
-                            requestItem.provided_quantity !== requestItem.required_quantity && (
-                              <td className="p-2 border">
-                                <FulfillRequisitionModal requestItemId={requestItem.id} />
-                              </td>
+                          ) && (
+                              <td className="p-2 border">{requestItem.status}</td>
                             )}
+                          {
+                            (user?.permissions?.includes('fulfill requisitionItem') && requestItem.provided_quantity !== requestItem.required_quantity) ||
+                              (user?.id === requisition.requester.id && requestItem.status === "provided") ? (
+                              <td className="p-2 border">
+                                {user?.permissions?.includes('fulfill requisitionItem') &&
+                                  requestItem.provided_quantity !== requestItem.required_quantity ? (
+                                  <FulfillRequisitionModal requestItemId={requestItem.id} />
+                                ) : user?.id === requisition.requester.id && requestItem.status === "provided" ? (
+                                  <ReceiveRequisitionModal requestItemId={requestItem.id} />
+                                ) : null}
+                              </td>
+                            ) : null
+                          }
+
                         </tr>
                       )
                     ))}
