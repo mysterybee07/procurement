@@ -40,6 +40,7 @@ class PermissionSeeder extends Seeder
             'edit requisitions',
             'delete requisitions',
             'show requisitions',
+            'fulfill requisitionItem',
 
             // Document management
             'view documents',
@@ -61,12 +62,6 @@ class PermissionSeeder extends Seeder
             'delete roles',
             'assign permissions to roles',
             'update role permissions',
-
-            // Permission management
-            'view permissions',
-            'create permissions',
-            'edit permissions',
-            'delete permissions',
         ];
 
         foreach ($permissions as $permission) {

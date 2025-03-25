@@ -48,7 +48,7 @@ interface EOIProps {
   organizationAddress: string;
 }
 
-export default function ViewEoi({ eoi, flash, organizationName, organizationAddress }: EOIProps) {
+export default function EOIDetails({ eoi, flash, organizationName, organizationAddress }: EOIProps) {
   console.log(eoi);
 
   // Helper function to format date

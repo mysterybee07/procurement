@@ -7,13 +7,27 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use DB;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 
-class ProductController extends Controller
+class ProductController extends Controller implements HasMiddleware
 {
     /**
      * Display a listing of the resource.
      */
+
+     public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view products', only: ['index']),
+            new Middleware('permission:create products', only: ['create']),
+            new Middleware('permission:edit products', only: ['edit']),
+            new Middleware('permission:delete products', only: ['destroy']),
+            // new Middleware('permission:assign permissions to eois', only: ['assignPermissionsToRole']),
+            // new Middleware('permission:update role permissions', only: ['updatePermissions']),
+        ];
+    }
     public function index()
     {
         $products = Product::with('category')->paginate();

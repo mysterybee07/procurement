@@ -5,14 +5,28 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CategoryRequest;
 use App\Models\ProductCategory;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
-class ProductCategoryController extends Controller
+class ProductCategoryController extends Controller implements HasMiddleware
 {
     /**
      * Display a listing of the resource.
      */
+
+     public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view categories', only: ['index']),
+            new Middleware('permission:create categories', only: ['create']),
+            new Middleware('permission:edit categories', only: ['edit']),
+            new Middleware('permission:delete categories', only: ['destroy']),
+            // new Middleware('permission:assign permissions to eois', only: ['assignPermissionsToRole']),
+            // new Middleware('permission:update role permissions', only: ['updatePermissions']),
+        ];
+    }
     public function index()
     {
         $categories = ProductCategory::with('parentCategory')

@@ -22,7 +22,7 @@ interface Requisition {
   urgency: string;
   eoi_id: number;
   request_items: Array<{
-    required_quantity: string;
+    required_quantity: number;
     additional_specifications: string;
     product: {
       name: string;
@@ -30,10 +30,10 @@ interface Requisition {
     };
   }>;
   requester: {
+    id: string;
     name: string;
   };
 }
-
 
 interface IndexProps {
   requisitions: {
@@ -47,14 +47,47 @@ interface IndexProps {
   };
 }
 
-
 export default function ListRequisition({ requisitions, flash }: IndexProps) {
   const { auth } = usePage().props as any;
   const user = auth?.user;
-  // console.log(user.permission)
+  console.log(requisitions);
 
   const [selectedRequisitions, setSelectedRequisitions] = useState<number[]>([]);
-  console.log(requisitions.data);
+  const [statusUpdating, setStatusUpdating] = useState<Record<number, boolean>>({});
+
+  const statusOptions = [
+    'draft',
+    'submitted',
+    'pending_approval',
+    'approved',
+    'rejected',
+    'fulfilled',
+    'closed',
+    'canceled'
+  ];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'submitted':
+        return 'bg-blue-100 text-blue-800';
+      case 'pending_approval':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'fulfilled':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'closed':
+        return 'bg-purple-100 text-purple-800';
+      case 'canceled':
+        return 'bg-gray-300 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const toggleRequisitionselection = (id: number) => {
     if (selectedRequisitions.includes(id)) {
@@ -68,21 +101,24 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
     router.visit(route('eois.create', { requisition_ids: selectedRequisitions }));
   };
 
-  // const onEdit = () => {
-  //   router.visit(route('eois.edit', { requisition_ids: selectedRequisitions }));
-  // };
-
   const showMessage = () => {
     confirm("Please select Requisitions First");
-    // <Confirmation
-    //   title="Select Requisition"
-    //   description="Please select one of "
-    //   buttonLabel="OK"
-    //   buttonVariant="secondary"
-    //   onConfirm={() => console.log("Item deleted!")}
-    // />
-  }
-  console.log(requisitions.data)
+  };
+
+  const updateStatus = (id: number, newStatus: string) => {
+    setStatusUpdating(prev => ({ ...prev, [id]: true }));
+
+    router.post(route('requisitions.updateStatus', id), {
+      status: newStatus
+    }, {
+      onSuccess: () => {
+        setStatusUpdating(prev => ({ ...prev, [id]: false }));
+      },
+      onError: () => {
+        setStatusUpdating(prev => ({ ...prev, [id]: false }));
+      }
+    });
+  };
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -130,16 +166,21 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
               <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <div className="flex items-center">
-                        <span>Select</span>
-                      </div>
-                    </th>
+                    {user?.permissions?.includes('create eois') &&
+                      requisitions?.data?.some((requisition) => requisition.status === 'submitted') && (
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <div className="flex items-center">
+                            <span>Select</span>
+                          </div>
+                        </th>
+                      )}
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requister</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Item</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Required Quantity</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In Stock</th>
+                    {user?.permission?.includes('create eois') && (
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In Stock</th>
+                    )}
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Required Date</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -156,16 +197,18 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                     requisitions.data.map((requisition) => (
                       <tr key={requisition.id}>
                         {/* Checkbox */}
-                        <td className="px-4 py-4 whitespace-nowrap text-sm">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                            checked={selectedRequisitions.includes(requisition.id)}
-                            onChange={() => toggleRequisitionselection(requisition.id)}
-                            disabled={!!requisition.eoi_id} // Disable if linked to an EOI
-                          />
-                        </td>
-
+                        {user?.permissions?.includes('create eois') &&
+                          requisitions?.data?.some((requisition) => requisition.status === 'submitted') && (
+                            <td className="px-4 py-4 whitespace-nowrap text-sm">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                checked={selectedRequisitions.includes(requisition.id)}
+                                onChange={() => toggleRequisitionselection(requisition.id)}
+                                disabled={!!requisition.eoi_id}
+                              />
+                            </td>
+                          )}
                         {/* Requester Name */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           {requisition?.requester ? requisition.requester.name : 'N/A'}
@@ -173,48 +216,69 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
 
                         {/* Title */}
                         <td className="px-6 py-4 whitespace-nowrap">{requisition.title}</td>
-                        {/* <td className="px-6 py-4 whitespace-nowrap">{requisition.request_items.required_quantity}</td> */}
 
                         {/* Requested Products */}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {requisition.request_items.length > 0
+                          {requisition.request_items.length > 0 &&
+                            requisition.request_items.some(item => item.required_quantity > 0)
                             ? requisition.request_items
-                              .map((item) =>
-                                item.product.name
-                              )
+                              .filter(item => item.required_quantity > 0)
+                              .map(item => item.product.name)
                               .join(', ')
                             : 'N/A'}
                         </td>
+
                         <td className="px-6 py-4 whitespace-nowrap">
                           {Array.isArray(requisition.request_items) && requisition.request_items.length > 0
-                            ? requisition.request_items.map((item) => item.required_quantity).join(', ')
-                            : 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {requisition.request_items.length > 0
+                            && requisition.request_items.some(item => item.required_quantity > 0)
                             ? requisition.request_items
-                              .map((item) =>
-
-                                item.product.in_stock_quantity
-                              )
+                              .filter(item => item.required_quantity > 0)
+                              .map(item => item.required_quantity)
                               .join(', ')
                             : 'N/A'}
                         </td>
 
+                        {user?.permission?.includes('create eois') && (
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {requisition.request_items.length > 0
+                              ? requisition.request_items
+                                .map((item) =>
+                                  item.product.in_stock_quantity
+                                )
+                                .join(', ')
+                              : 'N/A'}
+                          </td>
+                        )}
                         {/* Required Date */}
                         <td className="px-6 py-4 whitespace-nowrap">{requisition.required_date}</td>
 
-                        {/* Status */}
+                        {/* Status - now as dropdown for users with permission */}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-              ${requisition.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                requisition.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                  requisition.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                    'bg-gray-100 text-gray-800'}`}
-                          >
-                            {requisition.status || 'N/A'}
-                          </span>
+                          {user?.permissions?.includes('update requisitions status') ? (
+                            <div className="relative">
+                              <select
+                                value={requisition.status}
+                                onChange={(e) => updateStatus(requisition.id, e.target.value)}
+                                disabled={statusUpdating[requisition.id]}
+                                className={`rounded-md text-sm font-medium py-1 px-2 border ${getStatusColor(requisition.status)}`}
+                              >
+                                {statusOptions.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option.replace('_', ' ')}
+                                  </option>
+                                ))}
+                              </select>
+                              {statusUpdating[requisition.id] && (
+                                <span className="ml-2 text-xs text-gray-500">Updating...</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(requisition.status)}`}
+                            >
+                              {requisition.status.replace('_', ' ') || 'N/A'}
+                            </span>
+                          )}
                         </td>
 
                         {/* Actions */}
@@ -223,7 +287,7 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                             onClick={() => router.visit(route('requisitions.show', requisition.id))}
                             className="text-indigo-600 hover:text-indigo-900"
                           >
-                            View Details
+                            View
                           </Button>
 
                           <Button
@@ -240,12 +304,22 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                             itemId={requisition.id}
                             onSuccess={() => console.log("Requisition deleted successfully!")}
                           />
+
+                          {user?.id === requisition.requester.id && requisition.status === 'draft' && (
+                            <Button
+                              type='submit'
+                              onClick={() => router.post(route('requisitions.submit', requisition.id))}
+                              className="text-indigo-600 hover:text-indigo-900 border border-indigo-600 rounded-md px-4 py-2"
+                            >
+                              Submit
+                            </Button>
+                          )}
+
                         </td>
                       </tr>
                     ))
                   )}
                 </tbody>
-
               </table>
             </div>
 

@@ -16,13 +16,18 @@ return new class extends Migration
             $table->unsignedBigInteger('requisition_id');
             $table->unsignedBigInteger('product_id');
             $table->integer('required_quantity');
+            $table->integer('provided_quantity')->nullable();
             $table->text('additional_specifications')->nullable();
-                       
-            $table->timestamps();
-            
+            $table->enum('status', [      
+                'submitted',  
+                'approved',
+                'provided',   
+                'rejected',   
+                'fulfilled',
+            ])->default('submitted');
+            $table->timestamps();            
             $table->foreign('requisition_id')->references(columns: 'id')->on('requisitions')->onDelete('cascade');
             $table->foreign('product_id')->references(columns: 'id')->on('products')->onDelete('cascade');
-            
         });
     }
 

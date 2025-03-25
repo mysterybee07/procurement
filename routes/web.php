@@ -62,6 +62,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/requisitions/{requisition}', [RequisitionController::class, 'show'])->name('requisitions.show');
     Route::put('/requisitions/{requisition}', [RequisitionController::class, 'update'])->name('requisitions.update');
     Route::delete('/requisitions/{requisition}', [RequisitionController::class, 'destroy'])->name('requisitions.destroy');
+    Route::post('/requisitions/{requestItem}/fulfill', [RequisitionController::class, 'fulfillRequisitionItem'])->name('requisitionsItem.fulfill');
+    Route::post('/requisitions/{requisition}/submit', [RequisitionController::class, 'submitRequisition'])->name('requisitions.submit');
+
 });
 Route::middleware(['auth'])->group(function () {
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
