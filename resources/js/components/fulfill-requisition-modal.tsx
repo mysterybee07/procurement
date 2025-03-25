@@ -14,8 +14,8 @@ interface FulfillRequisitionModalProps {
 
 export default function FulfillRequisitionModal({ requestItemId }: FulfillRequisitionModalProps) {
     const inputRef = useRef<HTMLInputElement>(null);
-    const { data, setData, processing, reset, errors, clearErrors, post } = useForm<{ givenQuantity: string, requestItemId: number }>({
-      givenQuantity: '',
+    const { data, setData, processing, reset, errors, clearErrors, post } = useForm<{ provided_quantity: string, requestItemId: number }>({
+      provided_quantity: '',
       requestItemId: requestItemId,
     });
 
@@ -49,18 +49,18 @@ export default function FulfillRequisitionModal({ requestItemId }: FulfillRequis
                         </DialogDescription>
                         <form className="space-y-6" onSubmit={fulfillRequisition}>
                             <div className="grid gap-2">
-                                <Label htmlFor="givenQuantity">Given Quantity</Label>
+                                <Label htmlFor="provided_quantity">Given Quantity</Label>
                                 <Input
-                                    id="givenQuantity"
+                                    id="provided_quantity"
                                     type="number"
-                                    name="givenQuantity"
+                                    name="provided_quantity"
                                     ref={inputRef}
-                                    value={data.givenQuantity}
-                                    onChange={(e) => setData('givenQuantity', e.target.value)}
+                                    value={data.provided_quantity}
+                                    onChange={(e) => setData('provided_quantity', e.target.value)}
                                     placeholder="Enter quantity"
                                     required
                                 />
-                                <InputError message={errors.givenQuantity} />
+                                <InputError message={errors.provided_quantity} />
                             </div>
 
                             <DialogFooter className="gap-2">

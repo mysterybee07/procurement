@@ -18,7 +18,8 @@ interface Product {
 interface RequestItem {
   id: number;
   required_quantity: number;
-  status:string;
+  provided_quantity: number;
+  status: string;
   product: Product;
 }
 
@@ -44,7 +45,7 @@ interface RequisitionProps {
 export default function RequisitionDetails({ requisition, flash }: RequisitionProps) {
   const { auth } = usePage().props as any;
   const user = auth?.user;
-  
+
 
   // Breadcrumbs
   const breadcrumbs: BreadcrumbItem[] = [
@@ -104,15 +105,19 @@ export default function RequisitionDetails({ requisition, flash }: RequisitionPr
                     <tr>
                       <th className="p-2 border">Item Name</th>
                       <th className="p-2 border">Required Quantity</th>
-                      <th className="p-2 border">In Stock</th>
+                      {user?.permissions?.includes('fulfill requisitionItem') && (
+                        <th className="p-2 border">In Stock</th>
+                      )}
                       <th className="p-2 border">Unit</th>
                       <th className="p-2 border">Specifications</th>
-                      {user?.id === requisition.requester.id && (
-                      <th className="p-2 border">Status</th>
-                      )}
-                      {user?.permissions?.includes('fulfill requisitionItem') && (
-                        <th className="p-2 border">Action</th>
-                      )}
+                      {(user?.id === requisition.requester.id ||
+                        requisition.request_items.some(item => item.status === "provided")) && (
+                          <th className="p-2 border">Status</th>
+                        )}
+                      {user?.permissions?.includes('fulfill requisitionItem') &&
+                        requisition.request_items.some(item=>item.provided_quantity !== item.required_quantity) && (
+                          <th className="p-2 border">Action</th>
+                        )}
                     </tr>
                   </thead>
                   <tbody>
@@ -120,18 +125,23 @@ export default function RequisitionDetails({ requisition, flash }: RequisitionPr
                       requestItem.required_quantity > 0 && (
                         <tr key={requestItem.id} className="border-t">
                           <td className="p-2 border">{requestItem.product.name}</td>
-                          <td className="p-2 border text-center">{requestItem.required_quantity}</td>
-                          <td className="p-2 border text-center">{requestItem.product.in_stock_quantity}</td>
+                          <td className="p-2 border text-center">{requestItem.required_quantity - requestItem.provided_quantity}</td>
+                          {user?.permissions?.includes('fulfill requisitionItem') && (
+                            <td className="p-2 border text-center">{requestItem.product.in_stock_quantity}</td>
+                          )}
                           <td className="p-2 border text-center">{requestItem.product.unit}</td>
                           <td className="p-2 border">{requestItem.product.specifications}</td>
-                          {user?.id === requisition.requester.id && (
+                          {(user?.id === requisition.requester.id 
+                            || requestItem.provided_quantity === requestItem.required_quantity
+                          )&& (
                             <td className="p-2 border">{requestItem.status}</td>
                           )}
-                          {user?.permissions?.includes('fulfill requisitionItem') && (
-                            <td className="p-2 border">
-                              <FulfillRequisitionModal requestItemId={requestItem.id} />
-                            </td>
-                          )}
+                          {user?.permissions?.includes('fulfill requisitionItem') &&
+                            requestItem.provided_quantity !== requestItem.required_quantity && (
+                              <td className="p-2 border">
+                                <FulfillRequisitionModal requestItemId={requestItem.id} />
+                              </td>
+                            )}
                         </tr>
                       )
                     ))}

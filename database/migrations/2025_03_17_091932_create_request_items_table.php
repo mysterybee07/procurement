@@ -21,9 +21,10 @@ return new class extends Migration
             $table->enum('status', [      
                 'submitted',  
                 'approved',
-                'provided',   
+                'provided',
+                'partially provided',   
                 'rejected',   
-                'fulfilled',
+                'received',
             ])->default('submitted');
             $table->timestamps();            
             $table->foreign('requisition_id')->references(columns: 'id')->on('requisitions')->onDelete('cascade');

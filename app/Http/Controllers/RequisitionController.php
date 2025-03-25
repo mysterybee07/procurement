@@ -27,7 +27,7 @@ class RequisitionController extends Controller implements HasMiddleware
             new Middleware('permission:create requisitions', only: ['create']),
             new Middleware('permission:edit requisitions', only: ['edit']),
             new Middleware('permission:delete requisitions', only: ['destroy']),
-            // new Middleware('permission:fulfill requisitionItem', only: ['fulfillRequisitionItem']),
+            new Middleware('permission:fulfill requisitionItem', only: ['fulfillRequisitionItem']),
             // new Middleware('permission:assign permissions to requisitions', only: ['assignPermissionsToRole']),
             // new Middleware('permission:update role permissions', only: ['updatePermissions']),
         ];
@@ -36,10 +36,10 @@ class RequisitionController extends Controller implements HasMiddleware
     {
         $user = auth()->user();
 
-        if ($user->can('create eois')) {
+        if ($user->can('fulfill requisitionItem')) {
             $requisitions = Requisition::with('requester', 'requestItems', 'requestItems.product')
                 ->where(function ($query) use ($user) {
-                    $query->where('status', 'submitted')
+                    $query->where('status','!=', 'draft')
                         ->orWhere('requester', $user->id);
                 })
                 ->paginate(10);
@@ -260,30 +260,48 @@ class RequisitionController extends Controller implements HasMiddleware
     public function fulfillRequisitionItem(Request $request, $id)
     {
         $request->validate([
-            'givenQuantity' => 'required|numeric|min:1',
+            'provided_quantity' => 'required|numeric|min:1',
         ]);
         // dd($request);
 
         $request_item = RequestItem::findOrFail($id);
 
         $product = Product::findOrFail($request_item->product_id);
+        $previouslyProvidedQuantity = $request_item->provided_quantity;
+        $requisition = $request_item->requisition;
 
-        if ($product->in_stock_quantity < $request->givenQuantity) {
+        if ($product->in_stock_quantity < $request->provided_quantity) {
             return redirect()->back()
-            ->withErrors(['givenQuantity' => 'Not enough stock available.']);
+            ->withErrors(['provided_quantity' => 'Not enough stock available.']);
         }
 
         // deduct the stock
-        $product->in_stock_quantity -= $request->givenQuantity;
+        $product->in_stock_quantity -= $request->provided_quantity;
         $product->save();
 
         // fulfilled
-        $request_item->required_quantity -= $request->givenQuantity;
-        $request_item->status = 'provided';
+        $request_item->provided_quantity = $request->provided_quantity + $previouslyProvidedQuantity;
+        $request_item->status = ($request->provided_quantity === $request_item->required_quantity) 
+                            ? 'provided' 
+                            : 'partially provided';        
         $request_item->save();
+
+        if ($requisition->requestItems()->where('status', '!=', 'provided')->count() === 0) {
+            $requisition->status = 'provided';
+            $requisition->save();
+        }
 
         return redirect()->back()
         ->with('message', 'Requisition fulfilled successfully.');
     }
+    public function receiveRequisitionItem(Request $request, $id)
+    {
+        // Update the status to 'submitted'
+        $request_item = RequestItem::findOrFail($id);        
+        $request_item->status = 'received';
+        $request_item->save();        
 
+        return redirect()->back()
+        ->with('message', 'Requisition submitted successfully.');
+    }
 }
