@@ -8,12 +8,11 @@ import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
 import AppLogo from './app-logo';
 
 // Define the navigation items with required permissions
-const mainNavItems: (NavItem & { permission?: string })[] = [
+const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
         icon: LayoutGrid,
-        // Dashboard typically available to all authenticated users
     },
     {
         title: 'Users',
@@ -37,7 +36,7 @@ const mainNavItems: (NavItem & { permission?: string })[] = [
         title: 'Product Category',
         href: '/categories',
         icon: LayoutGrid,
-        permission: 'view categories' // Permission required to see this item
+        permission: 'view categories'
     },
     {
         title: 'Products',
@@ -69,20 +68,81 @@ const mainNavItems: (NavItem & { permission?: string })[] = [
         icon: LayoutGrid,
         permission: 'view vendors'
     },
+    {
+        title: 'Open EOIs',
+        href: '/vendor/eois',
+        icon: LayoutGrid,
+        vendorOnly: true
+    },
     
 ];
+
+// export function AppSidebar() {
+//     const { auth } = usePage().props as any;
+//     const user = auth?.user;
+    
+//     const filteredNavItems = mainNavItems.filter(item => {
+
+//         if (item.vendorOnly) {
+//             // Only show for vendors
+//             return user?.is_vendor === true;
+//         }
+
+//         if (!item.permission) return true;
+        
+//         return user?.permissions?.includes(item.permission) || 
+//                user?.roles?.some((role: any) => 
+//                    role.permissions?.includes(item.permission)
+//                );
+//     });
+
+//     return (
+//         <Sidebar collapsible="icon" variant="inset">
+//             <SidebarHeader>
+//                 <SidebarMenu>
+//                     <SidebarMenuItem>
+//                         <SidebarMenuButton size="lg" asChild>
+//                             <Link href="/dashboard" prefetch>
+//                                 <AppLogo />
+//                             </Link>
+//                         </SidebarMenuButton>
+//                     </SidebarMenuItem>
+//                 </SidebarMenu>
+//             </SidebarHeader>
+
+//             <SidebarContent>
+//                 <NavMain items={filteredNavItems} />
+//             </SidebarContent>
+
+//             <SidebarFooter>
+//                 <NavUser />
+//             </SidebarFooter>
+//         </Sidebar>
+//     );
+// }
 
 export function AppSidebar() {
     const { auth } = usePage().props as any;
     const user = auth?.user;
     
     const filteredNavItems = mainNavItems.filter(item => {
-        if (!item.permission) return true;
-        
-        return user?.permissions?.includes(item.permission) || 
-               user?.roles?.some((role: any) => 
-                   role.permissions?.includes(item.permission)
-               );
+        // If it's a vendor-only route
+        if (item.vendorOnly) {
+            // Only show for vendors
+            return user?.is_vendor === true;
+        }
+
+        // For non-vendor-only routes
+        // Check permissions if they exist
+        if (item.permission) {
+            return user?.permissions?.includes(item.permission) || 
+                   user?.roles?.some((role: any) => 
+                       role.permissions?.includes(item.permission)
+                   );
+        }
+
+        // If no permission specified, show the item
+        return true;
     });
 
     return (

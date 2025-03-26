@@ -105,20 +105,6 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
     confirm("Please select Requisitions First");
   };
 
-  // const updateStatus = (id: number, newStatus: string) => {
-  //   setStatusUpdating(prev => ({ ...prev, [id]: true }));
-
-  //   router.post(route('requisitions.updateStatus', id), {
-  //     status: newStatus
-  //   }, {
-  //     onSuccess: () => {
-  //       setStatusUpdating(prev => ({ ...prev, [id]: false }));
-  //     },
-  //     onError: () => {
-  //       setStatusUpdating(prev => ({ ...prev, [id]: false }));
-  //     }
-  //   });
-  // };
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -140,7 +126,7 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
 
           <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
             <div className="flex justify-between items-center mb-6">
-              {/* "Create EOI" aligned to the left */}
+              {/* "Create EOI" */}
               {user?.permissions?.includes('create eois') && (
                 <button
                   onClick={selectedRequisitions.length === 0 ? showMessage : createEOI}
@@ -150,7 +136,7 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                 </button>
               )}
 
-              {/* "Add New Requisition" aligned to the right */}
+              {/* "Add New Requisition"*/}
               {user?.permissions?.includes('create requisitions') && (
                 <Link
                   href={route('requisitions.create')}

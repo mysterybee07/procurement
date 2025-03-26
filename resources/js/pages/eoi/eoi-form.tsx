@@ -94,16 +94,13 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onCh
 };
 
 const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocuments, isEditing, eoi }) => {
-  // State for requisition IDs
+  
   const [requisitionIds, setRequisitionIds] = useState<number[]>([]);
 
-  // State for modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // State for managing documents (including newly created ones)
   const [documents, setDocuments] = useState<Document[]>(initialDocuments || []);
 
-  // State for document modal
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
 
   const breadcrumbs: BreadcrumbItem[] = [

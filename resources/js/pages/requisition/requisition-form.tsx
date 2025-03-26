@@ -28,9 +28,9 @@ interface RequisitionFormData {
 }
 
 // Define a more specific type for form errors
-interface FormErrors {
-  [key: string]: string;
-}
+// interface FormErrors {
+//   [key: string]: string;
+// }
 
 interface Props {
   products: Product[];
@@ -47,41 +47,41 @@ interface Props {
   }
 }
 
-interface SimpleRichTextEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}
+// interface SimpleRichTextEditorProps {
+//   value: string;
+//   onChange: (value: string) => void;
+//   placeholder?: string;
+// }
 
-const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onChange, placeholder }) => {
-  return (
-    <div className="border rounded">
-      <div className="flex gap-2 p-2 border-b bg-gray-50">
-        <button className="p-1 hover:bg-gray-200 rounded" title="Bold">
-          <Bold size={16} />
-        </button>
-        <button className="p-1 hover:bg-gray-200 rounded" title="Italic">
-          <Italic size={16} />
-        </button>
-        <button className="p-1 hover:bg-gray-200 rounded" title="Bullet List">
-          <List size={16} />
-        </button>
-        <button className="p-1 hover:bg-gray-200 rounded" title="Insert Link">
-          <Link size={16} />
-        </button>
-        <button className="p-1 hover:bg-gray-200 rounded" title="Insert Image">
-          <Image size={16} />
-        </button>
-      </div>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full p-2 min-h-24 focus:outline-none"
-        placeholder={placeholder}
-      />
-    </div>
-  );
-};
+// const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onChange, placeholder }) => {
+//   return (
+//     <div className="border rounded">
+//       <div className="flex gap-2 p-2 border-b bg-gray-50">
+//         <button className="p-1 hover:bg-gray-200 rounded" title="Bold">
+//           <Bold size={16} />
+//         </button>
+//         <button className="p-1 hover:bg-gray-200 rounded" title="Italic">
+//           <Italic size={16} />
+//         </button>
+//         <button className="p-1 hover:bg-gray-200 rounded" title="Bullet List">
+//           <List size={16} />
+//         </button>
+//         <button className="p-1 hover:bg-gray-200 rounded" title="Insert Link">
+//           <Link size={16} />
+//         </button>
+//         <button className="p-1 hover:bg-gray-200 rounded" title="Insert Image">
+//           <Image size={16} />
+//         </button>
+//       </div>
+//       <textarea
+//         value={value}
+//         onChange={(e) => onChange(e.target.value)}
+//         className="w-full p-2 min-h-24 focus:outline-none"
+//         placeholder={placeholder}
+//       />
+//     </div>
+//   );
+// };
 
 const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisition }) => {
   const defaultItem: RequestItem = {
@@ -126,7 +126,6 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionType, setSubmissionType] = useState<'draft' | 'submitted' | 'updated'>('draft');
 
-  // Handle form submission
   // Handle form submission
   useEffect(() => {
     if (isSubmitting) {

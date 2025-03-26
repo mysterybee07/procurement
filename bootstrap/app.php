@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'prevent.vendor' => \App\Http\Middleware\HandleVendorAccess::class,
+            'ensure.vendor' => \App\Http\Middleware\EnsureVendorAccess::class,
         ]);
     })
     

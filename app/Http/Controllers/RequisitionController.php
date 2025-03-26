@@ -37,7 +37,7 @@ class RequisitionController extends Controller implements HasMiddleware
         $user = auth()->user();
 
         if ($user->can('fulfill requisitionItem')) {
-            $requisitions = Requisition::with('requester', 'requestItems', 'requestItems.product')
+            $requisitions = Requisition::with('requester', 'requestItems.product')
                 ->where(function ($query) use ($user) {
                     $query->where('status','!=', 'draft')
                         ->orWhere('requester', $user->id);
@@ -48,7 +48,10 @@ class RequisitionController extends Controller implements HasMiddleware
             $requisitions = Requisition::where('requester', $user->id)
                 ->with('requester', 'requestItems', 'requestItems.product')
                 ->paginate(10);
+            
         }
+        // dd($requisitions);
+        // dd($user);
 
         return Inertia::render('requisition/list-requisitions', [
             'requisitions' => $requisitions,
@@ -281,7 +284,7 @@ class RequisitionController extends Controller implements HasMiddleware
 
         // fulfilled
         $request_item->provided_quantity = $request->provided_quantity + $previouslyProvidedQuantity;
-        $request_item->status = ($request->provided_quantity === $request_item->required_quantity) 
+        $request_item->status = ($request_item->provided_quantity === $request_item->required_quantity) 
                             ? 'provided' 
                             : 'partially provided';        
         $request_item->save();

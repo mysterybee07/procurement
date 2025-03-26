@@ -10,7 +10,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/dashboard',
     },
 ];
-
 interface Category {
     id: number;
     category_name: string;

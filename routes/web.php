@@ -9,6 +9,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RequisitionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VendorController;
 use App\Models\Requisition;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -105,6 +106,12 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     // Route::put('/permissions/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
     // Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
 });
+
+
+    // Vendor routes
+    Route::middleware(['auth', 'ensure.vendor'])->group(function () {
+            Route::get('/vendor/eois', [VendorController::class, 'EOIsForVendor'])->name('eois.vendor');
+    });
 
 
 require __DIR__.'/settings.php';

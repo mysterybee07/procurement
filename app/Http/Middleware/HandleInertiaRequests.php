@@ -60,15 +60,14 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
-                    // Get ALL permissions (both direct and via roles)
                     'permissions' => $request->user()->getAllPermissions()->pluck('name'),
-                    // Keep roles information if needed
                     'roles' => $request->user()->roles->map(function($role) {
                         return [
                             'name' => $role->name,
                             'permissions' => $role->permissions->pluck('name')
                         ];
                     }),
+                    'is_vendor' => $request->user()->is_vendor,
                 ] : null,
             ],
         ]);

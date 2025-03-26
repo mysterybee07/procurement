@@ -210,11 +210,11 @@ class EOIController extends Controller implements HasMiddleware
      */
     public function destroy(EOI $eoi)
     {
-        // First, remove EOI reference from requisitions
+        //remove EOI reference from requisitions
         Requisition::where('eoi_id', $eoi->id)
             ->update(['eoi_id' => null]);
             
-        // Detach all documents
+        // Detach documents
         $eoi->documents()->detach();
         
         // Delete the EOI
@@ -226,13 +226,12 @@ class EOIController extends Controller implements HasMiddleware
 
     public function publishEOI(Request $request, EOI $eoi)
     {
-
         $request->validate([
             'submission_deadline' => 'required|date|after:today',
         ]);
 
         // dd($request);
-        // if (!$eoi->isApproved) {
+        // if ($eoi->status!=='approved') {
         //     return redirect()->back()
         //         ->with('error', 'EOI cannot be published because it has not been approved.');
         // }
