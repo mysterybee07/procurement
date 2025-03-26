@@ -16,7 +16,7 @@ class ProductCategoryController extends Controller implements HasMiddleware
      * Display a listing of the resource.
      */
 
-     public static function middleware(): array
+    public static function middleware(): array
     {
         return [
             new Middleware('permission:view categories', only: ['index']),

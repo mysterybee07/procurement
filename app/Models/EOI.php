@@ -16,7 +16,7 @@ class EOI extends Model
         'title',
         'description',
         'estimated_budget',
-        'submission_date',
+        'publish_date',
         'status',
         'current_approval_step',
         'approval_workflow_id',

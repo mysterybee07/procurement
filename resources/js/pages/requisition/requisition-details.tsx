@@ -112,7 +112,7 @@ export default function RequisitionDetails({ requisition, flash }: RequisitionPr
                       <th className="p-2 border">Unit</th>
                       <th className="p-2 border">Specifications</th>
                       {(user?.id === requisition.requester.id ||
-                        requisition.request_items.some(item => item.status !== "provided")) && (
+                        requisition.request_items.some(item => item.status === "provided")) && (
                           <th className="p-2 border">Status</th>
                         )}
                       {user?.permissions?.includes('fulfill requisitionItem') &&

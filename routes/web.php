@@ -23,7 +23,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth','prevent.vendor'])->group(function () {
+
+    // users route
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
@@ -34,26 +36,24 @@ Route::middleware(['auth'])->group(function () {
     ->name('users.assignRoles');
     Route::put('/users/{user}/roles', [UserController::class, 'updateUserRoles'])
     ->name('users.updateRole');
-});
 
-Route::middleware(['auth'])->group(function () {
+    // categories route
     Route::get('/categories', [ProductCategoryController::class, 'index'])->name('categories.index');
     Route::get('/categories/create', [ProductCategoryController::class, 'create'])->name('categories.create');
     Route::post('/categories', [ProductCategoryController::class, 'store'])->name('categories.store');
     Route::get('/categories/{category}/edit', [ProductCategoryController::class, 'edit'])->name('categories.edit');
     Route::put('/categories/{category}', [ProductCategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [ProductCategoryController::class, 'destroy'])->name('categories.destroy');
-});
-Route::middleware(['auth'])->group(function () {
+
+    // products
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
-});
 
-Route::middleware(['auth'])->group(function () {
+    // requisitions route
     Route::get('/requisitions', [RequisitionController::class, 'index'])->name('requisitions.index');
     // Route::get('/requisitions', [RequisitionController::class, 'index'])->name('requisitions.userRequisition');
     Route::get('/requisitions/create', [RequisitionController::class, 'create'])->name('requisitions.create');
@@ -65,9 +65,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/requisitions/{requisition}/submit', [RequisitionController::class, 'submitRequisition'])->name('requisitions.submit');
     Route::post('/requisitions/{requestItem}/fulfill', [RequisitionController::class, 'fulfillRequisitionItem'])->name('requisitionsItem.fulfill');
     Route::post('/requisitions/{requestItem}/receive', [RequisitionController::class, 'receiveRequisitionItem'])->name('requisitionsItem.receive');
-});
 
-Route::middleware(['auth'])->group(function () {
+    // documents route
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
     // Route::get('/documents/create', [DocumentController::class, 'create'])->name('documents.create');
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
@@ -75,9 +74,8 @@ Route::middleware(['auth'])->group(function () {
     // Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
-});
 
-Route::middleware(['auth'])->group(function () {
+    // eois route
     Route::get('/eois', [EOIController::class, 'index'])->name('eois.index');
     Route::get('/eois/create', [EOIController::class, 'create'])->name('eois.create');
     Route::post('/eois', [EOIController::class, 'store'])->name('eois.store');
@@ -85,9 +83,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/eois/{eoi}', [EOIController::class, 'show'])->name('eois.show');
     Route::put('/eois/{eoi}', [EOIController::class, 'update'])->name('eois.update');
     Route::delete('/eois/{eoi}', [EOIController::class, 'destroy'])->name('eois.destroy');
-});
+    Route::put('/eois/{eoi}/publish', [EOIController::class, 'publishEOI'])->name('eois.publish');
 
-Route::middleware(['auth'])->group(function () {
+    // roles route
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
     Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
@@ -98,15 +96,14 @@ Route::middleware(['auth'])->group(function () {
     ->name('roles.permissions');
     Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])
     ->name('roles.updatePermissions');
-});
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
-    // Route::get('/permissions/create', [PermissionController::class, 'create'])->name('permissions.create');
-    Route::post('/permissions', [PermissionController::class, 'store'])->name('permissions.store');
-    // Route::get('/permissions/{permission}/edit', [PermissionController::class, 'edit'])->name('permissions.edit');
-    Route::put('/permissions/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
-    Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
+
+    // Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+    // // Route::get('/permissions/create', [PermissionController::class, 'create'])->name('permissions.create');
+    // Route::post('/permissions', [PermissionController::class, 'store'])->name('permissions.store');
+    // // Route::get('/permissions/{permission}/edit', [PermissionController::class, 'edit'])->name('permissions.edit');
+    // Route::put('/permissions/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
+    // Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
 });
 
 

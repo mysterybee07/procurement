@@ -42,12 +42,13 @@ class UserController extends Controller implements HasMiddleware
         // ->get();
         // $users = DB::table('users')
         $users = User::with('roles')
-        ->whereNotIn('id', function ($query) {
-            $query->select('model_id')
-                ->from('model_has_roles')
-                ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
-                ->where('roles.name', 'vendor');
-            })->paginate(10);
+        ->where(function ($query) {
+            $query->where('is_vendor', false)  
+                ->where('is_super_admin', false);
+        })
+        ->paginate(10);
+
+    
 
             // dd($users);
         // dd($users);

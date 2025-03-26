@@ -50,7 +50,7 @@ interface IndexProps {
 export default function ListRequisition({ requisitions, flash }: IndexProps) {
   const { auth } = usePage().props as any;
   const user = auth?.user;
-  console.log(requisitions);
+  // console.log(requisitions);
 
   const [selectedRequisitions, setSelectedRequisitions] = useState<number[]>([]);
   const [statusUpdating, setStatusUpdating] = useState<Record<number, boolean>>({});
@@ -105,20 +105,20 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
     confirm("Please select Requisitions First");
   };
 
-  const updateStatus = (id: number, newStatus: string) => {
-    setStatusUpdating(prev => ({ ...prev, [id]: true }));
+  // const updateStatus = (id: number, newStatus: string) => {
+  //   setStatusUpdating(prev => ({ ...prev, [id]: true }));
 
-    router.post(route('requisitions.updateStatus', id), {
-      status: newStatus
-    }, {
-      onSuccess: () => {
-        setStatusUpdating(prev => ({ ...prev, [id]: false }));
-      },
-      onError: () => {
-        setStatusUpdating(prev => ({ ...prev, [id]: false }));
-      }
-    });
-  };
+  //   router.post(route('requisitions.updateStatus', id), {
+  //     status: newStatus
+  //   }, {
+  //     onSuccess: () => {
+  //       setStatusUpdating(prev => ({ ...prev, [id]: false }));
+  //     },
+  //     onError: () => {
+  //       setStatusUpdating(prev => ({ ...prev, [id]: false }));
+  //     }
+  //   });
+  // };
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -167,7 +167,7 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                 <thead className="bg-gray-50">
                   <tr>
                     {user?.permissions?.includes('create eois') &&
-                      requisitions?.data?.some((requisition) => requisition.status === 'submitted') && (
+                      requisitions?.data?.filter((requisition) => requisition.status === 'submitted') && (
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           <div className="flex items-center">
                             <span>Select</span>
@@ -197,7 +197,8 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                     requisitions.data.map((requisition) => (
                       <tr key={requisition.id}>
                         {/* Checkbox */}
-                        {user?.permissions?.includes('create eois') &&
+                        {
+                          user?.permissions?.includes('create eois') &&
                           requisitions?.data?.some((requisition) => requisition.status === 'submitted') && (
                             <td className="px-4 py-4 whitespace-nowrap text-sm">
                               <input
@@ -205,10 +206,12 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                                 className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                                 checked={selectedRequisitions.includes(requisition.id)}
                                 onChange={() => toggleRequisitionselection(requisition.id)}
-                                disabled={!!requisition.eoi_id}
+                                disabled={requisition.status !== 'submitted' || !!requisition.eoi_id}
                               />
                             </td>
-                          )}
+                          )
+                        }
+
                         {/* Requester Name */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           {requisition?.requester ? requisition.requester.name : 'N/A'}
@@ -258,7 +261,7 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                             <div className="relative">
                               <select
                                 value={requisition.status}
-                                onChange={(e) => updateStatus(requisition.id, e.target.value)}
+                                // onChange={(e) => updateStatus(requisition.id, e.target.value)}
                                 disabled={statusUpdating[requisition.id]}
                                 className={`rounded-md text-sm font-medium py-1 px-2 border ${getStatusColor(requisition.status)}`}
                               >
@@ -289,14 +292,14 @@ export default function ListRequisition({ requisitions, flash }: IndexProps) {
                           >
                             View
                           </Button>
-
-                          <Button
-                            onClick={() => router.visit(route('requisitions.edit', requisition.id))}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            Edit
-                          </Button>
-
+                          {user?.id === requisition.requester.id && requisition.status === 'draft' && (
+                            <Button
+                              onClick={() => router.visit(route('requisitions.edit', requisition.id))}
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              Edit
+                            </Button>
+                          )}
                           <DeleteModal
                             title="Delete Requisition"
                             description="Are you sure you want to delete this requisition? This action cannot be undone."

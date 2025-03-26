@@ -25,7 +25,6 @@ class EOIRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'submission_deadline' => 'nullable|date|after_or_equal:submission_date',
             'evaluation_criteria' => 'nullable|string',
             'allow_partial_item_submission' => 'boolean',
             'documents' => 'nullable|array',
@@ -48,8 +47,8 @@ class EOIRequest extends FormRequest
             'description.required' => 'The description is required.',
             'description.string' => 'The description must be a string.',
             
-            'submission_deadline.date' => 'The submission deadline must be a valid date.',
-            'submission_deadline.after_or_equal' => 'The submission deadline cannot be before the submission date.',
+            // 'submission_deadline.date' => 'The submission deadline must be a valid date.',
+            // 'submission_deadline.after_or_equal' => 'The submission deadline cannot be before the submission date.',
             
             'documents.array' => 'The selected documents must be an array.',
             'documents.*.exists' => 'One or more selected documents do not exist.',

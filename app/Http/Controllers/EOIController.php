@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
+use function PHPUnit\Framework\returnValueMap;
 
 class EOIController extends Controller implements HasMiddleware
 {
@@ -86,7 +87,6 @@ class EOIController extends Controller implements HasMiddleware
         $eoi = EOI::create([
             'title' => $requestData['title'],
             'description' => $requestData['description'],
-            'submission_deadline' => $requestData['submission_deadline'],
             'evaluation_criteria' => $requestData['evaluation_criteria'],
             'allow_partial_item_submission' => $requestData['allow_partial_item_submission'] ?? false,
             // 'approval_workflow_id' => $requestData['approval_workflow_id'],
@@ -222,5 +222,25 @@ class EOIController extends Controller implements HasMiddleware
         
         return redirect()->route('eois.index')
             ->with('message', 'Expression of Interest deleted successfully.');
+    }
+
+    public function publishEOI(Request $request, EOI $eoi)
+    {
+        $request->validate([
+            'submission_deadline' => 'required|date|after:today',
+        ]);
+        // if (!$eoi->isApproved) {
+        //     return redirect()->back()
+        //         ->with('error', 'EOI cannot be published because it has not been approved.');
+        // }
+
+        $eoi->update([
+            'status' => 'published',
+            'submission_deadline' => $request['submission_deadline'],
+            'publish_date' => now(),
+        ]);
+
+        return redirect()->back()
+            ->with('message', 'EOI published successfully.');
     }
 }

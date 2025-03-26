@@ -16,9 +16,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory(10)->create();
-        $this->call(RoleSeeder::class);
+        // $this->call(RoleSeeder::class);
+        $this->call(PermissionSeeder::class);
 
-        $superadmin = User::factory()->create([
+        $superAdmin = User::factory()->create([
             'name' => 'Super Admin',
             'username'=>'superadmin123',
             'email' => 'admin@example.com',
@@ -26,11 +27,14 @@ class DatabaseSeeder extends Seeder
             'address'=>'abc xyz',
             'phone'=>'9840380475',
             'status'=>'active',
+            'is_super_admin'=>true,
             // 'role_id'=>'1'
         ]);
+        $superAdmin->syncPermissions(Permission::all());
 
-        $superadmin->assignRole('superadmin');
-         // OR Directly Assign All Permissions to the User
+
+        // $superadmin->assignRole('superadmin');
+        // OR Directly Assign All Permissions to the User
         //  $superadmin->syncPermissions(Permission::all());
 
         User::factory()->create([
@@ -63,6 +67,7 @@ class DatabaseSeeder extends Seeder
             'address'=>'abc xyz',
             'phone'=>'9840380477',
             'status'=>'active',
+            'is_vendor'=>true,
         ]);
 
         // Vendors::factory()->create([
@@ -76,7 +81,7 @@ class DatabaseSeeder extends Seeder
             'vendor_name' => 'Tech Solutions',
             'registration_number' => 'REG-67890',
             'pan_number' => 'ABCDE5678G',
-            'user_id' => 2,
+            'user_id' => 3,
             'in_contact_person' => 'Jane Smith',
         ]);
     }

@@ -27,7 +27,7 @@ interface EOIFormData {
   status: string;
   // approval_workflow_id: number;
   document_id: number;
-  submission_deadline: string;
+  // submission_deadline: string;
   evaluation_criteria: string;
   eoi_number: string;
   allow_partial_item_submission: boolean;
@@ -54,7 +54,7 @@ interface Props {
     document_id?: number;
     status?: string;
     // approval_workflow_id?: number;
-    submission_deadline?: string;
+    // submission_deadline?: string;
     evaluation_criteria?: string;
     eoi_number?: string;
     allow_partial_item_submission?: boolean;
@@ -125,7 +125,6 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
     status: 'draft',
     // approval_workflow_id: 0,
     document_id: 0,
-    submission_deadline: '',
     evaluation_criteria: '',
     eoi_number: '',
     allow_partial_item_submission: false,
@@ -160,7 +159,7 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
         document_id: eoi.document_id || 0,
         status: eoi.status || 'draft',
         // approval_workflow_id: eoi.approval_workflow_id || 0,
-        submission_deadline: eoi.submission_deadline || '',
+        // submission_deadline: eoi.submission_deadline || '',
         evaluation_criteria: eoi.evaluation_criteria || '',
         eoi_number: eoi.eoi_number || '',
         allow_partial_item_submission: eoi.allow_partial_item_submission || false,
@@ -282,7 +281,7 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
                 {errors.description && (
                   <p className="mt-1 text-sm text-red-600">{errors.description}</p>
                 )}
-              </div>             
+              </div>
 
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">Evaluation Criteria</label>
@@ -376,44 +375,6 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
 
               <div className="mb-4">
                 <div className="flex justify-between">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Approval Workflow</label>
-                  <select
-                    name="approval_workflow_id"
-                    value={data.approval_workflow_id}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded"
-                  >
-                    <option value="">Select a workflow</option>
-                    {approvalWorkflows && approvalWorkflows.map((workflow) => (
-                      <option key={workflow.id} value={workflow.id}>
-                        {workflow.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.approval_workflow_id && (
-                    <p className="mt-1 text-sm text-red-600">{errors.approval_workflow_id}</p>
-                  )}
-                </div> */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-1">Submission Deadline</label>
-                      <div className="relative">
-                        <input
-                          type="date"
-                          name="submission_deadline"
-                          value={data.submission_deadline}
-                          onChange={handleChange}
-                          className="w-full p-2 border rounded"
-                        />
-                        <Calendar size={16} className="absolute right-3 top-3 text-gray-400" />
-                      </div>
-                      {errors.submission_deadline && (
-                        <p className="mt-1 text-sm text-red-600">{errors.submission_deadline}</p>
-                      )}
-                    </div>
-                  </div>
-
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -427,32 +388,34 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
                       Allow Partial Item Submission
                     </label>
                   </div>
+                  <div>
+                  {/* Custom button to open modal */}
+                  <button
+                    type="button"
+                    onClick={handleOpenModal}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Add Requisitions
+                  </button>
+
+                  {/* Render the modal only when isModalOpen is true */}
+                  {isModalOpen && (
+                    <DirectRequisitionModal
+                      onSuccess={handleRequisitionSelected}
+                      onClose={handleCloseModal}
+                      products={products}
+                      initialSelectedIds={requisitionIds}
+                      isOpen={isModalOpen}
+                    />
+                  )}
+
+                </div>
                 </div>
                 {errors.allow_partial_item_submission && (
                   <p className="mt-1 text-sm text-red-600">{errors.allow_partial_item_submission}</p>
                 )}
-              </div>
-              <div>
-                {/* Custom button to open modal */}
-                <button
-                  type="button"
-                  onClick={handleOpenModal}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Add Requisitions
-                </button>
 
-                {/* Render the modal only when isModalOpen is true */}
-                {isModalOpen && (
-                  <DirectRequisitionModal
-                    onSuccess={handleRequisitionSelected}
-                    onClose={handleCloseModal}
-                    products={products}
-                    initialSelectedIds={requisitionIds}
-                    isOpen={isModalOpen}
-                  />
-                )}
-
+               
               </div>
 
               {/* Display selected requisition IDs */}
