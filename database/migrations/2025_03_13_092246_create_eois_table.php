@@ -20,7 +20,8 @@ return new class extends Migration
             $table->enum('status', [
                 'draft',      
                 'submitted', 
-                'under_review', 
+                'under_review',
+                'published', 
                 'approved',   
                 'rejected',   
                 'closed',     

@@ -36,21 +36,12 @@ class UserController extends Controller implements HasMiddleware
     }
     public function index()
     {
-        // $user = User::whereDoesntHave('model_has_roles', function($query){
-        //     $query->where('name', 'vendor');
-        // })
-        // ->get();
-        // $users = DB::table('users')
-        $users = User::with('roles')
-        ->where(function ($query) {
-            $query->where('is_vendor', false)  
-                ->where('is_super_admin', false);
-        })
-        ->paginate(10);
+        $users = User::nonVendors()
+        ->where('is_super_admin', false)
+        ->with('roles')
+        ->paginate(10);  
 
-    
-
-            // dd($users);
+        // dd($users);
         // dd($users);
         return Inertia::render('auth/user/list-users', [
             'users'=> $users,

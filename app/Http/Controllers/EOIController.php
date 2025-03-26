@@ -226,9 +226,12 @@ class EOIController extends Controller implements HasMiddleware
 
     public function publishEOI(Request $request, EOI $eoi)
     {
+
         $request->validate([
             'submission_deadline' => 'required|date|after:today',
         ]);
+
+        // dd($request);
         // if (!$eoi->isApproved) {
         //     return redirect()->back()
         //         ->with('error', 'EOI cannot be published because it has not been approved.');

@@ -10,10 +10,9 @@ class HandleVendorAccess
     public function handle($request, Closure $next)
     {
         $user = Auth::user();
-        // If user is a vendor, prevent access to organizational routes
+        // preventing access to organizational routes for vendor
         if ($user && $user->is_vendor) {
-            // Redirect or return a forbidden response
-            return Inertia::render('403', [
+            return Inertia::render('error/403', [
                 'message' => 'You do not have permission to access this resource.'
             ])->with(403);
         }

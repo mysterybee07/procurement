@@ -6,13 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Vendor;
 use DB;
-use Dotenv\Exception\ValidationException;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
+// use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -34,18 +30,21 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+ 
+    //  Vendor and user Registration
+    public function store(Request $request)
     {
-        // dd($request);
+
+        // dd($request)
         $input = $request->all();
-        // dd($input);
+        
         DB::beginTransaction();
-    
+        
         try {
             // Default rules for normal users
             $rules = [
                 'address' => ['required', 'string', 'max:255'],
-                'phone' => ['required', 'string'], 
+                'phone' => ['required', 'string'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             ];
     
@@ -54,17 +53,23 @@ class RegisteredUserController extends Controller
                 $rules['name'] = ['required', 'string'];
             }
     
-            // Validation for vendors only fields
-            if (isset($input['vendor_name']) && isset($input['registration_number']) && isset($input['pan_number'])) {
+            $isVendorRegistration = 
+                isset($input['vendor_name']) 
+                && isset($input['registration_number']) 
+                && isset($input['pan_number']);
+    
+            // dd($isVendorRegistration)
+            if ($isVendorRegistration) {
                 $rules = array_merge($rules, [
                     'vendor_name' => ['required', 'string', 'max:255'],
-                    'registration_number' => ['required', 'numeric', 'digits:9'],
-                    'pan_number' => ['required', 'numeric', 'digits:9'],
+                    'registration_number' => ['required', 'string', 'max:20'],
+                    'pan_number' => ['required', 'string', 'max:20'],
                 ]);
             }
     
             // Validation
-            Validator::make($input, $rules)->validate();
+            $validator = Validator::make($input, $rules);
+            $validator->validate();
     
             // Username auto generation
             $baseUsername = explode('@', $input['email'])[0];
@@ -76,15 +81,19 @@ class RegisteredUserController extends Controller
     
             // Create the user
             $user = User::create([
+                'name' => $input['name'] ?? null,
                 'username' => $username,
                 'address' => $input['address'],
                 'phone' => $input['phone'],
                 'email' => $input['email'],
                 'password' => $hashedPassword,
+                'is_vendor' => $isVendorRegistration, 
             ]);
+
+            // dd($user)
     
-            // If it's a vendor registration, create the vendor details and assign role
-            if (isset($input['vendor_name']) && isset($input['registration_number']) && isset($input['pan_number'])) {
+            // If it's a vendor registration, create the vendor details
+            if ($isVendorRegistration) {
                 // Create vendor details
                 Vendor::create([
                     'user_id' => $user->id,
@@ -92,28 +101,23 @@ class RegisteredUserController extends Controller
                     'registration_number' => $input['registration_number'],
                     'pan_number' => $input['pan_number'],
                 ]);
-    
-                // Assign "vendor" role to the user
-                $role = Role::where('name', 'vendor')->first();
-                if ($role) {
-                    $user->assignRole($role->name); 
-                }
             }
+    
+            // Send welcome email or notification (optional)
+            // Mail::to($user->email)->send(new WelcomeUserMail($user, $password));
     
             DB::commit();
     
-            event(new Registered($user));
-    
-            Auth::login($user);
-    
+            return redirect()->back()->with([
+                'message' => 'User registered successfully',
+                // 'user' => $user,
+                // 'temporary_password' => $password //for development
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new ValidationException($e);
-        } 
-        
-        // Redirect to dashboard
-        return to_route('dashboard');
-        
+            
+            return to_route('dashboard');
+        }
     }
 
 }
