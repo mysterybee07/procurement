@@ -17,20 +17,20 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
         // $this->call(RoleSeeder::class);
-        $this->call(PermissionSeeder::class);
+        // $this->call(PermissionSeeder::class);
 
-        $superAdmin = User::factory()->create([
-            'name' => 'Super Admin',
-            'username'=>'superadmin123',
-            'email' => 'admin@example.com',
-            'password'=>'password123',
-            'address'=>'abc xyz',
-            'phone'=>'9840380475',
-            'status'=>'active',
-            'is_super_admin'=>true,
-            // 'role_id'=>'1'
-        ]);
-        $superAdmin->syncPermissions(Permission::all());
+        // $superAdmin = User::factory()->create([
+        //     'name' => 'Super Admin',
+        //     'username'=>'superadmin123',
+        //     'email' => 'admin@example.com',
+        //     'password'=>'password123',
+        //     'address'=>'abc xyz',
+        //     'phone'=>'9840380475',
+        //     'status'=>'active',
+        //     'is_super_admin'=>true,
+        //     // 'role_id'=>'1'
+        // ]);
+        // $superAdmin->syncPermissions(Permission::all());
 
 
         // $superadmin->assignRole('superadmin');

@@ -26,12 +26,12 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
         icon: LayoutGrid,
         permission: 'view roles'
     },
-    {
-        title: 'Permissions',
-        href: '/permissions',
-        icon: LayoutGrid,
-        permission: 'view permissions'
-    },
+    // {
+    //     title: 'Permissions',
+    //     href: '/permissions',
+    //     icon: LayoutGrid,
+    //     permission: 'view permissions'
+    // },
     {
         title: 'Product Category',
         href: '/categories',
@@ -126,14 +126,20 @@ export function AppSidebar() {
     const user = auth?.user;
     
     const filteredNavItems = mainNavItems.filter(item => {
+        // Super Admins do not see vendor-only items
+        if (user?.is_super_admin) {
+            if (item.vendorOnly) {
+                return false; // Skip vendor-only items for Super Admin
+            }
+            return true; // Super Admin sees everything else
+        }
+
         // If it's a vendor-only route
         if (item.vendorOnly) {
-            // Only show for vendors
             return user?.is_vendor === true;
         }
 
-        // For non-vendor-only routes
-        // Check permissions if they exist
+        // For non-vendor-only routes, check permissions
         if (item.permission) {
             return user?.permissions?.includes(item.permission) || 
                    user?.roles?.some((role: any) => 

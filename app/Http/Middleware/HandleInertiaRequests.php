@@ -68,6 +68,7 @@ class HandleInertiaRequests extends Middleware
                         ];
                     }),
                     'is_vendor' => $request->user()->is_vendor,
+                    'is_super_admin'=>$request->user()->is_super_admin,
                 ] : null,
             ],
         ]);

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('vendor_id');
             $table->boolean('is_shortlisted')->default(false);
             $table->date('submission_date')->nullable();
-            $$table->enum('status', [
+            $table->enum('status', [
                 'draft',      
                 'submitted', 
                 'under_review',   
@@ -26,14 +26,13 @@ return new class extends Migration
             $table->text('terms_and_conditions')->nullable();
             $table->date('delivery_date');
             $table->text('remarks')->nullable();
-            // $table->string('current_approval_steps')->nullable();
             $table->decimal('items_total_price', 10, 2);
             $table->timestamps();
-
+        
             $table->foreign('eoi_id')->references('id')->on('eois')->onDelete('cascade');
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
-
         });
+        
     }
 
     /**
