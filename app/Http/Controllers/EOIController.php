@@ -114,40 +114,40 @@ class EOIController extends Controller implements HasMiddleware
      * Display the specified resource.
      */
     public function show(EOI $eoi)
-{
-    // Load required relationships
-    $eoi->load('createdBy', 'documents', 'requisitions.requestItems.product.category');
+    {
+        // Load required relationships
+        $eoi->load('createdBy', 'documents', 'requisitions.requestItems.product.category');
 
-    // Aggregate request items by product ID
-    $aggregatedItems = [];
+        // Aggregate request items by product ID
+        $aggregatedItems = [];
 
-    foreach ($eoi->requisitions as $requisition) {
-        foreach ($requisition->requestItems as $item) {
-            $productId = $item->product->id;
+        foreach ($eoi->requisitions as $requisition) {
+            foreach ($requisition->requestItems as $item) {
+                $productId = $item->product->id;
 
-            if (!isset($aggregatedItems[$productId])) {
-                $aggregatedItems[$productId] = [
-                    'name' => $item->product->name,
-                    'unit' => $item->product->unit,
-                    'category' => $item->product->category->category_name,
-                    'required_quantity' => 0, 
-                ];
+                if (!isset($aggregatedItems[$productId])) {
+                    $aggregatedItems[$productId] = [
+                        'name' => $item->product->name,
+                        'unit' => $item->product->unit,
+                        'category' => $item->product->category->category_name,
+                        'required_quantity' => 0, 
+                    ];
+                }
+
+                // Add the quantity
+                $aggregatedItems[$productId]['required_quantity'] += $item->required_quantity;
             }
-
-            // Add the quantity
-            $aggregatedItems[$productId]['required_quantity'] += $item->required_quantity;
         }
-    }
 
-    return Inertia::render('eoi/eoi-details', [
-        'eoi' => $eoi,
-        'aggregatedItems' => array_values($aggregatedItems), 
-        'flash' => [
-            'message' => session('message'),
-            'error' => session('error'),
-        ]
-    ]);
-}
+        return Inertia::render('eoi/eoi-details', [
+            'eoi' => $eoi,
+            'aggregatedItems' => array_values($aggregatedItems), 
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
+            ]
+        ]);
+    }
 
 
     /**
@@ -179,7 +179,7 @@ class EOIController extends Controller implements HasMiddleware
         $eoi->update([
             'title' => $requestData['title'],
             'description' => $requestData['description'],
-            'submission_deadline' => $requestData['submission_deadline'],
+            // 'submission_deadline' => $requestData['submission_deadline'],
             'evaluation_criteria' => $requestData['evaluation_criteria'],
             'allow_partial_item_submission' => $requestData['allow_partial_item_submission'] ?? false,
             'status' => $requestData['status'] ?? $eoi->status,

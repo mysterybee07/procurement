@@ -248,8 +248,9 @@ export default function EOIDetails({ eoi, organizationName, organizationAddress,
             <div className="flex justify-end space-x-4">
               {eoi.status === 'published' && (
                 <Button
-                  type="submit"
+                  type="button"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-md px-4 py-2 mt-4"
+                  onClick={() => router.visit(`/vendor/${eoi.id}/submission`)}
                 >
                   Submit Bid
                 </Button>

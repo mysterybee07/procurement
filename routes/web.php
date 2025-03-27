@@ -10,7 +10,9 @@ use App\Http\Controllers\RequisitionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\VendorEOISubmissionController;
 use App\Models\Requisition;
+use App\Models\VendorEOISubmission;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -80,8 +82,8 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::get('/eois', [EOIController::class, 'index'])->name('eois.index');
     Route::get('/eois/create', [EOIController::class, 'create'])->name('eois.create');
     Route::post('/eois', [EOIController::class, 'store'])->name('eois.store');
-    Route::get('/eois/{eoi}/edit', [EOIController::class, 'edit'])->name('eois.edit');
     Route::get('/eois/{eoi}', [EOIController::class, 'show'])->name('eois.show');
+    Route::get('/eois/{eoi}/edit', [EOIController::class, 'edit'])->name('eois.edit');
     Route::put('/eois/{eoi}', [EOIController::class, 'update'])->name('eois.update');
     Route::delete('/eois/{eoi}', [EOIController::class, 'destroy'])->name('eois.destroy');
     Route::put('/eois/{eoi}/publish', [EOIController::class, 'publishEOI'])->name('eois.publish');
@@ -112,7 +114,9 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::middleware(['auth', 'ensure.vendor'])->group(function () {
             Route::get('/vendor/eois', [VendorController::class, 'EOIsForVendor'])->name('eois.vendor');
     });
-
-
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/vendor/eois/{eoi}', [EOIController::class, 'show'])->name('eois.show');
+        Route::get('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'create']);
+    });
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
