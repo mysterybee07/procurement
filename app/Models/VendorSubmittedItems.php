@@ -9,12 +9,12 @@ class VendorSubmittedItems extends Model
     protected $fillable = [
         'vendor_eoi_submission_id',
         'request_items_id',
-        'product_name',
-        'required_quantity',
+        // 'product_name',
+        // 'required_quantity',
         'actual_unit_price',
         'actual_product_total_price',
         'discount_rate',
-        'can_provide'
+        // 'can_provide'
     ];
 
     public function vendorEOISubmission()

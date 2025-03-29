@@ -1,404 +1,460 @@
+import React, { useEffect, useState } from 'react';
+import { useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import React, { useState, FormEvent } from 'react';
-import { router } from '@inertiajs/react';
+import { PlusCircle, Trash2, FileText, Upload } from 'lucide-react';
 
+// Interfaces
 interface Product {
     id: number;
     name: string;
 }
 
-interface Document {
-    id: number;
-    name: string;
-    type?: string;
-    is_mandatory: boolean;
-}
-
 interface RequestItem {
     id: number;
+    required_quantity: number;
+    additional_specifications?: string | null;
     product: Product;
-    required_quantity: number;
-    additional_specifications?: string;
 }
 
-interface VendorSubmittedItem {
-    request_items_id: number;
-    product_name: string;
-    required_quantity: number;
-    actual_unit_price: number;
-    actual_product_total_price: number;
-    discount_rate?: number;
-    can_provide: boolean;
+interface VendorDocument {
+    id: number;
+    name: string;
+    file_path: string;
 }
 
-interface SubmittedDocument {
-    document_id: number;
-    file: File | null;
-    document_name: string;
+// Updated interface to include index signature
+interface VendorEOISubmissionFormData {
+    [key: string]: any; // Index signature to satisfy FormDataType
+    id?: number;
+    eoi_id?: number;
+    vendor_id?: number;
+    submission_date: string;
+    delivery_date: string;
+    terms_and_conditions: File | string | null;
+    remarks: string;
+    items_total_price: string;
+    // submission_type?: 'draft' | 'submitted';
+    submittedItems: {
+        request_items_id: number;
+        actual_unit_price: string;
+        actual_product_total_price: string;
+        discount_rate?: string;
+        additional_specifications?: string | null;
+    }[];
+    submittedDocuments: {
+        document_id: number;
+        file: File | null;
+        fileName?: string;
+    }[];
 }
 
 interface Props {
     requestItems: RequestItem[];
-    documents: Document[];
+    documents: VendorDocument[];
     eoi_id: number;
+    eoi_number: string;
     vendor_id: number;
+    vendor_name: string;
+    vendor_address: string;
+    isEditing?: boolean;
+    existingSubmission?: Partial<VendorEOISubmissionFormData>;
 }
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Requisitions',
-        href: '/requisitions',
-    },
-];
 
 const VendorEOISubmissionForm: React.FC<Props> = ({
     requestItems,
     documents,
     eoi_id,
     vendor_id,
+    eoi_number,
+    vendor_name,
+    vendor_address,
+    isEditing = false,
+    existingSubmission
 }) => {
-    const [submissionDate] = useState(new Date().toISOString().split('T')[0]);
-    const [deliveryDate, setDeliveryDate] = useState('');
-    const [termsAndConditions, setTermsAndConditions] = useState('');
-    const [remarks, setRemarks] = useState('');
-    const [status, setStatus] = useState<'draft' | 'submitted'>('draft');
+    // Breadcrumb configuration
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'EOI Submissions',
+            href: '/vendor/eoi-submissions',
+        },
+        {
+            title: isEditing ? 'Edit EOI Submission' : 'Create EOI Submission',
+            href: isEditing ? `/vendor/eoi-submissions/${existingSubmission?.id}/edit` : '/vendor/eoi-submissions/create',
+        },
+    ];
 
-    // Initialize submitted documents state
-    const [submittedDocuments, setSubmittedDocuments] = useState<SubmittedDocument[]>(
-        documents.map(doc => ({
+    // Initial form data setup
+    const { data, setData, post, put, errors, processing, reset } = useForm<VendorEOISubmissionFormData>({
+        id: existingSubmission?.id,
+        eoi_id: eoi_id,
+        vendor_id: vendor_id,
+        submission_date: existingSubmission?.submission_date || new Date().toISOString().split('T')[0],
+        delivery_date: existingSubmission?.delivery_date || '',
+        terms_and_conditions: existingSubmission?.terms_and_conditions || null,
+        remarks: existingSubmission?.remarks || '',
+        items_total_price: existingSubmission?.items_total_price || '0',
+        // submission_type: 'draft',
+        submittedItems: existingSubmission?.submittedItems?.length
+            ? existingSubmission.submittedItems
+            : requestItems.map(item => ({
+                request_items_id: item.id,
+                actual_unit_price: '',
+                actual_product_total_price: '',
+                discount_rate: '',
+                additional_specifications: item.additional_specifications
+            })),
+        submittedDocuments: documents.map(doc => ({
             document_id: doc.id,
             file: null,
-            document_name: doc.name
-        }))
-    );
+            fileName: '',
+        })),
+    });
 
-    const [vendorSubmittedItems, setVendorSubmittedItems] = useState<VendorSubmittedItem[]>(
-        requestItems.map(item => ({
-            request_items_id: item.id,
-            product_name: item.product.name,
-            required_quantity: item.required_quantity,
-            can_provide: false,
-            actual_unit_price: 0,
-            actual_product_total_price: 0,
-            discount_rate: undefined
-        }))
-    );
-
+    // State for submission process
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionType, setSubmissionType] = useState<'draft' | 'submitted'>('draft');
 
-    const handleItemChange = (
-        index: number,
-        field: keyof VendorSubmittedItem,
-        value: boolean | string | number | undefined
-    ) => {
-        const updatedItems = [...vendorSubmittedItems];
-        const item = updatedItems[index];
-
-        switch (field) {
-            case 'can_provide':
-                item.can_provide = value as boolean;
-                if (!item.can_provide) {
-                    item.actual_unit_price = 0;
-                    item.actual_product_total_price = 0;
-                    item.discount_rate = undefined;
-                }
-                break;
-            case 'actual_unit_price':
-                const unitPrice = Number(value);
-                item.actual_unit_price = unitPrice;
-                item.actual_product_total_price = unitPrice * item.required_quantity *
-                    (1 - (item.discount_rate ? item.discount_rate / 100 : 0));
-                break;
-            case 'discount_rate':
-                const discountRate = Number(value);
-                item.discount_rate = discountRate;
-                if (item.actual_unit_price) {
-                    const discountedPrice = item.actual_unit_price * (1 - (discountRate / 100));
-                    item.actual_product_total_price = discountedPrice * item.required_quantity;
-                }
-                break;
-        }
-
-        setVendorSubmittedItems(updatedItems);
-    };
-
-    // Handle document file upload
-    const handleDocumentUpload = (index: number, file: File | null) => {
-        const updatedDocuments = [...submittedDocuments];
-        updatedDocuments[index].file = file;
-        setSubmittedDocuments(updatedDocuments);
-    };
-
-    const calculateTotalPrice = () => {
-        return vendorSubmittedItems
-            .filter(item => item.can_provide)
-            .reduce((total, item) => total + item.actual_product_total_price, 0);
-    };
-
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-
-        // Filter and validate submitted items
-        const submittedItems = vendorSubmittedItems.filter(item => item.can_provide);
-
-        // Validate items
-        const isItemsValid = submittedItems.length > 0 && submittedItems.every(item =>
-            item.actual_unit_price > 0 &&
-            item.actual_product_total_price > 0
-        );
-
-        // Validate documents
-        const isDocumentsValid = submittedDocuments.every(doc =>
-            doc.file !== null
-        );
-
-        if (!isItemsValid) {
-            alert('Please fill in all required fields for items you can provide');
-            setIsSubmitting(false);
-            return;
-        }
-
-        if (!isDocumentsValid) {
-            alert('Please upload all required documents');
-            setIsSubmitting(false);
-            return;
-        }
-
-        // Prepare form data for submission
+    // Store method to handle form submission
+    const store = () => {
         const formData = new FormData();
 
-        // Add base submission data
-        formData.append('eoi_id', eoi_id.toString());
-        formData.append('vendor_id', vendor_id.toString());
-        formData.append('submission_date', submissionDate);
-        formData.append('status', status);
-        formData.append('delivery_date', deliveryDate);
+        // Append basic submission data
+        formData.append('eoi_id', (data.eoi_id || eoi_id).toString());
+        formData.append('vendor_id', (data.vendor_id || vendor_id).toString());
+        formData.append('submission_date', data.submission_date);
+        formData.append('delivery_date', data.delivery_date);
+        formData.append('remarks', data.remarks);
+        formData.append('items_total_price', data.items_total_price);
+        // formData.append('submission_type', submissionType);
 
-        // Optional fields
-        if (termsAndConditions) {
-            formData.append('terms_and_conditions', termsAndConditions);
+        // Append terms and conditions file
+        if (data.terms_and_conditions instanceof File) {
+            formData.append('terms_and_conditions', data.terms_and_conditions);
         }
-        if (remarks) {
-            formData.append('remarks', remarks);
-        }
 
-        // Add total price
-        formData.append('items_total_price', calculateTotalPrice().toString());
+        // Append submitted items
+        data.submittedItems.forEach((item, index) => {
+            formData.append(`submittedItems[${index}][request_items_id]`, item.request_items_id.toString());
+            formData.append(`submittedItems[${index}][actual_unit_price]`, item.actual_unit_price);
+            formData.append(`submittedItems[${index}][actual_product_total_price]`, item.actual_product_total_price);
 
-        // Add submitted items
-        submittedItems.forEach((item, index) => {
-            formData.append(`vendorSubmittedItems[${index}][request_items_id]`, item.request_items_id.toString());
-            formData.append(`vendorSubmittedItems[${index}][product_name]`, item.product_name);
-            formData.append(`vendorSubmittedItems[${index}][required_quantity]`, item.required_quantity.toString());
-            formData.append(`vendorSubmittedItems[${index}][actual_unit_price]`, item.actual_unit_price.toString());
-            formData.append(`vendorSubmittedItems[${index}][actual_product_total_price]`, item.actual_product_total_price.toString());
             if (item.discount_rate) {
-                formData.append(`vendorSubmittedItems[${index}][discount_rate]`, item.discount_rate.toString());
+                formData.append(`submittedItems[${index}][discount_rate]`, item.discount_rate);
+            }
+
+            if (item.additional_specifications) {
+                formData.append(`submittedItems[${index}][additional_specifications]`, item.additional_specifications);
             }
         });
 
-        // Add submitted documents
-        submittedDocuments.forEach((doc, index) => {
+        // Append submitted documents
+        data.submittedDocuments.forEach((doc, index) => {
+            formData.append(`submittedDocuments[${index}][document_id]`, doc.document_id.toString());
+
             if (doc.file) {
-                formData.append(`submittedDocuments[${index}][document_id]`, doc.document_id.toString());
-                formData.append(`submittedDocuments[${doc.document_id}]`, doc.file);
+                formData.append(`submittedDocuments[${index}][file]`, doc.file);
             }
         });
 
-        // Submit form
-        router.post('/eoi/submission', formData, {
-            onStart: () => setIsSubmitting(true),
-            onFinish: () => setIsSubmitting(false),
-            onSuccess: () => {
-                alert('Submission successful!');
-                // Optionally redirect or reset form
-            },
-            onError: (errors) => {
-                console.error('Submission errors:', errors);
-                alert('Submission failed. Please check your inputs.');
-            }
-        });
+        // Perform the submission
+        if (isEditing && data.id) {
+            // For editing existing submission
+            put(`/vendor/eoi-submissions/${data.id}`, {
+                data: formData,
+                forceFormData: true,
+                onSuccess: () => {
+                    reset();
+                    setIsSubmitting(false);
+                },
+                onError: (errors) => {
+                    console.error('Submission Error:', errors);
+                    setIsSubmitting(false);
+                }
+            });
+        } else {
+            // For creating new submission
+            post(`/vendor/${eoi_id}/submission`, {
+                data: formData,
+                forceFormData: true,
+                onSuccess: () => {
+                    reset();
+                    setIsSubmitting(false);
+                },
+                onError: (errors) => {
+                    console.error('Submission Error:', errors);
+                    setIsSubmitting(false);
+                }
+            });
+        }
+    };
+
+    // Effect to trigger submission
+    useEffect(() => {
+        if (isSubmitting) {
+            store();
+        }
+    }, [isSubmitting]);
+
+    // Handler for item changes
+    const handleItemChange = (
+        index: number,
+        field: string,
+        value: string
+    ) => {
+        const updatedItems = [...data.submittedItems];
+        updatedItems[index] = {
+            ...updatedItems[index],
+            [field]: value
+        };
+
+        // Auto-calculate total price if unit price or discount is updated
+        if (field === 'actual_unit_price' || field === 'discount_rate') {
+            const quantity = requestItems[index].required_quantity;
+            const unitPrice = parseFloat(updatedItems[index].actual_unit_price) || 0;
+            const discountRate = parseFloat(updatedItems[index].discount_rate || '0') / 100;
+
+            const totalPriceBeforeDiscount = quantity * unitPrice;
+            const discountAmount = totalPriceBeforeDiscount * discountRate;
+            const totalPriceAfterDiscount = totalPriceBeforeDiscount - discountAmount;
+
+            updatedItems[index].actual_product_total_price = totalPriceAfterDiscount.toFixed(2);
+        }
+
+        // Recalculate total price
+        const totalPrice = updatedItems.reduce((total, item) =>
+            total + parseFloat(item.actual_product_total_price || '0'), 0);
+
+        setData('submittedItems', updatedItems);
+        setData('items_total_price', totalPrice.toFixed(2));
+    };
+
+    // Handler for document upload
+    const handleDocumentUpload = (index: number, file: File) => {
+        const updatedDocuments = [...data.submittedDocuments];
+        updatedDocuments[index] = {
+            ...updatedDocuments[index],
+            file,
+            fileName: file.name
+        };
+        setData('submittedDocuments', updatedDocuments);
+    };
+
+    // Submission methods
+    const saveAsDraft = (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmissionType('draft');
+        setIsSubmitting(true);
+    };
+
+    const submitForReview = (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmissionType('submitted');
+        setIsSubmitting(true);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="container mx-auto p-6">
-                <h1 className="text-2xl font-bold mb-6">Expression of Interest (EOI) Submission</h1>
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <div className="w-full max-w-4xl p-6 bg-white rounded-lg shadow-md">
+                    {/* Form Title */}
+                    <h1 className="text-2xl font-bold mb-6 justify-center flex">
+                        Submission for EOI Number: {eoi_number}
+                    </h1>
 
-                <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8">
+                    {/* Vendor Information */}
+                    <header className='mb-8'>
+                        <div className="text-center mb-2">
+                            <span className="font-semibold text-2xl">{vendor_name}</span>
+                        </div>
+                        <div className="text-center mb-4">
+                            <span className="font-semibold">{vendor_address}</span>
+                        </div>
+                    </header>
 
-                    {/* Request Items Table */}
-                    <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
-                            Required Items
-                        </label>
-                        <div className="overflow-x-auto">
+                    <form>
+                        {/* Submitted Items Section */}
+                        <div className="mb-8 p-6 border rounded-lg bg-gray-50">
+                            <h2 className="text-xl font-semibold mb-4">Items With Quoted Price</h2>
                             <table className="w-full border-collapse">
-                                <thead className="bg-gray-200">
-                                    <tr>
-                                        
-                                        <th className="border p-2 text-center w-20">Can Provide</th>
-                                        <th className="border p-2 text-left">Product Name</th>
-                                        <th className="border p-2 text-center">Required Quantity</th>
-                                        <th className="border p-2 text-left">Unit Price</th>
-                                        <th className="border p-2 text-left">Discount (%)</th>
-                                        <th className="border p-2 text-right">Total Price</th>
+                                <thead>
+                                    <tr className="bg-gray-200">
+                                        <th className="p-2 border text-left">Product</th>
+                                        <th className="p-2 border text-center">Quantity</th>
+                                        <th className="p-2 border text-center">Unit Price*</th>
+                                        <th className="p-2 border text-center">Discount Rate (%)</th>
+                                        <th className="p-2 border text-center">Total Price</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {vendorSubmittedItems.map((item, index) => (
+                                    {data.submittedItems.map((item, index) => (
                                         <tr key={item.request_items_id} className="hover:bg-gray-50">
-                                            <td className="border p-2 text-center">
+                                            <td className="p-2 border">
                                                 <input
-                                                    type="checkbox"
-                                                    checked={item.can_provide}
-                                                    onChange={(e) => handleItemChange(
-                                                        index,
-                                                        'can_provide',
-                                                        e.target.checked
-                                                    )}
-                                                    className="form-checkbox h-5 w-5 text-blue-600"
+                                                    type="text"
+                                                    value={requestItems[index].product.name}
+                                                    readOnly
+                                                    className="w-full p-1 border-none bg-transparent"
                                                 />
                                             </td>
-                                            <td className="border p-2">{item.product_name}</td>
-                                            <td className="border p-2 text-center">{item.required_quantity}</td>
-                                            
-                                            <td className="border p-2">
+                                            <td className="p-2 border text-center">
                                                 <input
                                                     type="number"
-                                                    value={item.actual_unit_price || ''}
-                                                    onChange={(e) => handleItemChange(
-                                                        index,
-                                                        'actual_unit_price',
-                                                        e.target.value
-                                                    )}
-                                                    disabled={!item.can_provide}
-                                                    className="w-full p-2 border rounded"
-                                                    min="0"
+                                                    value={requestItems[index].required_quantity}
+                                                    readOnly
+                                                    className="w-full p-1 text-center border-none bg-transparent"
+                                                />
+                                            </td>
+                                            <td className="p-2 border">
+                                                <input
+                                                    type="number"
                                                     step="0.01"
-                                                    placeholder="Unit price"
+                                                    value={item.actual_unit_price}
+                                                    onChange={(e) => handleItemChange(index, 'actual_unit_price', e.target.value)}
+                                                    className="w-full p-1 text-center border rounded"
+                                                    required
                                                 />
                                             </td>
-                                            <td className="border p-2">
+                                            <td className="p-2 border">
                                                 <input
                                                     type="number"
+                                                    step="0.01"
                                                     value={item.discount_rate || ''}
-                                                    onChange={(e) => handleItemChange(
-                                                        index,
-                                                        'discount_rate',
-                                                        e.target.value
-                                                    )}
-                                                    disabled={!item.can_provide}
-                                                    className="w-full p-2 border rounded"
-                                                    min="0"
-                                                    max="100"
-                                                    placeholder="Discount %"
+                                                    onChange={(e) => handleItemChange(index, 'discount_rate', e.target.value)}
+                                                    className="w-full p-1 text-center border rounded"
+                                                    placeholder="Optional"
                                                 />
                                             </td>
-                                            <td className="border p-2 text-right font-bold">
-                                                {item.can_provide
-                                                    ? item.actual_product_total_price.toFixed(2)
-                                                    : '-'}
+                                            <td className="p-2 border">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={item.actual_product_total_price}
+                                                    readOnly
+                                                    className="w-full p-1 text-center border-none bg-transparent"
+                                                />
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colSpan={5} className="border p-2 text-right font-bold">
-                                            Total Price:
-                                        </td>
-                                        <td className="border p-2 text-right font-bold">
-                                            {calculateTotalPrice().toFixed(2)}
-                                        </td>
-                                    </tr>
-                                </tfoot>
                             </table>
                         </div>
-                    </div>
 
-                    {/* Documents Upload Section */}
-                    <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
-                            Required Documents
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {submittedDocuments.map((doc, index) => (
-                                <div key={doc.document_id} className="mb-4">
-                                    <label className="block text-gray-700 text-sm font-bold mb-2">
-                                        {doc.document_name}
-                                    </label>
-                                    <input
-                                        type="file"
-                                        onChange={(e) => {
-                                            const file = e.target.files ? e.target.files[0] : null;
-                                            handleDocumentUpload(index, file);
-                                        }}
-                                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                        required
-                                    />
-                                    {doc.file && (
-                                        <p className="text-sm text-green-600 mt-2">
-                                            {doc.file.name} uploaded
-                                        </p>
-                                    )}
-                                </div>
-                            ))}
+                        {/* Submission Details Section */}
+                        <div className="mb-8 p-6 border rounded-lg bg-gray-50">
+                            <h2 className="text-xl font-semibold mb-4">Submission Details</h2>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium mb-1">Terms and Conditions</label>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx"
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                            setData('terms_and_conditions', e.target.files[0]);
+                                        }
+                                    }}
+                                    className="w-full p-2 border rounded"
+                                />
+                                {data.terms_and_conditions instanceof File && (
+                                    <div className="mt-2 text-sm text-green-600">
+                                        <FileText size={16} className="inline-block mr-2" />
+                                        {data.terms_and_conditions.name}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium mb-1">Remarks</label>
+                                <textarea
+                                    value={data.remarks}
+                                    onChange={(e) => setData('remarks', e.target.value)}
+                                    className="w-full p-2 border rounded h-24"
+                                    placeholder="Additional remarks..."
+                                />
+                            </div>
                         </div>
-                    </div>
-                    {/* Terms and Conditions */}
-                    <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
-                            Terms and Conditions
-                        </label>
-                        <textarea
-                            value={termsAndConditions}
-                            onChange={(e) => setTermsAndConditions(e.target.value)}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            rows={3}
-                        />
-                    </div>
 
-                    {/* Remarks */}
-                    <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
-                            Remarks
-                        </label>
-                        <textarea
-                            value={remarks}
-                            onChange={(e) => setRemarks(e.target.value)}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            rows={3}
-                        />
-                    </div>
+                        {/* Required Documents Section */}
+                        <div className="mb-8 p-6 border rounded-lg bg-gray-50">
+                            <h2 className="text-xl font-semibold mb-4">Required Documents</h2>
 
-                    {/* Submission Details */}
-                    <div>
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
-                            Delivery Date
-                        </label>
-                        <input
-                            type="date"
-                            value={deliveryDate}
-                            onChange={(e) => setDeliveryDate(e.target.value)}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            required
-                        />
-                    </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {data.submittedDocuments.map((doc, index) => (
+                                    <div key={doc.document_id} className="p-4 border rounded bg-white">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <label className="text-sm font-medium">
+                                                {documents[index].name}
+                                            </label>
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="file"
+                                                    id={`document-${doc.document_id}`}
+                                                    onChange={(e) => {
+                                                        if (e.target.files && e.target.files[0]) {
+                                                            handleDocumentUpload(index, e.target.files[0]);
+                                                        }
+                                                    }}
+                                                    className="hidden"
+                                                />
+                                                <label
+                                                    htmlFor={`document-${doc.document_id}`}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer"
+                                                >
+                                                    <Upload size={16} /> Upload
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {doc.fileName && (
+                                            <div className="flex items-center gap-2 text-sm text-green-600">
+                                                <FileText size={16} />
+                                                {doc.fileName}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
 
-                    {/* Submit Button */}
-                    <div className="flex justify-end">
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
-                        >
-                            {isSubmitting ? 'Submitting...' : 'Submit Bid'}
-                        </button>
-                    </div>
-                </form>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium mb-1">Delivery Date*</label>
+                            <input
+                                type="date"
+                                name="delivery_date"
+                                value={data.delivery_date}
+                                onChange={(e) => setData('delivery_date', e.target.value)}
+                                className="w-full p-2 border rounded"
+                                required
+                            />
+                            {errors.delivery_date && (
+                                <p className="mt-1 text-sm text-red-600">{errors.delivery_date}</p>
+                            )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-4 mt-6">
+                            {isEditing ? (
+                                <button
+                                    type="button"
+                                    onClick={saveAsDraft}
+                                    disabled={processing}
+                                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                    {processing ? 'Updating...' : 'Update Submission'}
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={submitForReview}
+                                    disabled={processing}
+                                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                    {processing ? 'Submitting...' : 'Submit'}
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
             </div>
         </AppLayout>
     );

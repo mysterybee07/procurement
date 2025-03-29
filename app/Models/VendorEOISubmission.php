@@ -28,12 +28,10 @@ class VendorEOISubmission extends Model
     {
         return $this->belongsTo(EOI::class);
     }
-
     public function vendor()
     {
-        return $this->belongsTo(Vendor::class);
+        return $this->belongsTo(User::class);
     }
-
     public function vendorSubmittedItems()
     {
         return $this->hasMany(VendorSubmittedItems::class);

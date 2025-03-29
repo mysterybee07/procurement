@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\EOI;
+use App\Models\Vendor;
+use App\Models\VendorEOIDocument;
 use App\Models\VendorEOISubmission;
 use App\Models\VendorSubmittedItems;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Log;
 
 class VendorEOISubmissionController extends Controller
 {
@@ -24,6 +27,7 @@ class VendorEOISubmissionController extends Controller
      */
     public function create($eoiId)
     {
+        // dd($eoiId);
         $eoi = EOI::with('documents', 'requisitions.requestItems.product')->findOrFail($eoiId);
 
         $requestItems = $eoi->requisitions->flatMap(function ($requisition) {
@@ -55,7 +59,11 @@ class VendorEOISubmissionController extends Controller
             'requestItems' => $transformedRequestItems,
             'documents' => $transformedDocuments,
             'eoi_id'    => $eoi->id,
-            'vendor_id' => auth()->id(),
+            'eoi_number'=>$eoi->eoi_number,
+            'vendor_id' => auth()->id(),            
+            'vendor_name' => auth()->user()->name, 
+            'vendor_address' => auth()->user()->address, 
+                // 'contact' => auth()->user()->contact_number,
         ]);
     }
 
@@ -67,101 +75,111 @@ class VendorEOISubmissionController extends Controller
     // {
     //     //
     // }
-    public function store(Request $request, $eoi_id)
+    public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'vendor_id' => 'required|exists:vendors,id',
-            'delivery_date' => 'required|date|after:today',
-            'status' => 'in:draft,submitted',
-            'terms_and_conditions' => 'nullable|string',
+        // Validate the request
+        $validated = $request->validate([
+            'eoi_id' => 'required|exists:eois,id',
+            'vendor_id' => 'required|exists:users,id',
+            'submission_date' => 'required|date',
+            'delivery_date' => 'required|date',
             'remarks' => 'nullable|string',
-            'vendorSubmittedItems' => 'required|array',
-            'vendorSubmittedItems.*.request_items_id' => 'required|exists:request_items,id',
-            // 'vendorSubmittedItems.*.can_provide' => 'boolean',
-            'vendorSubmittedItems.*.actual_unit_price' => 'numeric|min:0',
-            'vendorSubmittedItems.*.discount_rate' => 'nullable|numeric|min:0|max:100',
+            'terms_and_conditions' => 'nullable|file|mimes:pdf,doc,docx|max:10240', // 10MB max
+            'items_total_price' => 'required|numeric|min:0',
+            'submittedItems' => 'required|array|min:1',
+            'submittedItems.*.request_items_id' => 'required|exists:request_items,id',
+            'submittedItems.*.actual_unit_price' => 'required|numeric|min:0',
+            'submittedItems.*.actual_product_total_price' => 'required|numeric|min:0',
+            'submittedItems.*.discount_rate' => 'nullable|numeric|min:0|max:100',
+            'submittedItems.*.additional_specifications' => 'nullable|string',
+            'submittedDocuments' => 'required|array',
+            'submittedDocuments.*.document_id' => 'required|exists:documents,id',
+            'submittedDocuments.*.file' => 'nullable|file|max:10240', // 10MB max
         ]);
-
-        // Begin database transaction
-        DB::beginTransaction();
-
+    
         try {
-            // Calculate total price
-            $itemsToSubmit = collect($validatedData['vendorSubmittedItems'])
-                ->where('can_provide', true);
-
-            $totalPrice = $itemsToSubmit->sum(function ($item) {
-                $unitPrice = $item['actual_unit_price'];
-                $quantity = $item['required_quantity'];
-                $discountRate = $item['discount_rate'] ?? 0;
-                
-                // Apply discount
-                $finalUnitPrice = $unitPrice * (1 - ($discountRate / 100));
-                
-                return $finalUnitPrice * $quantity;
-            });
-
-            // Create or update submission
-            $submission = VendorEOISubmission::updateOrCreate(
-                [
-                    'eoi_id' => $eoi_id,
-                    'vendor_id' => $validatedData['vendor_id'],
-                    'status' => $validatedData['status']
-                ],
-                [
-                    'submission_date' => now(),
-                    'delivery_date' => $validatedData['delivery_date'],
-                    'terms_and_conditions' => $validatedData['terms_and_conditions'],
-                    'remarks' => $validatedData['remarks'],
-                    'items_total_price' => $totalPrice,
-                ]
-            );
-
-            // Delete existing submitted items
-            $submission->vendorSubmittedItems()->delete();
-
-            // Create new submitted items
-            $submittedItems = $itemsToSubmit->map(function ($item) use ($submission) {
-                return new VendorSubmittedItems([
+            DB::beginTransaction();
+            $vendor = Vendor::where('user_id',$request->vendor_id)->first();
+            if (!$vendor) {
+                return back()->withErrors(['vendor_id' => 'The selected user is not a registered vendor.']);
+            }
+            
+            // Ensure storage directories exist
+            $termsPath = storage_path('app/public/terms_and_conditions');
+            $docsPath = storage_path('app/public/eoi_documents');
+            
+            if (!file_exists($termsPath)) {
+                mkdir($termsPath, 0755, true);
+            }
+            
+            if (!file_exists($docsPath)) {
+                mkdir($docsPath, 0755, true);
+            }
+            
+            // Handle terms and conditions file upload
+            $termsAndConditionsPath = null;
+            if ($request->hasFile('terms_and_conditions')) {
+                $termsAndConditionsPath = $request->file('terms_and_conditions')->store('terms_and_conditions', 'public');
+            }
+            
+            // Create vendor EOI submission
+            $submission = VendorEoiSubmission::create([
+                'eoi_id' => $request->eoi_id,
+                'vendor_id' => $vendor->id,
+                'submission_date' => $request->submission_date,
+                'delivery_date' => $request->delivery_date,
+                'remarks' => $request->remarks,
+                'terms_and_conditions' => $termsAndConditionsPath,
+                'items_total_price' => $request->items_total_price,
+                'status' => 'submitted', // Set initial status
+            ]);
+            
+            // Process submitted items
+            foreach ($request->submittedItems as $item) {
+                VendorSubmittedItems::create([
+                    'vendor_eoi_submission_id' => $submission->id,
                     'request_items_id' => $item['request_items_id'],
-                    'product_name' => $item['product_name'],
-                    'required_quantity' => $item['required_quantity'],
                     'actual_unit_price' => $item['actual_unit_price'],
+                    'actual_product_total_price' => $item['actual_product_total_price'],
                     'discount_rate' => $item['discount_rate'] ?? null,
-                    'can_provide' => true,
-                    'actual_product_total_price' => 
-                        $item['actual_unit_price'] * 
-                        $item['required_quantity'] * 
-                        (1 - (($item['discount_rate'] ?? 0) / 100))
+                    'additional_specifications' => $item['additional_specifications'] ?? null,
                 ]);
-            });
-
-            // Save submitted items
-            $submission->vendorSubmittedItems()->saveMany($submittedItems);
-
-            // Commit transaction
-            \DB::commit();
-
-            // Redirect based on submission status
-            return redirect()
-                ->route('vendor.eoi.submissions.index')
-                ->with('success', $submission->status === 'submitted' 
-                    ? 'EOI Submission submitted successfully' 
-                    : 'EOI Draft saved successfully');
-
+            }
+            
+            // Process submitted documents
+            foreach ($request->file('submittedDocuments', []) as $index => $fileData) {
+                if (isset($fileData['file']) && $fileData['file']->isValid()) {
+                    $filePath = $fileData['file']->store('eoi_documents', 'public');
+                    
+                    VendorEoiDocument::create([
+                        'document_id' => $request->input("submittedDocuments.{$index}.document_id"),
+                        'vendor_id' => $request->vendor_id,
+                        'eoi_submission_id' => $submission->id,
+                        'file_path' => $filePath,
+                        'status' => 'submitted',
+                    ]);
+                }
+            }
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'EOI submission created successfully',
+                'data' => $submission
+            ], 201);
+            
         } catch (\Exception $e) {
-            // Rollback transaction
-            \DB::rollBack();
-
-            // Log error
-            \Log::error('EOI Submission Error: ' . $e->getMessage());
-
-            // Redirect back with error
-            return back()
-                ->withInput()
-                ->withErrors(['error' => 'Failed to submit EOI']);
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create EOI submission',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
+    
 
     /**
      * Display the specified resource.

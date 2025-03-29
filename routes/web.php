@@ -117,6 +117,7 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::get('/vendor/eois/{eoi}', [EOIController::class, 'show'])->name('eois.show');
         Route::get('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'create']);
+        Route::post('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'store']);
     });
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

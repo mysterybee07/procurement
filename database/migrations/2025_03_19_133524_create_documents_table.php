@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('documents', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->enum('type', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'])->nullable();
+            $table->boolean('is_mandatory')->default(true);
             $table->timestamps();
         });
     }

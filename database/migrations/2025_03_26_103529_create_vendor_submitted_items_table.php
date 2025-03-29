@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('vendor_submitted_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('vendor_eoi_submission_id');
-            $table->decimal('actual_unit_price', 10, 2);
             $table->unsignedBigInteger('request_items_id');
+            $table->decimal('actual_unit_price', 10, 2);
             $table->decimal('actual_product_total_price', 10, 2);
             $table->decimal('discount_rate', 5, 2)->nullable();
 
