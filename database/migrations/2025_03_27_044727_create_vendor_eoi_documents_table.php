@@ -23,6 +23,10 @@ return new class extends Migration
                 'rejected'
             ])->default('submitted');            
             $table->timestamps();
+
+            $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
+            $table->foreign('eoi_submission_id')->references('id')->on('vendor_eoi_submissions')->onDelete('cascade');
+
         });
     }
 

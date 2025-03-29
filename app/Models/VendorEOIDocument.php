@@ -8,7 +8,7 @@ class VendorEOIDocument extends Model
 {
     protected $table= 'vendor_eoi_documents';
     protected $fillable = [
-        'vendor_eoi_submission_id', 
+        'eoi_submission_id', 
         'document_id', 
         'file_path', 
         'vendor_id'

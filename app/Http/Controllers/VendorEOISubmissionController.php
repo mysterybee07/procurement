@@ -71,10 +71,6 @@ class VendorEOISubmissionController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    // public function store(Request $request)
-    // {
-    //     //
-    // }
     public function store(Request $request)
     {
         // Validate the request
@@ -84,7 +80,7 @@ class VendorEOISubmissionController extends Controller
             'submission_date' => 'required|date',
             'delivery_date' => 'required|date',
             'remarks' => 'nullable|string',
-            'terms_and_conditions' => 'nullable|file|mimes:pdf,doc,docx|max:10240', // 10MB max
+            'terms_and_conditions' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
             'items_total_price' => 'required|numeric|min:0',
             'submittedItems' => 'required|array|min:1',
             'submittedItems.*.request_items_id' => 'required|exists:request_items,id',
@@ -94,17 +90,24 @@ class VendorEOISubmissionController extends Controller
             'submittedItems.*.additional_specifications' => 'nullable|string',
             'submittedDocuments' => 'required|array',
             'submittedDocuments.*.document_id' => 'required|exists:documents,id',
-            'submittedDocuments.*.file' => 'nullable|file|max:10240', // 10MB max
+            'submittedDocuments.*.file' => 'nullable|file|max:10240', 
         ]);
     
         try {
+            // Log incoming data for debugging
+            Log::info('Incoming request data', [
+                'all' => $request->all(),
+                'files' => $request->allFiles()
+            ]);
+            
             DB::beginTransaction();
-            $vendor = Vendor::where('user_id',$request->vendor_id)->first();
+            
+            $vendor = Vendor::where('user_id', $request->vendor_id)->first();
             if (!$vendor) {
                 return back()->withErrors(['vendor_id' => 'The selected user is not a registered vendor.']);
             }
             
-            // Ensure storage directories exist
+            // Create storage directories with proper permissions
             $termsPath = storage_path('app/public/terms_and_conditions');
             $docsPath = storage_path('app/public/eoi_documents');
             
@@ -119,7 +122,13 @@ class VendorEOISubmissionController extends Controller
             // Handle terms and conditions file upload
             $termsAndConditionsPath = null;
             if ($request->hasFile('terms_and_conditions')) {
-                $termsAndConditionsPath = $request->file('terms_and_conditions')->store('terms_and_conditions', 'public');
+                $file = $request->file('terms_and_conditions');
+                if ($file->isValid()) {
+                    $termsAndConditionsPath = $file->store('terms_and_conditions', 'public');
+                    Log::info('Terms and conditions file stored', ['path' => $termsAndConditionsPath]);
+                } else {
+                    Log::error('Invalid terms and conditions file');
+                }
             }
             
             // Create vendor EOI submission
@@ -146,31 +155,51 @@ class VendorEOISubmissionController extends Controller
                 ]);
             }
             
+            // Process submitted documents - fixed to handle the FormData structure correctly
+            $documents = $request->file('submittedDocuments') ?? [];
+            $documentIds = $request->input('submittedDocuments_ids') ?? [];
+            
+            Log::info('Processing documents', [
+                'documentCount' => count($documents),
+                'document_ids' => $documentIds
+            ]);
+            
             // Process submitted documents
-            foreach ($request->file('submittedDocuments', []) as $index => $fileData) {
-                if (isset($fileData['file']) && $fileData['file']->isValid()) {
-                    $filePath = $fileData['file']->store('eoi_documents', 'public');
+            if ($request->hasFile('submittedDocuments')) {
+                foreach ($request->file('submittedDocuments') as $index => $file) {
+                    // Get the corresponding document ID - make sure this matches your form structure
+                    $documentId = $request->input('submittedDocuments_ids.' . $index);
                     
-                    VendorEoiDocument::create([
-                        'document_id' => $request->input("submittedDocuments.{$index}.document_id"),
-                        'vendor_id' => $request->vendor_id,
-                        'eoi_submission_id' => $submission->id,
-                        'file_path' => $filePath,
-                        'status' => 'submitted',
-                    ]);
+                    if (!$documentId) {
+                        Log::warning('Missing document ID for file', ['index' => $index]);
+                        continue;
+                    }
+                    
+                    if ($file->isValid()) {
+                        $filePath = $file->store('eoi_documents', 'public');
+                        Log::info('Document file stored', ['path' => $filePath, 'document_id' => $documentId]);
+                        
+                        VendorEoiDocument::create([
+                            'document_id' => $documentId,
+                            'vendor_id' => $vendor->id,
+                            'eoi_submission_id' => $submission->id,
+                            'file_path' => $filePath,
+                        ]);
+                    }
                 }
             }
             
             DB::commit();
             
-            return response()->json([
-                'success' => true,
-                'message' => 'EOI submission created successfully',
-                'data' => $submission
-            ], 201);
+            return redirect()->back()
+                ->with('message', 'EOI submitted successfully');
             
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('EOI submission error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
