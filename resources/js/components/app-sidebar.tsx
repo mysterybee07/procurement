@@ -74,6 +74,12 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
         icon: LayoutGrid,
         vendorOnly: true
     },
+    {
+        title: 'Submitted EOIs',
+        href: '/vendor/submitted-eois',
+        icon: LayoutGrid,
+        vendorOnly: true
+    },
     
 ];
 

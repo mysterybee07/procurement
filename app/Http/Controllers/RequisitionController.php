@@ -39,7 +39,7 @@ class RequisitionController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        $requisitions = $this->requisitionService->getAllPaginated(10);
+        $requisitions = $this->requisitionService->getAllPaginated();
 
         return Inertia::render('requisition/list-requisitions', [
             'requisitions' => $requisitions,

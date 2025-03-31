@@ -46,3 +46,18 @@ export interface User {
     vendor?: Vendor;
     [key: string]: unknown; // This allows for additional properties...
 }
+
+export interface PageProps {
+    auth?: {
+        user?: {
+            id: number;
+            name: string;
+            email: string;
+        };
+    };
+    flash?: {
+        message?: string;
+        error?: string;
+    };
+}
+

@@ -34,6 +34,6 @@ class VendorEOISubmission extends Model
     }
     public function vendorSubmittedItems()
     {
-        return $this->hasMany(VendorSubmittedItems::class);
+        return $this->hasMany(VendorSubmittedItems::class,'vendor_eoi_submission_id');
     }
 }

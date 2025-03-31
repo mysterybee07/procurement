@@ -8,20 +8,46 @@ use App\Models\VendorEOIDocument;
 use App\Models\VendorEOISubmission;
 use App\Models\VendorSubmittedItems;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Log;
+use Yajra\DataTables\DataTables;
 
 class VendorEOISubmissionController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        
-    }
+        $vendor = Auth::user()->vendor;
 
+        // Check if request is an AJAX request for DataTables
+        if ($request->ajax() && $request->expectsJson()) {
+            $submittedEois = DB::table('vendor_eoi_submissions as v')
+                ->leftJoin('eois as e', 'v.eoi_id', '=', 'e.id')
+                ->where('v.vendor_id', $vendor->id)
+                ->select('v.*', 'e.eoi_number');
+                // dd($submittedEois);
+
+            return DataTables::of($submittedEois)
+                ->addColumn('actions', function ($row) {
+                    return '<button class="text-blue-500">View</button>';
+                })
+                ->rawColumns(['actions'])
+                ->toJson();
+        }
+
+        // Return Inertia response for normal page loads
+        return Inertia::render('vendor/vendor-side/list-vendor-submitted-eois', [
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
+            ]
+        ]);
+    }
+    
     /**
      * Show the form for creating a new resource.
      */
@@ -143,7 +169,7 @@ class VendorEOISubmissionController extends Controller
      */
     public function show(VendorEOISubmission $vendorEOISubmission)
     {
-        //
+        
     }
 
     /**

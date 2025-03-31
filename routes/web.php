@@ -113,10 +113,11 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     // Vendor routes
     Route::middleware(['auth', 'ensure.vendor'])->group(function () {
             Route::get('/vendor/eois', [VendorController::class, 'EOIsForVendor'])->name('eois.vendor');
+            Route::get('/vendor/submitted-eois', [VendorEOISubmissionController::class, 'index'])->name('vendoreois.index');
     });
     Route::middleware(['auth'])->group(function () {
         Route::get('/vendor/eois/{eoi}', [EOIController::class, 'show'])->name('eois.show');
-        Route::get('/vendor/eois', [EOIController::class, 'index'])->name('vendoreois.index');
+        // Route::get('/vendor/submitted-eois', [VendorEOISubmissionController::class, 'index'])->name('vendoreois.index');
         Route::get('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'create']);
         Route::post('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'store']);
     });
