@@ -5,20 +5,23 @@ namespace App\Http\Controllers;
 use App\Http\Requests\RequisitionRequest;
 use App\Models\Requisition;
 use App\Models\Product;
-use App\Models\ProductCategory;
-use App\Models\RequestItem;
-use App\Models\User;
-use DB;
+use App\Services\RequisitionService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
-use function Termwind\render;
 
 class RequisitionController extends Controller implements HasMiddleware
 {
+    protected $requisitionService;
+
+    public function __construct(RequisitionService $requisitionService)
+    {
+        $this->requisitionService = $requisitionService;
+    }
+
     /**
-     * Display a listing of the resource.
+     * Define middleware for the controller
      */
     public static function middleware(): array
     {
@@ -28,30 +31,15 @@ class RequisitionController extends Controller implements HasMiddleware
             new Middleware('permission:edit requisitions', only: ['edit']),
             new Middleware('permission:delete requisitions', only: ['destroy']),
             new Middleware('permission:fulfill requisitionItem', only: ['fulfillRequisitionItem']),
-            // new Middleware('permission:assign permissions to requisitions', only: ['assignPermissionsToRole']),
-            // new Middleware('permission:update role permissions', only: ['updatePermissions']),
         ];
     }
+
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
-        $user = auth()->user();
-
-        if ($user->can('fulfill requisitionItem')) {
-            $requisitions = Requisition::with('requester', 'requestItems.product')
-                ->where(function ($query) use ($user) {
-                    $query->where('status','!=', 'draft')
-                        ->orWhere('requester', $user->id);
-                })
-                ->paginate(10);
-        } else {
-            // Show only requisitions created by the logged-in user (all statuses)
-            $requisitions = Requisition::where('requester', $user->id)
-                ->with('requester', 'requestItems', 'requestItems.product')
-                ->paginate(10);
-            
-        }
-        // dd($requisitions);
-        // dd($user);
+        $requisitions = $this->requisitionService->getAllPaginated(10);
 
         return Inertia::render('requisition/list-requisitions', [
             'requisitions' => $requisitions,
@@ -62,20 +50,18 @@ class RequisitionController extends Controller implements HasMiddleware
         ]);
     }
 
-
-
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        $products= Product::all();
-        // dd($categories);
-        return Inertia::render('requisition/requisition-form',[
-            'products'=> $products,
-            'flash'=>[
-                'message'=>session('message'),
-                'error'=>session('error'),
+        $products = Product::all();
+        
+        return Inertia::render('requisition/requisition-form', [
+            'products' => $products,
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
             ]
         ]);
     }
@@ -86,66 +72,29 @@ class RequisitionController extends Controller implements HasMiddleware
     public function store(RequisitionRequest $request)
     {
         try {
-            $requestData = $request->validated();
-            $requester = auth()->user()->id;
-    
-            DB::beginTransaction();
-    
-            // Fetch all product names in a single query
-            $productIds = array_column($requestData['requestItems'], 'product_id');
-            $products = Product::whereIn('id', $productIds)->pluck('name', 'id');
-    
-            // Determine the title
-            $title = $requestData['title'] ?? 'Required: ' . implode(', ', array_map(
-                fn($item) => $products[$item['product_id']] ?? 'Unknown Product',
-                $requestData['requestItems']
-            ));
-    
-            $requisition = Requisition::create([
-                'title' => $title,
-                'required_date' => $requestData['required_date'],
-                'requester' => $requester,
-                'status' => $requestData['status'],
-                'urgency' => $requestData['urgency'],
-            ]);
-    
-            $requestItems = array_map(fn($item) => [
-                'requisition_id' => $requisition->id,
-                'required_quantity' => $item['required_quantity'],
-                'additional_specifications' => $item['additional_specifications'],
-                'product_id' => $item['product_id'],
-            ], $requestData['requestItems']);
-    
-            // Bulk insert for efficiency
-            RequestItem::insert($requestItems);
-    
-            DB::commit();
+            $this->requisitionService->create($request->validated());
             return redirect()->route('requisitions.index')->with('message', 'Requisition created successfully');
         } catch (\Exception $e) {
-            DB::rollBack();
             return back()->withErrors([
                 'error' => 'There was a problem creating the requisition. ' . $e->getMessage()
             ]);
         }
     }
-    
 
     /**
      * Display the specified resource.
      */
     public function show(Requisition $requisition)
     {
-        // $categories = ProductCategory::all();
-        $requisition->load('requester', 'requestItems.product');
-        // dd($requisition);
-       return Inertia::render('requisition/requisition-details',[
-        'requisition'=>$requisition,
-        'flash' =>[
-            'message'=>session('message'),
-            'error'=>session('error'),
-        ]
-        // 'categories'=>$categories,
-       ]);
+        $requisition = $this->requisitionService->getById($requisition->id);
+        
+        return Inertia::render('requisition/requisition-details', [
+            'requisition' => $requisition,
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
+            ]
+        ]);
     }
 
     /**
@@ -153,13 +102,12 @@ class RequisitionController extends Controller implements HasMiddleware
      */
     public function edit(Requisition $requisition)
     {
-        // if ($requisition->status !== 'draft' || $requisition->status !== 'rejected') {
-        //     return redirect()->route('requisitions.index')->with('error', 'Requisition has already been submitted. Now you cannot edit it');
-        // }
+        if (!$this->requisitionService->canEditRequisition($requisition)) {
+            return redirect()->route('requisitions.index')->with('error', 'Requisition has already been submitted. Now you cannot edit it');
+        }
 
         $products = Product::all();
         $requisition->load('requestItems');
-        // dd($requisition->requestItems());
         
         return Inertia::render('requisition/requisition-form', [
             'requisition' => $requisition,
@@ -177,138 +125,84 @@ class RequisitionController extends Controller implements HasMiddleware
      */
     public function update(RequisitionRequest $request, Requisition $requisition)
     {
-
-    // dd($request);
         try {
-            $requester = auth()->user()->id;
-            $requestData = $request->validated();
-            
-            DB::beginTransaction();
-
-            $requisition = Requisition::create([
-                'title'=>$requestData['title'],
-                'description'=>$requestData['description'],
-                'required_date'=>$requestData['required_date'],
-                'requester'=>$requester,
-                'status'=>$requestData['status'],
-                'urgency'=>$requestData['urgency'],
-                // 'eoi_id'=>$requestData['eoi_id'],
-            ]);
-
-            // Sync request items
-            $requisition->requestItems()->delete();
-            foreach ($requestData['requestItems'] as $item) {
-                RequestItem::create([
-                    'requisition_id' => $requisition->id,
-                    'required_quantity' => $item['required_quantity'],
-                    'additional_specifications' => $item['additional_specifications'],
-                    'product_id' => $item['product_id'],
-                ]);
-            }
-
-            DB::commit();
+            $this->requisitionService->update($requisition, $request->validated());
             return redirect()->route('requisitions.index')->with('message', 'Requisition updated successfully');
         } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'There was a problem updating the requisition. ' . $e->getMessage()]);
+            return back()->withErrors([
+                'error' => 'There was a problem updating the requisition. ' . $e->getMessage()
+            ]);
         }
     }
+
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(Requisition $requisition)
     {
-        // if ($requisition->status !== 'draft' || $requisition->status !== 'rejected') {
-        //     return redirect()->route('requisitions.index')->with(
-        //         'error', 'Requisition has already been submitted. Now you cannot delete it'
-        //     );
-        // } 
-        DB::beginTransaction();
-        
-        try{    
-            // Delete requisition
-            $requisition->delete();
-            
-            DB::commit();
-            
+        try {    
+            $this->requisitionService->delete($requisition);
             return redirect()->route('requisitions.index')
                 ->with('message', 'Requisition deleted successfully.');
-                
         } catch (\Exception $e) {
-            DB::rollBack();
-            
             return back()->withErrors([
                 'error' => 'There was a problem deleting the requisition. ' . $e->getMessage()
             ]);
         }
     }
 
-    // public function requisitionByUser()
-    // {
-    //     $userId = auth()->user()->id;
-    //     $requisitions = Requisition::where('requester', $userId)->get();
-    //     dd($requisitions);
-    // }
-
+    /**
+     * Submit a requisition
+     */
     public function submitRequisition(Requisition $requisition)
     {
-        // Update the status to 'submitted'
-        $requisition->status = 'submitted';
-        $requisition->save();
-
-        return redirect()->back()
-            ->with('message', 'Requisition submitted successfully.');
+        try {
+            $this->requisitionService->submitRequisition($requisition);
+            return redirect()->back()
+                ->with('message', 'Requisition submitted successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'error' => 'There was a problem submitting the requisition. ' . $e->getMessage()
+            ]);
+        }
     }
 
+    /**
+     * Fulfill a requisition item
+     */
     public function fulfillRequisitionItem(Request $request, $id)
     {
         $request->validate([
             'provided_quantity' => 'required|numeric|min:1',
         ]);
-        // dd($request);
 
-        $request_item = RequestItem::findOrFail($id);
-
-        $product = Product::findOrFail($request_item->product_id);
-        $previouslyProvidedQuantity = $request_item->provided_quantity;
-        $requisition = $request_item->requisition;
-
-        if ($product->in_stock_quantity < $request->provided_quantity) {
-            return redirect()->back()
-            ->withErrors(['provided_quantity' => 'Not enough stock available.']);
+        try {
+            $result = $this->requisitionService->fulfillRequisitionItem($id, $request->provided_quantity);
+            
+            if (!$result['success']) {
+                return redirect()->back()->withErrors(['provided_quantity' => $result['message']]);
+            }
+            
+            return redirect()->back()->with('message', $result['message']);
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'error' => 'There was a problem fulfilling the requisition. ' . $e->getMessage()
+            ]);
         }
-
-        // deduct the stock
-        $product->in_stock_quantity -= $request->provided_quantity;
-        $product->save();
-
-        // fulfilled
-        $request_item->provided_quantity = $request->provided_quantity + $previouslyProvidedQuantity;
-        $request_item->status = ($request_item->provided_quantity === $request_item->required_quantity) 
-                            ? 'provided' 
-                            : 'partially provided';        
-        $request_item->save();
-
-        if ($requisition->requestItems()->where('status', '!=', 'provided')->count() === 0) {
-            $requisition->status = 'provided';
-            $requisition->save();
-        }
-
-        return redirect()->back()
-        ->with('message', 'Requisition fulfilled successfully.');
     }
+
+    /**
+     * Receive a requisition item
+     */
     public function receiveRequisitionItem($id)
     {
-        $request_item = RequestItem::findOrFail($id);
-        $requisition = $request_item->requisition;        
-        $request_item->status = 'received';
-        $request_item->save();
-        
-        if ($requisition->requestItems()->where('status', '!=', 'received')->count() === 0) {
-            $requisition->status = 'fulfilled';
-            $requisition->save();
+        try {
+            $this->requisitionService->receiveRequisitionItem($id);
+            return redirect()->back()->with('message', 'Requisition item received successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'error' => 'There was a problem receiving the requisition item. ' . $e->getMessage()
+            ]);
         }
-        return redirect()->back()->with('message', 'Requisition submitted successfully.');
     }
-
 }

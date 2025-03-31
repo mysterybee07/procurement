@@ -3,6 +3,14 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Repositories\Interfaces\ProductCategoryInterface;
+use App\Repositories\Interfaces\ProductInterface;
+use App\Repositories\Interfaces\RequisitionInterface;
+use App\Repositories\Interfaces\RoleInterface;
+use App\Repositories\ProductCategoryRepository;
+use App\Repositories\ProductRepository;
+use App\Repositories\RequisitionRepository;
+use App\Repositories\RoleRepository;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,7 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(ProductCategoryInterface::class, ProductCategoryRepository::class);
+        $this->app->bind(ProductInterface::class, ProductRepository::class);
+        $this->app->bind(RequisitionInterface::class, RequisitionRepository::class);
+        $this->app->bind(RoleInterface::class, RoleRepository::class);
     }
 
     /**

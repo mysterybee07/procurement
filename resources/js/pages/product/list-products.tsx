@@ -37,6 +37,7 @@ interface IndexProps {
 }
 
 export default function ListProduct({ products, flash }: IndexProps) {
+    console.log(products);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Product Categories" />
