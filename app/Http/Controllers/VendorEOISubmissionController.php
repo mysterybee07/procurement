@@ -22,23 +22,59 @@ class VendorEOISubmissionController extends Controller
     public function index(Request $request)
     {
         $vendor = Auth::user()->vendor;
-
+    
         // Check if request is an AJAX request for DataTables
         if ($request->ajax() && $request->expectsJson()) {
             $submittedEois = DB::table('vendor_eoi_submissions as v')
                 ->leftJoin('eois as e', 'v.eoi_id', '=', 'e.id')
                 ->where('v.vendor_id', $vendor->id)
-                ->select('v.*', 'e.eoi_number');
-                // dd($submittedEois);
-
+                ->select([
+                    'v.id',
+                    'v.vendor_id',
+                    'v.eoi_id',
+                    'e.eoi_number',
+                    'v.submission_date',
+                    'v.delivery_date',
+                    'v.status',
+                    'v.items_total_price'
+                ]);
+    
             return DataTables::of($submittedEois)
+                // Make all columns searchable
+                ->filterColumn('eoi_number', function($query, $keyword) {
+                    $query->where('e.eoi_number', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('submission_date', function($query, $keyword) {
+                    $query->where('v.created_at', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('delivery_date', function($query, $keyword) {
+                    $query->where('v.delivery_date', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('status', function($query, $keyword) {
+                    $query->where('v.status', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('items_total_price', function($query, $keyword) {
+                    $query->where('v.items_total_price', 'like', "%{$keyword}%");
+                })
+                // Format dates for better readability
+                // ->editColumn('submission_date', function($row) {
+                //     return \Carbon\Carbon::parse($row->submission_date)->format('M d, Y H:i');
+                // })
+                // ->editColumn('delivery_date', function($row) {
+                //     return $row->delivery_date ? \Carbon\Carbon::parse($row->delivery_date)->format('M d, Y') : 'N/A';
+                // })
+                // Format price with currency symbol
+                // ->editColumn('items_total_price', function($row) {
+                //     return '$' . number_format($row->items_total_price, 2);
+                // })
                 ->addColumn('actions', function ($row) {
-                    return '<button class="text-blue-500">View</button>';
+                    return '<a href="/vendor/submitted-eois/'.$row->id.'" class="text-blue-500 hover:underline mr-2">View</a>' .
+                           '<a href="/vendor/submitted-eois/'.$row->id.'/details" class="text-green-500 hover:underline">Details</a>';
                 })
                 ->rawColumns(['actions'])
                 ->toJson();
         }
-
+    
         // Return Inertia response for normal page loads
         return Inertia::render('vendor/vendor-side/list-vendor-submitted-eois', [
             'flash' => [
