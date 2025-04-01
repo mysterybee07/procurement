@@ -78,6 +78,10 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
+    // vendor submitted documents
+    Route::get('/documents/{eoiSubmissionId}', [DocumentController::class, 'show'])->name('eoiDocuments.show');
+
+
     // eois route
     Route::get('/eois', [EOIController::class, 'index'])->name('eois.index');
     Route::get('/eois/create', [EOIController::class, 'create'])->name('eois.create');
@@ -119,7 +123,6 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
             Route::get('/vendor/eois', [VendorController::class, 'EOIsForVendor'])->name('eois.vendor');
             Route::get('/vendor/submitted-eois', [VendorEOISubmissionController::class, 'index'])->name('vendoreois.index');
             Route::get('/vendor/eoi-submission/{eoi}/details', [VendorEOISubmissionController::class, 'show'])->name('eoisubmission.details');
-
     });
     // Route::middleware(['auth', 'ensure.vendor', 'owner'])->group(function () {
     // });

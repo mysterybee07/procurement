@@ -27,6 +27,6 @@ class VendorEOIDocument extends Model
 
     public function vendor()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Vendor::class, 'vendor_id');
     }
 }

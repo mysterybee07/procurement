@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\DocumentRequest;
 use App\Models\Document;
+use App\Models\VendorEOIDocument;
 use DB;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -82,9 +83,13 @@ class DocumentController extends Controller implements HasMiddleware
     /**
      * Display the specified resource.
      */
-    public function show(Document $document)
+    public function show($eoiSubmissionId)
     {
-        //
+        // dd($eoiSubmissionId);
+        $documents = VendorEOIDocument::select('file_path')
+        ->with('vendor')
+        ->where('eoi_submission_id',$eoiSubmissionId)->get();
+        dd($documents);
     }
 
     /**

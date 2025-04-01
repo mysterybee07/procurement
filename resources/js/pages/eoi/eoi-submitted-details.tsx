@@ -206,8 +206,12 @@ const EOISubmittedDetails: React.FC<Props> = ({ submission, flash }) => {
                         <div className="flex justify-between px-8">
                             <div className="flex items-center gap-2">
                                 <ExternalLink className="text-blue-600" size={20} />
-                                <p className="text-md text-gray-600">Documents</p>
+                                <a href={`/documents/${submission.id}`} className="text-md text-gray-600 hover:underline">
+                                    Documents
+                                </a>
                             </div>
+
+
 
                             <div className="flex items-center gap-2">
                                 <ExternalLink className="text-blue-600" size={20} />
