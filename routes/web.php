@@ -88,6 +88,10 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::delete('/eois/{eoi}', [EOIController::class, 'destroy'])->name('eois.destroy');
     Route::put('/eois/{eoi}/publish', [EOIController::class, 'publishEOI'])->name('eois.publish');
 
+    // eoi-submission route
+    Route::get('/eoi-submission/{eoi}', [EOIController::class, 'listVendorSubmissionByEoi'])->name('eoisubmission.list');
+    Route::get('/eoi-submission/{eoi}/details', [VendorEOISubmissionController::class, 'show'])->name('eoisubmission.details');
+
     // roles route
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
@@ -114,7 +118,11 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::middleware(['auth', 'ensure.vendor'])->group(function () {
             Route::get('/vendor/eois', [VendorController::class, 'EOIsForVendor'])->name('eois.vendor');
             Route::get('/vendor/submitted-eois', [VendorEOISubmissionController::class, 'index'])->name('vendoreois.index');
+            Route::get('/vendor/eoi-submission/{eoi}/details', [VendorEOISubmissionController::class, 'show'])->name('eoisubmission.details');
+
     });
+    // Route::middleware(['auth', 'ensure.vendor', 'owner'])->group(function () {
+    // });
     Route::middleware(['auth'])->group(function () {
         Route::get('/vendor/eois/{eoi}', [EOIController::class, 'show'])->name('eois.show');
         // Route::get('/vendor/submitted-eois', [VendorEOISubmissionController::class, 'index'])->name('vendoreois.index');

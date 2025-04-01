@@ -24,6 +24,6 @@ class VendorSubmittedItems extends Model
 
     public function requestItem()
     {
-        return $this->belongsTo(RequestItem::class);
+        return $this->belongsTo(RequestItem::class,'request_items_id');
     }
 }

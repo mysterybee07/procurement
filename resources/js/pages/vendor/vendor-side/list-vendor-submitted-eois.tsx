@@ -14,7 +14,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const columns = [
   { data: "eoi_number", title: "EOI Number", className: "text-center" },
   { data: "submission_date", title: "Submitted At", className: "text-center" },
-  { data: "items_total_price", title: "Total Price", className: "text-center" },
+  { data: "items_total_price", title: "Total Quoted Price", className: "text-center" },
   { data: "status", title: "Status", className: "text-center" },
   { 
     data: "actions", 

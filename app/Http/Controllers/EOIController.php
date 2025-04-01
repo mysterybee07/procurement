@@ -7,10 +7,13 @@ use App\Models\Document;
 use App\Models\EOI;
 use App\Models\Product;
 use App\Models\Requisition;
+use DB;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Yajra\DataTables\DataTables;
 use function PHPUnit\Framework\returnValueMap;
 
 class EOIController extends Controller implements HasMiddleware
@@ -245,4 +248,69 @@ class EOIController extends Controller implements HasMiddleware
         return redirect()->back()
             ->with('message', 'EOI published successfully.');
     }
+
+    // to list vendor based on EOI
+    public function listVendorSubmissionByEoi(Request $request, $eoiId)
+    {
+        $eoi = EOI::select('eoi_number')->where('id', $eoiId)->firstOrFail();
+        
+        if ($request->ajax() && $request->expectsJson()) {
+            $submittedEois = DB::table('vendor_eoi_submissions as ves')
+                ->leftJoin('vendors as v', 'ves.vendor_id', '=', 'v.id')
+                ->leftJoin('users as u', 'v.user_id', '=', 'u.id')
+                ->where('ves.eoi_id', $eoiId)
+                ->select([
+                    'ves.id',
+                    'ves.vendor_id',
+                    'v.vendor_name',
+                    'u.phone',
+                    'ves.submission_date',
+                    'ves.items_total_price',
+                    'ves.delivery_date',
+                    'ves.status',
+                ]);
+        
+            // Return filtered DataTables response
+            return DataTables::of($submittedEois)
+                // Make vendor_name column searchable
+                ->filterColumn('vendor_name', function ($query, $keyword) {
+                    $query->where('v.vendor_name', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('phone', function ($query, $keyword) {
+                    $query->where('u.phone', 'like', "%{$keyword}%");
+                })
+                // Make submission_date column searchable
+                ->filterColumn('submission_date', function ($query, $keyword) {
+                    $query->where('ves.submission_date', 'like', "%{$keyword}%");
+                })
+                // Make delivery_date column searchable
+                ->filterColumn('delivery_date', function ($query, $keyword) {
+                    $query->where('ves.delivery_date', 'like', "%{$keyword}%");
+                })
+
+                ->filterColumn('status', function ($query, $keyword) {
+                    $query->where('ves.status', 'like', "%{$keyword}%");
+                })
+
+                ->filterColumn('items_total_price', function ($query, $keyword) {
+                    $query->where('ves.items_total_price', 'like', "%{$keyword}%");
+                })
+                ->addColumn('actions', function ($row) {
+                    return '<a href="/eoi-submission/'.$row->id.'/details" class="text-green-500 hover:underline">Details</a>'.' '.
+                    '<a href="/vendor/documents'.$row->vendor_id.'" class="text-blue-500 hover:underline mr-2">View Documents</a>' ;
+                })            
+                ->rawColumns(['actions'])
+                ->toJson(); 
+        }
+    
+        // Return the page for the EOI if not an AJAX request
+        return Inertia::render('eoi/list-submissions-by-eoi', [
+            'eoi_id' => $eoiId, 
+            'eoi_number' => $eoi->eoi_number, 
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
+            ],
+        ]);
+    }   
 }

@@ -120,7 +120,7 @@ export default function ListEOI({ eois, flash }: EoiProps) {
                             onClick={() => router.visit(route('eois.show', eoi.id))}
                             className="text-indigo-600 hover:text-indigo-900"
                           >
-                            View
+                            View Details
                           </Button>
 
                           <Button
@@ -137,6 +137,13 @@ export default function ListEOI({ eois, flash }: EoiProps) {
                             itemId={eoi.id}
                             onSuccess={() => { }}
                           />
+
+                          <Button
+                            onClick={() => router.visit(route('eoisubmission.list', eoi.id))}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            View Submissions
+                          </Button>
                         </td>
                       </tr>
                     ))

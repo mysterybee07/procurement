@@ -68,8 +68,8 @@ class VendorEOISubmissionController extends Controller
                 //     return '$' . number_format($row->items_total_price, 2);
                 // })
                 ->addColumn('actions', function ($row) {
-                    return '<a href="/vendor/submitted-eois/'.$row->id.'" class="text-blue-500 hover:underline mr-2">View</a>' .
-                           '<a href="/vendor/submitted-eois/'.$row->id.'/details" class="text-green-500 hover:underline">Details</a>';
+                    return '<a href="/vendor/eoi-submission/'.$row->id.'/details" class="text-blue-500 hover:underline mr-2">View</a>';
+                        //    '<a href="/vendor/submitted-eois/'.$row->id.'" class="text-green-500 hover:underline">Details</a>';
                 })
                 ->rawColumns(['actions'])
                 ->toJson();
@@ -143,7 +143,7 @@ class VendorEOISubmissionController extends Controller
                 return back()->withErrors(['error' => 'The selected user is not a registered vendor.']);
             }
     
-            // Check if the vendor has already submitted this EOI
+            // existing submission check
             $existingSubmission = VendorEoiSubmission::where('eoi_id', $request->eoi_id)
                                                       ->where('vendor_id', $vendor->id)
                                                       ->first();
@@ -203,9 +203,21 @@ class VendorEOISubmissionController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(VendorEOISubmission $vendorEOISubmission)
+    public function show($submissionId)
     {
-        
+        $submission = VendorEoiSubmission::with([
+            'vendor',
+            'eoi',
+            'vendorSubmittedItems.requestItem.product',
+        ])->findOrFail($submissionId);
+        // dd($submission);
+        return Inertia::render('eoi/eoi-submitted-details', [
+            'submission' => $submission,
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
+            ],
+        ]);
     }
 
     /**
