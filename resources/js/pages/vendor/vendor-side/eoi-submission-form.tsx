@@ -15,6 +15,8 @@ interface RequestItem {
     required_quantity: number;
     additional_specifications?: string | null;
     product: Product;
+    // Added provided_quantity to filter items
+    provided_quantity?: number;
 }
 
 interface VendorDocument {
@@ -34,7 +36,6 @@ interface VendorEOISubmissionFormData {
     terms_and_conditions: File | string | null;
     remarks: string;
     items_total_price: string;
-    // submission_type?: 'draft' | 'submitted';
     submittedItems: {
         request_items_id: number;
         actual_unit_price: string;
@@ -72,6 +73,11 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
     isEditing = false,
     existingSubmission
 }) => {
+    // Filter out request items where required_quantity equals provided_quantity
+    const filteredRequestItems = requestItems.filter(item => 
+        !item.provided_quantity || item.required_quantity > (item.provided_quantity || 0)
+    );
+
     // Breadcrumb configuration
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -94,10 +100,9 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
         terms_and_conditions: existingSubmission?.terms_and_conditions || null,
         remarks: existingSubmission?.remarks || '',
         items_total_price: existingSubmission?.items_total_price || '0',
-        // submission_type: 'draft',
         submittedItems: existingSubmission?.submittedItems?.length
             ? existingSubmission.submittedItems
-            : requestItems.map(item => ({
+            : filteredRequestItems.map(item => ({
                 request_items_id: item.id,
                 actual_unit_price: '',
                 actual_product_total_price: '',
@@ -126,7 +131,6 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
         formData.append('delivery_date', data.delivery_date);
         formData.append('remarks', data.remarks);
         formData.append('items_total_price', data.items_total_price);
-        // formData.append('submission_type', submissionType);
 
         // Append terms and conditions file
         if (data.terms_and_conditions instanceof File) {
@@ -210,7 +214,7 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
 
         // Auto-calculate total price if unit price or discount is updated
         if (field === 'actual_unit_price' || field === 'discount_rate') {
-            const quantity = requestItems[index].required_quantity;
+            const quantity = filteredRequestItems[index].required_quantity;
             const unitPrice = parseFloat(updatedItems[index].actual_unit_price) || 0;
             const discountRate = parseFloat(updatedItems[index].discount_rate || '0') / 100;
 
@@ -253,6 +257,9 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
         setIsSubmitting(true);
     };
 
+    // Check if we have any items to render
+    const hasItems = filteredRequestItems.length > 0;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -276,68 +283,75 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
                         {/* Submitted Items Section */}
                         <div className="mb-8 p-6 border rounded-lg bg-gray-50">
                             <h2 className="text-xl font-semibold mb-4">Items With Quoted Price</h2>
-                            <table className="w-full border-collapse">
-                                <thead>
-                                    <tr className="bg-gray-200">
-                                        <th className="p-2 border text-left">Product</th>
-                                        <th className="p-2 border text-center">Quantity</th>
-                                        <th className="p-2 border text-center">Unit Price*</th>
-                                        <th className="p-2 border text-center">Discount Rate (%)</th>
-                                        <th className="p-2 border text-center">Total Price</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data.submittedItems.map((item, index) => (
-                                        <tr key={item.request_items_id} className="hover:bg-gray-50">
-                                            <td className="p-2 border">
-                                                <input
-                                                    type="text"
-                                                    value={requestItems[index].product.name}
-                                                    readOnly
-                                                    className="w-full p-1 border-none bg-transparent"
-                                                />
-                                            </td>
-                                            <td className="p-2 border text-center">
-                                                <input
-                                                    type="number"
-                                                    value={requestItems[index].required_quantity}
-                                                    readOnly
-                                                    className="w-full p-1 text-center border-none bg-transparent"
-                                                />
-                                            </td>
-                                            <td className="p-2 border">
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={item.actual_unit_price}
-                                                    onChange={(e) => handleItemChange(index, 'actual_unit_price', e.target.value)}
-                                                    className="w-full p-1 text-center border rounded"
-                                                    required
-                                                />
-                                            </td>
-                                            <td className="p-2 border">
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={item.discount_rate || ''}
-                                                    onChange={(e) => handleItemChange(index, 'discount_rate', e.target.value)}
-                                                    className="w-full p-1 text-center border rounded"
-                                                    placeholder="Optional"
-                                                />
-                                            </td>
-                                            <td className="p-2 border">
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={item.actual_product_total_price}
-                                                    readOnly
-                                                    className="w-full p-1 text-center border-none bg-transparent"
-                                                />
-                                            </td>
+                            
+                            {hasItems ? (
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr className="bg-gray-200">
+                                            <th className="p-2 border text-left">Product</th>
+                                            <th className="p-2 border text-center">Quantity</th>
+                                            <th className="p-2 border text-center">Unit Price*</th>
+                                            <th className="p-2 border text-center">Discount Rate (%)</th>
+                                            <th className="p-2 border text-center">Total Price</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {data.submittedItems.map((item, index) => (
+                                            <tr key={item.request_items_id} className="hover:bg-gray-50">
+                                                <td className="p-2 border">
+                                                    <input
+                                                        type="text"
+                                                        value={filteredRequestItems[index].product.name}
+                                                        readOnly
+                                                        className="w-full p-1 border-none bg-transparent"
+                                                    />
+                                                </td>
+                                                <td className="p-2 border text-center">
+                                                    <input
+                                                        type="number"
+                                                        value={filteredRequestItems[index].required_quantity}
+                                                        readOnly
+                                                        className="w-full p-1 text-center border-none bg-transparent"
+                                                    />
+                                                </td>
+                                                <td className="p-2 border">
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={item.actual_unit_price}
+                                                        onChange={(e) => handleItemChange(index, 'actual_unit_price', e.target.value)}
+                                                        className="w-full p-1 text-center border rounded"
+                                                        required
+                                                    />
+                                                </td>
+                                                <td className="p-2 border">
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={item.discount_rate || ''}
+                                                        onChange={(e) => handleItemChange(index, 'discount_rate', e.target.value)}
+                                                        className="w-full p-1 text-center border rounded"
+                                                        placeholder="Optional"
+                                                    />
+                                                </td>
+                                                <td className="p-2 border">
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={item.actual_product_total_price}
+                                                        readOnly
+                                                        className="w-full p-1 text-center border-none bg-transparent"
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md text-center">
+                                    <p className="text-yellow-600">All requested items have already been fulfilled.</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Submission Details Section */}
@@ -414,8 +428,8 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
                                     </div>
                                 ))}
                             </div>
-
                         </div>
+                        
                         <div className="mb-4">
                             <label className="block text-sm font-medium mb-1">Delivery Date*</label>
                             <input
@@ -437,7 +451,7 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
                                 <button
                                     type="button"
                                     onClick={saveAsDraft}
-                                    disabled={processing}
+                                    disabled={processing || (!hasItems && !isEditing)}
                                     className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                                 >
                                     {processing ? 'Updating...' : 'Update Submission'}
@@ -446,7 +460,7 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
                                 <button
                                     type="button"
                                     onClick={submitForReview}
-                                    disabled={processing}
+                                    disabled={processing || !hasItems}
                                     className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                                 >
                                     {processing ? 'Submitting...' : 'Submit'}

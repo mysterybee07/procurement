@@ -118,14 +118,16 @@ class EOIController extends Controller implements HasMiddleware
      */
     public function show(EOI $eoi)
     {
-        // Load required relationships
         $eoi->load('createdBy', 'documents', 'requisitions.requestItems.product.category');
 
-        // Aggregate request items by product ID
         $aggregatedItems = [];
 
         foreach ($eoi->requisitions as $requisition) {
             foreach ($requisition->requestItems as $item) {
+                if ($item->provided_quantity >= $item->required_quantity) {
+                    continue;
+                }
+
                 $productId = $item->product->id;
 
                 if (!isset($aggregatedItems[$productId])) {
@@ -137,11 +139,11 @@ class EOIController extends Controller implements HasMiddleware
                     ];
                 }
 
-                // Add the quantity
-                $aggregatedItems[$productId]['required_quantity'] += $item->required_quantity;
+                // Add the remaining quantity needed
+                $aggregatedItems[$productId]['required_quantity'] += ($item->required_quantity - $item->provided_quantity);
             }
         }
-
+        // dd($aggregatedItems);
         return Inertia::render('eoi/eoi-details', [
             'eoi' => $eoi,
             'aggregatedItems' => array_values($aggregatedItems), 
@@ -151,7 +153,6 @@ class EOIController extends Controller implements HasMiddleware
             ]
         ]);
     }
-
 
     /**
      * Show the form for editing the specified resource.

@@ -50,27 +50,26 @@ interface Eoi {
   documents: Document[];
 }
 
-// interface PageProps {
-//   auth: {
-//     user?: User;
-//   };
-//   flash: {
-//     message: string;
-//     error: string;
-//   };
-// }
+// Updated to match backend structure
+interface AggregatedItem {
+  name: string;
+  unit: string;
+  category: string;
+  required_quantity: number;
+}
 
 interface EOIProps {
   eoi: Eoi;
+  aggregatedItems: AggregatedItem[]; // Added to match backend data
   flash: {
     message: string;
     error: string;
   };
-  organizationName: string;
-  organizationAddress: string;
+  organizationName?: string; // Made optional since it might be hardcoded
+  organizationAddress?: string; // Made optional since it might be hardcoded
 }
 
-export default function EOIDetails({ eoi, organizationName, organizationAddress, flash }: EOIProps) {
+export default function EOIDetails({ eoi, aggregatedItems, flash, organizationName = "Whetstone Associates", organizationAddress = "Sankhamul, Kathmandu" }: EOIProps) {
   const { auth } = usePage().props as any;
   const user = auth?.user;
 
@@ -86,29 +85,6 @@ export default function EOIDetails({ eoi, organizationName, organizationAddress,
       return 'Invalid Date';
     }
   };
-
-  // Collect all unique request items across all requisitions
-  const getAggregatedRequestItems = () => {
-    const itemMap = new Map<number, RequestItem>();
-
-    eoi.requisitions.forEach((requisition) => {
-      requisition.request_items.forEach((item) => {
-        const productKey = item.product.id;
-
-        if (itemMap.has(productKey)) {
-          const existingItem = itemMap.get(productKey)!;
-          existingItem.required_quantity += item.required_quantity;
-        } else {
-          itemMap.set(productKey, { ...item });
-        }
-      });
-    });
-
-    return Array.from(itemMap.values());
-  };
-
-  // Get aggregated items
-  const aggregatedItems = getAggregatedRequestItems();
 
   // Breadcrumbs
   const breadcrumbs: BreadcrumbItem[] = [
@@ -164,11 +140,11 @@ export default function EOIDetails({ eoi, organizationName, organizationAddress,
                 )}
               </div>
               <div className="text-center mb-2">
-                <span className="font-semibold text-2xl">Whetstone Associates</span>
+                <span className="font-semibold text-2xl">{organizationName}</span>
               </div>
 
               <div className="text-center mb-4">
-                <span className="font-semibold">Sankhamul, Kathmandu</span>
+                <span className="font-semibold">{organizationAddress}</span>
               </div>
             </header>
 
@@ -192,18 +168,18 @@ export default function EOIDetails({ eoi, organizationName, organizationAddress,
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="p-2 border">Item Name</th>
+                      <th className="p-2 border">Category</th>
                       <th className="p-2 border">Quantity</th>
                       <th className="p-2 border">Unit</th>
-                      <th className="p-2 border">Specifications</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {aggregatedItems.map((item) => (
-                      <tr key={item.product.id} className="border-t">
-                        <td className="p-2 border">{item.product.name}</td>
+                    {aggregatedItems.map((item, index) => (
+                      <tr key={index} className="border-t">
+                        <td className="p-2 border">{item.name}</td>
+                        <td className="p-2 border">{item.category}</td>
                         <td className="p-2 border text-center">{item.required_quantity}</td>
-                        <td className="p-2 border text-center">{item.product.unit}</td>
-                        <td className="p-2 border">{item.product.specifications}</td>
+                        <td className="p-2 border text-center">{item.unit}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -263,7 +239,7 @@ export default function EOIDetails({ eoi, organizationName, organizationAddress,
             </div>
           </div>
         </div>
-      </div >
-    </AppLayout >
+      </div>
+    </AppLayout>
   );
 }

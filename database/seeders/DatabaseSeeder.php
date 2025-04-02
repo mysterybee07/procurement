@@ -60,9 +60,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'name' => 'Seeded Vendor',
-            'username'=>'vendor123',
-            'email' => 'vendor@example.com',
+            'name' => 'Seeded Vendor 1',
+            'username'=>'vendor1',
+            'email' => 'vendor1@example.com',
             'password'=>'password123',
             'address'=>'abc xyz',
             'phone'=>'9840380477',
@@ -77,12 +77,51 @@ class DatabaseSeeder extends Seeder
         //     'user_id' => 2,
         //     'in_contact_person' => 'Jane Smith',
         // ]);
+
         DB::table('vendors')->insert([
             'vendor_name' => 'Tech Solutions',
             'registration_number' => 'REG-67890',
             'pan_number' => 'ABCDE5678G',
             'user_id' => 3,
-            'in_contact_person' => 'Jane Smith',
+            'in_contact_person' => 'Jane',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Seeded Vendor 2',
+            'username'=>'vendor2',
+            'email' => 'vendor2@example.com',
+            'password'=>'password123',
+            'address'=>'abc xyz',
+            'phone'=>'9840380478',
+            'status'=>'active',
+            'is_vendor'=>true,
+        ]);
+
+        DB::table('vendors')->insert([
+            'vendor_name' => 'Tech Solutions 2',
+            'registration_number' => 'REG-67891',
+            'pan_number' => 'ABCDE5678H',
+            'user_id' => 4,
+            'in_contact_person' => 'Will Smith',
+        ]);
+        
+        User::factory()->create([
+            'name' => 'Seeded Vendor 3',
+            'username'=>'vendor3',
+            'email' => 'vendor3@example.com',
+            'password'=>'password123',
+            'address'=>'abc xyz',
+            'phone'=>'9840380479',
+            'status'=>'active',
+            'is_vendor'=>true,
+        ]);
+
+        DB::table('vendors')->insert([
+            'vendor_name' => 'Tech Solutions ',
+            'registration_number' => 'REG-67892',
+            'pan_number' => 'ABCDE5678I',
+            'user_id' => 5,
+            'in_contact_person' => 'Smith',
         ]);
     }
 }

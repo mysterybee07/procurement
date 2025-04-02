@@ -89,17 +89,19 @@ class VendorEOISubmissionController extends Controller
      */
     public function create($eoiId)
     {
-        // dd($eoiId);
         $eoi = EOI::with('documents', 'requisitions.requestItems.product')->findOrFail($eoiId);
-
+    
         $requestItems = $eoi->requisitions->flatMap(function ($requisition) {
-            return $requisition->requestItems;
+            return $requisition->requestItems->filter(function ($item) {
+                return $item->required_quantity > $item->provided_quantity; 
+            });
         });
-
+    
+        // Transform the filtered request items
         $transformedRequestItems = $requestItems->map(function ($item) {
             return [
                 'id' => $item->id,
-                'required_quantity' => $item->required_quantity,
+                'required_quantity' => $item->required_quantity - $item->provided_quantity, 
                 'additional_specifications' => $item->additional_specifications ?? null,
                 'product' => [
                     'id'   => $item->product->id,
@@ -107,27 +109,27 @@ class VendorEOISubmissionController extends Controller
                 ],
             ];
         })->values();
-
+    
+        // Transform documents
         $transformedDocuments = $eoi->documents->map(function ($document) {
             return [
                 'id' => $document->id,
                 'name' => $document->name,
                 'file_path' => $document->file_path,
-                // 'type' => $document->type,
             ];
         })->values();
-
+    
         return Inertia::render('vendor/vendor-side/eoi-submission-form', [
             'requestItems' => $transformedRequestItems,
             'documents' => $transformedDocuments,
             'eoi_id'    => $eoi->id,
-            'eoi_number'=>$eoi->eoi_number,
+            'eoi_number'=> $eoi->eoi_number,
             'vendor_id' => auth()->id(),            
             'vendor_name' => auth()->user()->name, 
-            'vendor_address' => auth()->user()->address, 
-                // 'contact' => auth()->user()->contact_number,
+            'vendor_address' => auth()->user()->address,
         ]);
     }
+    
 
 
     /**
