@@ -111,10 +111,10 @@ export default function RequisitionDetails({ requisition, flash }: RequisitionPr
                       )}
                       <th className="p-2 border">Unit</th>
                       <th className="p-2 border">Specifications</th>
-                      {(user?.id === requisition.requester.id ||
-                        requisition.request_items.some(item => item.status === "provided")) && (
+                      {/* {(user?.id === requisition.requester.id ||
+                        requisition.request_items.some(item => item.status === "provided")) && ( */}
                           <th className="p-2 border">Status</th>
-                        )}
+                        {/* )} */}
                       {user?.permissions?.includes('fulfill requisitionItem') &&
                         requisition.request_items.some(item => item.provided_quantity !== item.required_quantity) && (
                           <th className="p-2 border">Action</th>
@@ -133,7 +133,7 @@ export default function RequisitionDetails({ requisition, flash }: RequisitionPr
                           <td className="p-2 border text-center">{requestItem.product.unit}</td>
                           <td className="p-2 border">{requestItem.product.specifications}</td>
                           {(user?.id === requisition.requester.id
-                            || requestItem.provided_quantity === requestItem.required_quantity
+                            || requestItem.provided_quantity !== requestItem.required_quantity || requestItem.status ==="received"
                           ) && (
                               <td className="p-2 border">{requestItem.status}</td>
                             )}
@@ -150,7 +150,6 @@ export default function RequisitionDetails({ requisition, flash }: RequisitionPr
                               </td>
                             ) : null
                           }
-
                         </tr>
                       )
                     ))}

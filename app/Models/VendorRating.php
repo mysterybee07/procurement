@@ -10,7 +10,7 @@ class VendorRating extends Model
     use HasFactory;
 
     protected $fillable = [
-        'eoi_submission_id',
+        'vendor_eoi_submission_id',
         'vendor_id',
         'eoi_id',
         'total_pricing_score',

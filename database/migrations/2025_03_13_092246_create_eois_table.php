@@ -21,11 +21,13 @@ return new class extends Migration
                 'draft',      
                 'submitted', 
                 'under_review',
-                'published', 
-                'approved',   
                 'rejected',   
-                'closed',     
-                'canceled'    
+                'approved',   
+                'canceled',    
+                'published',
+                'open', 
+                'closed',
+                'under_selection'     
             ])->default('draft');
             $table->string('current_approval_step')->nullable();
             $table->unsignedBigInteger('approval_workflow_id')->nullable();
