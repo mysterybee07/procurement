@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use App\Services\ProductService;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Yajra\DataTables\DataTables;
 
 class ProductController extends Controller implements HasMiddleware
 {
@@ -28,16 +31,48 @@ class ProductController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $products = $this->productService->getAllProducts();
-        // dd($products);
+        if ($request->ajax() && $request->expectsJson()) {
+            $products = DB::table('products as p')
+                ->leftJoin('product_categories as c', 'p.category_id', '=', 'c.id')
+                ->select([
+                    'p.id',
+                    'p.name',
+                    'p.in_stock_quantity',
+                    'p.unit',
+                    'p.specifications',
+                    DB::raw('GROUP_CONCAT(c.category_name SEPARATOR ", ") as categories')
+                ])
+                ->groupBy('p.id', 'p.name', 'p.in_stock_quantity', 'p.unit', 'p.specifications');
+
+            return DataTables::of($products)
+                ->filterColumn('name', function($query, $keyword) {
+                    $query->where('p.name', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('categories', function($query, $keyword) {
+                    $query->where('c.category_name', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('specifications', function($query, $keyword) {
+                    $query->where('p.specifications', 'like', "%{$keyword}%");
+                })
+                ->addColumn('actions', function ($row) {
+                    return '<a href="'.route('products.edit', $row->id).'" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>' .
+                        '<button data-id="'.$row->id.'" class="text-red-600 hover:text-red-900 delete-product">Delete</button>';
+                })
+                ->editColumn('specifications', function ($row) {
+                    return strlen($row->specifications) > 50 ? 
+                        substr($row->specifications, 0, 50) . '...' : 
+                        $row->specifications ?? 'N/A';
+                })
+                ->rawColumns(['actions'])
+                ->toJson();
+        }
 
         return Inertia::render('product/list-products', [
-            'products' => $products,
             'flash' => [
                 'message' => session('message'),
-                'error' => session('error')
+                'error' => session('error'),
             ]
         ]);
     }

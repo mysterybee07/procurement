@@ -3,15 +3,35 @@ import $ from "jquery";
 import "datatables.net-dt/css/dataTables.dataTables.css";
 import "datatables.net";
 
-interface DataTableProps {
-  columns: Array<{ data: string; title: string; orderable?: boolean; searchable?: boolean; className?: string }>;
-  ajaxUrl: string;
+interface DataTableColumn {
+  data: string;
+  title: string;
+  orderable?: boolean;
+  searchable?: boolean;
+  className?: string;
+  visible?: boolean;
+  render?: (data: any, type: any, row: any) => string;
 }
 
-const DataTable: React.FC<DataTableProps> = ({ columns, ajaxUrl }) => {
+interface DataTableProps {
+  columns: DataTableColumn[];
+  ajaxUrl: string;
+  onDrawCallback?: () => void;
+  destroy?: boolean;
+  id?: string;
+}
+
+const DataTable: React.FC<DataTableProps> = ({ 
+  columns, 
+  ajaxUrl, 
+  onDrawCallback, 
+  destroy = false,
+  id = "DataTable"
+}) => {
   const tableRef = useRef<HTMLTableElement>(null);
 
   useEffect(() => {
+    // Add custom styles
     $("<style>")
       .prop("type", "text/css")
       .html(`
@@ -33,6 +53,12 @@ const DataTable: React.FC<DataTableProps> = ({ columns, ajaxUrl }) => {
       .appendTo("head");
 
     if (tableRef.current) {
+      // Destroy existing instance if needed
+      if (destroy && $.fn.DataTable.isDataTable(tableRef.current)) {
+        $(tableRef.current).DataTable().destroy();
+      }
+
+      // Initialize new DataTable
       $(tableRef.current).DataTable({
         processing: true,
         serverSide: true,
@@ -44,11 +70,19 @@ const DataTable: React.FC<DataTableProps> = ({ columns, ajaxUrl }) => {
             className: "dt-center",
           },
         ],
+        drawCallback: onDrawCallback
       });
     }
-  }, [columns, ajaxUrl]);
 
-  return <table ref={tableRef} className="min-w-full divide-y divide-gray-200" />;
+    // Cleanup function
+    return () => {
+      if (tableRef.current && $.fn.DataTable.isDataTable(tableRef.current)) {
+        $(tableRef.current).DataTable().destroy();
+      }
+    };
+  }, [columns, ajaxUrl, destroy, onDrawCallback]);
+
+  return <table ref={tableRef} id={id} className="min-w-full divide-y divide-gray-200" />;
 };
 
 export default DataTable;

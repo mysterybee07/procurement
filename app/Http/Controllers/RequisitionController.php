@@ -9,7 +9,9 @@ use App\Services\RequisitionService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Yajra\DataTables\DataTables;
 
 class RequisitionController extends Controller implements HasMiddleware
 {
@@ -37,12 +39,84 @@ class RequisitionController extends Controller implements HasMiddleware
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $requisitions = $this->requisitionService->getAllPaginated();
+        if ($request->ajax() && $request->expectsJson()) {
+            $requisitions = DB::table('requisitions as r')
+                ->leftJoin('users as u', 'r.requester', '=', 'u.id')
+                ->select([
+                    'r.id',
+                    'r.title',
+                    // 'r.description',
+                    'r.required_date',
+                    'r.status',
+                    'r.urgency',
+                    'r.eoi_id',
+                    'u.id as requester',
+                    'u.name as requester_name'
+                ]);
+
+            return DataTables::of($requisitions)
+                ->addColumn('products', function ($row) {
+                    $items = DB::table('request_items as ri')
+                        ->join('products as p', 'ri.product_id', '=', 'p.id')
+                        ->where('ri.requisition_id', $row->id)
+                        ->where('ri.required_quantity', '>', 0)
+                        ->pluck('p.name')
+                        ->toArray();
+                    
+                    return !empty($items) ? implode(', ', $items) : 'N/A';
+                })
+                ->addColumn('quantities', function ($row) {
+                    $quantities = DB::table('request_items')
+                        ->where('requisition_id', $row->id)
+                        ->where('required_quantity', '>', 0)
+                        ->pluck('required_quantity')
+                        ->toArray();
+                    
+                    return !empty($quantities) ? implode(', ', $quantities) : 'N/A';
+                })
+                ->addColumn('in_stock', function ($row) {
+                    $inStock = DB::table('request_items as ri')
+                        ->join('products as p', 'ri.product_id', '=', 'p.id')
+                        ->where('ri.requisition_id', $row->id)
+                        ->where('ri.required_quantity', '>', 0)
+                        ->pluck('p.in_stock_quantity')
+                        ->toArray();
+                    
+                    return !empty($inStock) ? implode(', ', $inStock) : 'N/A';
+                })
+                ->addColumn('select', function ($row) {
+                    return $row->id;
+                })
+                ->addColumn('actions', function ($row) {
+                    $actions = '<a href="' . route('requisitions.show', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">View</a>';
+                    
+                    // Check if user can edit (will be handled by frontend based on user permissions)
+                    if (auth()->id() == $row->requester && $row->status == 'draft') {
+                        $actions .= '<a href="' . route('requisitions.edit', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>';
+                        $actions .= '<button data-submit-id="' . $row->id . '" class="text-indigo-600 hover:text-indigo-900 mr-2 submit-requisition">Submit</button>';
+                    }
+                    
+                    // Add delete button
+                    $actions .= '<button data-id="' . $row->id . '" class="text-red-600 hover:text-red-900 delete-requisition">Delete</button>';
+                    
+                    return $actions;
+                })
+                ->filterColumn('requester', function($query, $keyword) {
+                    $query->where('u.name', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('title', function($query, $keyword) {
+                    $query->where('r.title', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('status', function($query, $keyword) {
+                    $query->where('r.status', 'like', "%{$keyword}%");
+                })
+                ->rawColumns(['actions'])
+                ->toJson();
+        }
 
         return Inertia::render('requisition/list-requisitions', [
-            'requisitions' => $requisitions,
             'flash' => [
                 'message' => session('message'),
                 'error' => session('error'),
