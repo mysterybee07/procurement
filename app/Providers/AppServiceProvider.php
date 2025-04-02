@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Models\EOI;
+use App\Models\Requisition;
 use App\Models\User;
 use App\Observers\EOIObserver;
+use App\Observers\RequisitionObserver;
 use App\Repositories\Interfaces\ProductCategoryInterface;
 use App\Repositories\Interfaces\ProductInterface;
 use App\Repositories\Interfaces\RequisitionInterface;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         EOI::observe(EOIObserver::class);
+        Requisition::observe(RequisitionObserver::class);
         // $this->registerPolicies();
 
         // Super Admin Bypass
