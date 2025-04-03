@@ -52,8 +52,8 @@ class RequisitionController extends Controller implements HasMiddleware
                     'r.status',
                     'r.urgency',
                     'r.eoi_id',
-                    'u.id as requester',
-                    'u.name as requester_name'
+                    'u.id as requester_id',
+                    'u.name as requester'
                 ]);
 
             return DataTables::of($requisitions)

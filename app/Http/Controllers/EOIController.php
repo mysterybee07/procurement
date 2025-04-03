@@ -296,6 +296,7 @@ class EOIController extends Controller implements HasMiddleware
             $submittedEois = DB::table('vendor_eoi_submissions as ves')
                 ->leftJoin('vendors as v', 'ves.vendor_id', '=', 'v.id')
                 ->leftJoin('users as u', 'v.user_id', '=', 'u.id')
+                ->leftJoin('vendor_ratings as vr', 'ves.id', '=', 'vr.vendor_eoi_submission_id')
                 ->where('ves.eoi_id', $eoiId)
                 ->select([
                     'ves.id',
@@ -307,41 +308,65 @@ class EOIController extends Controller implements HasMiddleware
                     'ves.delivery_date',
                     'ves.status',
                 ]);
-        
-            // Return filtered DataTables response
+
+            // Filtering logic
+            $orderColumn = 'ves.submission_date';
+            if ($request->filled('rating_filter')) {
+                switch ($request->rating_filter) {
+                    case 'by_documents':
+                        $submittedEois->where('vr.document_score', '>=', 3);
+                        $orderColumn = 'vr.document_score';
+                        break;
+                    case 'by_submission_completeness':
+                        $submittedEois->where('vr.submission_completeness_score', '>=', 3);
+                        $orderColumn = 'vr.submission_completeness_score';
+                        break;
+                    case 'by_pricing':
+                        $submittedEois->where('vr.total_pricing_score', '>=', 3);
+                        $orderColumn = 'vr.total_pricing_score';
+                        break;
+                    case 'by_delivery':
+                        $submittedEois->where('vr.delivery_date_score', '>=', 3);
+                        $orderColumn = 'vr.delivery_date_score';
+                        break;
+                    case 'by_past_performance':
+                        $submittedEois->where('vr.past_performance_score', '>=', 3);
+                        $orderColumn = 'vr.past_performance_score';
+                        break;
+                    case 'by_overall_rating':
+                        $submittedEois->where('vr.overall_rating', '>=', 3);
+                        $orderColumn = 'vr.overall_rating';
+                        break;
+                }
+            }
+
+            // Apply ordering in descending order
+            $submittedEois->orderByDesc($orderColumn);
+
             return DataTables::of($submittedEois)
-                // Make vendor_name column searchable
                 ->filterColumn('vendor_name', function ($query, $keyword) {
                     $query->where('v.vendor_name', 'like', "%{$keyword}%");
                 })
                 ->filterColumn('phone', function ($query, $keyword) {
                     $query->where('u.phone', 'like', "%{$keyword}%");
                 })
-                // Make submission_date column searchable
                 ->filterColumn('submission_date', function ($query, $keyword) {
                     $query->where('ves.submission_date', 'like', "%{$keyword}%");
                 })
-                // Make delivery_date column searchable
                 ->filterColumn('delivery_date', function ($query, $keyword) {
                     $query->where('ves.delivery_date', 'like', "%{$keyword}%");
                 })
-
                 ->filterColumn('status', function ($query, $keyword) {
                     $query->where('ves.status', 'like', "%{$keyword}%");
                 })
-
-                ->filterColumn('items_total_price', function ($query, $keyword) {
-                    $query->where('ves.items_total_price', 'like', "%{$keyword}%");
-                })
                 ->addColumn('actions', function ($row) {
                     return '<a href="/eoi-submission/'.$row->id.'/details" class="text-green-500 hover:underline">Details</a>'.' '.
-                    '<a href="/vendor/documents'.$row->vendor_id.'" class="text-blue-500 hover:underline mr-2">View Documents</a>' ;
-                })            
+                        '<a href="/vendor/documents/'.$row->vendor_id.'" class="text-blue-500 hover:underline mr-2">View Documents</a>';
+                })
                 ->rawColumns(['actions'])
-                ->toJson(); 
+                ->toJson();
         }
-    
-        // Return the page for the EOI if not an AJAX request
+
         return Inertia::render('eoi/list-submissions-by-eoi', [
             'eoi_id' => $eoiId, 
             'eoi_number' => $eoi->eoi_number, 
@@ -350,5 +375,6 @@ class EOIController extends Controller implements HasMiddleware
                 'error' => session('error'),
             ],
         ]);
-    }   
+    }
+   
 }

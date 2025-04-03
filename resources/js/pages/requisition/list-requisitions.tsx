@@ -57,7 +57,20 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
 
   const columns = [
     {
-      data: "requester_name",
+      data: "select",
+      title: "Select",
+      className: "px-4 py-4 whitespace-nowrap text-sm",
+      orderable: false,
+      searchable: false,
+      visible: user?.permissions?.includes("create eois"),
+      render: function (data: any, type: any, row: any) {
+        const disabled = row.status !== "submitted" || row.eoi_id;
+        return `<input type="checkbox" class="requisition-select h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" 
+                data-id="${row.id}" ${disabled ? "disabled" : ""}>`;
+      },
+    },
+    {
+      data: "requester",
       title: "Requester",
       className: "px-6 py-4 whitespace-nowrap",
     },
@@ -107,19 +120,7 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
       orderable: false,
       searchable: false,
     },
-    {
-      data: "select",
-      title: "Select",
-      className: "px-4 py-4 whitespace-nowrap text-sm",
-      orderable: false,
-      searchable: false,
-      visible: user?.permissions?.includes("create eois"),
-      render: function (data: any, type: any, row: any) {
-        const disabled = row.status !== "submitted" || row.eoi_id;
-        return `<input type="checkbox" class="requisition-select h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" 
-                data-id="${row.id}" ${disabled ? "disabled" : ""}>`;
-      },
-    },
+  
   ];
 
   return (

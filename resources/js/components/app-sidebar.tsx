@@ -135,9 +135,9 @@ export function AppSidebar() {
         // Super Admins do not see vendor-only items
         if (user?.is_super_admin) {
             if (item.vendorOnly) {
-                return false; // Skip vendor-only items for Super Admin
+                return false;
             }
-            return true; // Super Admin sees everything else
+            return true; 
         }
 
         // If it's a vendor-only route
