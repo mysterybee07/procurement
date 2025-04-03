@@ -90,7 +90,10 @@ export default function ListEOI({ eois, flash, categories }: EoiProps) {
                 <div key={eoi.id} className="bg-white rounded-xl shadow-md relative mb-4">
                   <div className="p-4">
                     <div className="mb-6">
+                      <div className='flex justify-between'>
                       <div className="text-gray-600 my-2">EOI Number: {eoi.eoi_number}</div>
+                      <div>{eoi.status}</div>
+                      </div>
                       <h3 className="text-xl font-bold">{eoi.title}</h3>
                     </div>
 
@@ -115,11 +118,15 @@ export default function ListEOI({ eois, flash, categories }: EoiProps) {
                     <div className="border border-gray-100 mb-5"></div>
 
                     <div className="flex flex-col lg:flex-row justify-between mb-4">
-                      {/* {eoi.status==="closed"&&( */}
-                      <div className="text-orange-700 mb-3">
-                        Submission Deadline: {eoi.submission_deadline}
-                      </div>
-                      {/* // )} */}
+                      {eoi.status === "published" && eoi.submission_deadline ==="" ? (
+                        <div className="text-red-600 mb-3">EOI is not open to submission</div>
+                      ) : new Date(eoi.submission_deadline) < new Date() ? (
+                        <div className="text-red-600 mb-3">Submission deadline crossed</div>
+                      ) : (
+                        <div className="text-orange-700 mb-3">
+                          Submission Deadline: {eoi.submission_deadline}
+                        </div>
+                      )}
                       {/* {eoi.status!=="closed"&&(
                       <div className="text-orange-700 mb-3">
                          {eoi.status}

@@ -22,8 +22,7 @@ return new class extends Migration
             $table->decimal('document_score', 8, 2);           
             $table->decimal('past_performance_score', 8, 2);   
             $table->decimal('overall_rating', 8, 2);           
-            $table->timestamps();
-        
+            $table->timestamps();       
            
             $table->foreign('vendor_eoi_submission_id')->references('id')->on('vendor_eoi_submissions')->onDelete('cascade');
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');

@@ -295,7 +295,7 @@ class EOIController extends Controller implements HasMiddleware
             $eoi = EOI::findOrFail($id);
             $eoi->update(['status' => 'under_selection']);
     
-            return redirect()->back()
+            return redirect()->route('eoisubmission.list')
                 ->with('message', 'Vendor has been rated based on their submission. Now you can filter them based on their submission.');
         } catch (\Exception $e) {
             return redirect()->back()
@@ -331,27 +331,27 @@ class EOIController extends Controller implements HasMiddleware
             if ($request->filled('rating_filter')) {
                 switch ($request->rating_filter) {
                     case 'by_documents':
-                        $submittedEois->where('vr.document_score', '>=', 3);
+                        $submittedEois->where('vr.document_score', '>', 0);
                         $orderColumn = 'vr.document_score';
                         break;
                     case 'by_submission_completeness':
-                        $submittedEois->where('vr.submission_completeness_score', '>=', 3);
+                        $submittedEois->where('vr.submission_completeness_score', '>', 0);
                         $orderColumn = 'vr.submission_completeness_score';
                         break;
                     case 'by_pricing':
-                        $submittedEois->where('vr.total_pricing_score', '>=', 3);
+                        $submittedEois->where('vr.total_pricing_score', '>=', 0);
                         $orderColumn = 'vr.total_pricing_score';
                         break;
                     case 'by_delivery':
-                        $submittedEois->where('vr.delivery_date_score', '>=', 3);
+                        $submittedEois->where('vr.delivery_date_score', '>=', 0);
                         $orderColumn = 'vr.delivery_date_score';
                         break;
                     case 'by_past_performance':
-                        $submittedEois->where('vr.past_performance_score', '>=', 3);
+                        $submittedEois->where('vr.past_performance_score', '>=', 0);
                         $orderColumn = 'vr.past_performance_score';
                         break;
                     case 'by_overall_rating':
-                        $submittedEois->where('vr.overall_rating', '>=', 3);
+                        $submittedEois->where('vr.overall_rating', '>=', 0);
                         $orderColumn = 'vr.overall_rating';
                         break;
                 }

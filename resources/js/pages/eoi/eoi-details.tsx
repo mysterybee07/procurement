@@ -214,15 +214,19 @@ export default function EOIDetails({ eoi, aggregatedItems, flash, organizationNa
             </section>
 
             {/* Submission Deadline */}
-            {eoi.status === "published" && (
+            {(eoi.status === "published" || eoi.status === "under_selection") && (
               <div className="mb-6 p-4 bg-gray-100 rounded text-red-600">
                 <span className="font-semibold">Submission Deadline: </span>
-                <span>{formatDate(eoi.submission_deadline)}</span>
+                {new Date(eoi.submission_deadline) < new Date() ? (
+                  <span>Deadline crossed</span>
+                ) : (
+                  <span>{formatDate(eoi.submission_deadline)}</span>
+                )}
               </div>
             )}
             <hr />
             <div className="flex justify-end space-x-4">
-              {eoi.status === 'published' && (
+              {eoi.status === 'open' && (
                 <Button
                   type="button"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-md px-4 py-2 mt-4"
@@ -233,7 +237,7 @@ export default function EOIDetails({ eoi, aggregatedItems, flash, organizationNa
               )}
             </div>
             <div>
-              {!(eoi.status === "published" || eoi.status === "closed") && (
+              {!(eoi.status === "published" || eoi.status === "closed" || eoi.status === "under_selection") && (
                 <PublishEOIModal eoiId={eoi.id} />
               )}
             </div>

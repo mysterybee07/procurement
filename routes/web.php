@@ -3,7 +3,6 @@
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EOIController;
 use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RequisitionController;
@@ -123,7 +122,7 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     // Vendor routes
     Route::middleware(['auth', 'ensure.vendor'])->group(function () {
             Route::get('/vendor/eois', [VendorController::class, 'EOIsForVendor'])->name('eois.vendor');
-            Route::get('/vendor/submitted-eois', [VendorEOISubmissionController::class, 'index'])->name('vendoreois.index');
+            Route::get('/vendor/submitted-eois', [VendorEOISubmissionController::class, 'index'])->name('vendoreois.index')->middleware('owner');
             Route::get('/vendor/eoi-submission/{eoi}/details', [VendorEOISubmissionController::class, 'show'])->name('eoisubmission.details');
     });
     // Route::middleware(['auth', 'ensure.vendor', 'owner'])->group(function () {
@@ -131,7 +130,7 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::get('/vendor/eois/{eoi}', [EOIController::class, 'show'])->name('eois.show');
         // Route::get('/vendor/submitted-eois', [VendorEOISubmissionController::class, 'index'])->name('vendoreois.index');
-        Route::get('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'create']);
+        Route::get('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'create'])->middleware('isEOIOpen');
         Route::post('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'store']);
     });
 require __DIR__.'/settings.php';

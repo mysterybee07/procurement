@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'prevent.vendor' => \App\Http\Middleware\HandleVendorAccess::class,
             'ensure.vendor' => \App\Http\Middleware\EnsureVendorAccess::class,
             'owner' => \App\Http\Middleware\EnsureOwner::class,
+            'isEOIOpen' => \App\Http\Middleware\EnsureEOIOpen::class,
         ]);
     })
     

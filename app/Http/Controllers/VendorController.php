@@ -16,8 +16,10 @@ class VendorController extends Controller
 
     public function EOIsForVendor()
     {
-        $openedEOIs = EOI::where('status', 'published')->paginate(10); 
-
+        $openedEOIs = EOI::whereIn('status', ['published', 'open', 'closed', 'cancelled', 'under_selection'])
+        ->orderBy('submission_deadline', 'desc')
+        ->paginate(10);
+    
         // Fetch distinct product categories using a join
         $categories = DB::table('eois')
             ->join('requisitions', 'requisitions.eoi_id', '=', 'eois.id')
