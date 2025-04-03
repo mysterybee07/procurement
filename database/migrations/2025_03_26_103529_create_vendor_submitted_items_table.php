@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('actual_unit_price', 10, 2);
             $table->decimal('actual_product_total_price', 10, 2);
             $table->decimal('discount_rate', 5, 2)->nullable();
-
+            $table->integer('submitted_quantity');
             $table->timestamps();
 
             $table->foreign('vendor_eoi_submission_id')->references('id')->on('vendor_eoi_submissions')->onDelete('cascade');

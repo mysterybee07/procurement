@@ -91,7 +91,7 @@ class VendorRatingService
             return 5; 
         }
         
-        $totalRequired = $items->sum('required_quantity');
+        $totalRequired = $items->RequestItem->sum('required_quantity');
         $totalSubmitted = $items->sum('submitted_quantity');
 
         if ($totalRequired == 0 || $items->count() == 0) {

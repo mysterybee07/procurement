@@ -133,5 +133,8 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
         Route::get('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'create'])->middleware('isEOIOpen');
         Route::post('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'store']);
     });
+
+    // Add this route in your 
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

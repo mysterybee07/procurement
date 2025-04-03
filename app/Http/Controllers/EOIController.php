@@ -307,13 +307,17 @@ class EOIController extends Controller implements HasMiddleware
     public function listVendorSubmissionByEoi(Request $request, $eoiId)
     {
         $eoi = EOI::select('eoi_number','status')->where('id', $eoiId)->firstOrFail();
-        // dd($eoi->status);
         
         if ($request->ajax() && $request->expectsJson()) {
             $submittedEois = DB::table('vendor_eoi_submissions as ves')
                 ->leftJoin('vendors as v', 'ves.vendor_id', '=', 'v.id')
                 ->leftJoin('users as u', 'v.user_id', '=', 'u.id')
                 ->leftJoin('vendor_ratings as vr', 'ves.id', '=', 'vr.vendor_eoi_submission_id')
+                // For product and category filters
+                ->leftJoin('vendor_submitted_items as vsi', 'ves.id', '=', 'vsi.vendor_eoi_submission_id')
+                ->leftJoin('request_items as ri', 'vsi.id','=', 'ri.id')
+                ->leftJoin('products as p', 'ri.product_id', '=', 'p.id')
+                ->leftJoin('product_categories as pc', 'p.category_id', '=', 'pc.id')
                 ->where('ves.eoi_id', $eoiId)
                 ->select([
                     'ves.id',
@@ -324,37 +328,73 @@ class EOIController extends Controller implements HasMiddleware
                     'ves.items_total_price',
                     'ves.delivery_date',
                     'ves.status',
+                ])
+                ->groupBy([
+                    'ves.id',
+                    'ves.vendor_id',
+                    'v.vendor_name',
+                    'u.phone',
+                    'ves.submission_date',
+                    'ves.items_total_price',
+                    'ves.delivery_date',
+                    'ves.status',
                 ]);
 
-            // Filtering logic
+            // Rating filter logic
             $orderColumn = 'ves.submission_date';
             if ($request->filled('rating_filter')) {
                 switch ($request->rating_filter) {
                     case 'by_documents':
-                        $submittedEois->where('vr.document_score', '>', 0);
+                        $submittedEois->where('vr.document_score', '>', 3);
                         $orderColumn = 'vr.document_score';
                         break;
                     case 'by_submission_completeness':
-                        $submittedEois->where('vr.submission_completeness_score', '>', 0);
+                        $submittedEois->where('vr.submission_completeness_score', '>', 3);
                         $orderColumn = 'vr.submission_completeness_score';
                         break;
                     case 'by_pricing':
-                        $submittedEois->where('vr.total_pricing_score', '>=', 0);
+                        $submittedEois->where('vr.total_pricing_score', '>=', 3);
                         $orderColumn = 'vr.total_pricing_score';
                         break;
                     case 'by_delivery':
-                        $submittedEois->where('vr.delivery_date_score', '>=', 0);
+                        $submittedEois->where('vr.delivery_date_score', '>=', 3);
                         $orderColumn = 'vr.delivery_date_score';
                         break;
                     case 'by_past_performance':
-                        $submittedEois->where('vr.past_performance_score', '>=', 0);
+                        $submittedEois->where('vr.past_performance_score', '>=', 3);
                         $orderColumn = 'vr.past_performance_score';
                         break;
                     case 'by_overall_rating':
-                        $submittedEois->where('vr.overall_rating', '>=', 0);
+                        $submittedEois->where('vr.overall_rating', '>=', 3);
                         $orderColumn = 'vr.overall_rating';
                         break;
                 }
+            }
+
+            // Price range filter
+            if ($request->filled('min_price')) {
+                $submittedEois->where('ves.items_total_price', '>=', $request->min_price);
+            }
+            if ($request->filled('max_price')) {
+                $submittedEois->where('ves.items_total_price', '<=', $request->max_price);
+            }
+
+            // Delivery date range filter
+            if ($request->filled('start_delivery_date')) {
+                $submittedEois->whereDate('ves.delivery_date', '>=', $request->start_delivery_date);
+            }
+            if ($request->filled('end_delivery_date')) {
+                $submittedEois->whereDate('ves.delivery_date', '<=', $request->end_delivery_date);
+            }
+
+            // Product category filter
+            if ($request->filled('product_category')) {
+                $submittedEois->where('pc.name', $request->product_category);
+            }
+
+            // Product filter
+            if ($request->filled('product')) {
+                $submittedEois->where('p.name', $request->product);
             }
 
             // Apply ordering in descending order
@@ -393,6 +433,5 @@ class EOIController extends Controller implements HasMiddleware
                 'error' => session('error'),
             ],
         ]);
-    }
-   
+    } 
 }
