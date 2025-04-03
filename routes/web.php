@@ -95,6 +95,8 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     // eoi-submission route
     Route::get('/eoi-submission/{eoi}', [EOIController::class, 'listVendorSubmissionByEoi'])->name('eoisubmission.list');
     Route::get('/eoi-submission/{eoi}/details', [VendorEOISubmissionController::class, 'show'])->name('eoisubmission.details');
+    Route::post('/eoi-submission/{eoi}/begin-selection', [EOIController::class, 'beginVendorSelection'])->name('eoisubmission.begin-selection');
+
 
     // roles route
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');

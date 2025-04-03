@@ -287,10 +287,27 @@ class EOIController extends Controller implements HasMiddleware
             ->with('message', 'EOI published successfully.');
     }
 
+    // Update Status of EOI to begin_selection
+    public function beginVendorSelection($id)
+    {
+        // dd($id);
+        try {
+            $eoi = EOI::findOrFail($id);
+            $eoi->update(['status' => 'under_selection']);
+    
+            return redirect()->back()
+                ->with('message', 'Vendor has been rated based on their submission. Now you can filter them based on their submission.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to begin vendor selection. Please try again.');
+        }
+    }    
+
     // to list vendor based on EOI
     public function listVendorSubmissionByEoi(Request $request, $eoiId)
     {
-        $eoi = EOI::select('eoi_number')->where('id', $eoiId)->firstOrFail();
+        $eoi = EOI::select('eoi_number','status')->where('id', $eoiId)->firstOrFail();
+        // dd($eoi->status);
         
         if ($request->ajax() && $request->expectsJson()) {
             $submittedEois = DB::table('vendor_eoi_submissions as ves')
@@ -369,7 +386,8 @@ class EOIController extends Controller implements HasMiddleware
 
         return Inertia::render('eoi/list-submissions-by-eoi', [
             'eoi_id' => $eoiId, 
-            'eoi_number' => $eoi->eoi_number, 
+            'eoi_number' => $eoi->eoi_number,
+            'eoi_status'=>$eoi->status, 
             'flash' => [
                 'message' => session('message'),
                 'error' => session('error'),
