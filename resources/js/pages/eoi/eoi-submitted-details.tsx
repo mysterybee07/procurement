@@ -11,6 +11,7 @@ interface Product {
 interface RequestItem {
     id: number;
     required_quantity: number;
+    provided_quantity:number;
     additional_specifications?: string | null;
     product: Product;
 }
@@ -162,7 +163,7 @@ const EOISubmittedDetails: React.FC<Props> = ({ submission, flash }) => {
                                                 {item.request_item.product.name}
                                             </td>
                                             <td className="p-3 text-center border border-gray-200">
-                                                {item.request_item.required_quantity}
+                                                {item.request_item.required_quantity-item.request_item.provided_quantity}
                                             </td>
                                             <td className="p-3 text-center border border-gray-200">
                                                 ${parseFloat(item.actual_unit_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

@@ -33,13 +33,50 @@ class EOIController extends Controller implements HasMiddleware
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $eois = EOI::with('createdBy', 'requisitions.requestItems.product')->paginate();
-        // dd($eois);
+        if ($request->ajax() && $request->expectsJson()) {
+            $eois = DB::table('eois as e')
+                ->leftJoin('users as u', 'e.created_by', '=', 'u.id')
+                ->select([
+                    'e.id',
+                    'e.eoi_number',
+                    'e.title',
+                    'e.status',
+                    'e.created_at',
+                    'e.submission_deadline',
+                    'u.id as creator_id',
+                    'u.name as created_by'
+                ]);
+
+            return DataTables::of($eois)
+                ->addColumn('requisitions_count', function ($row) {
+                    return DB::table('requisitions')
+                        ->where('eoi_id', $row->id)
+                        ->count();
+                })
+                ->addColumn('actions', function ($row) {
+                    $actions = '<a href="' . route('eois.show', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">View Details</a>';
+                    $actions .= '<a href="' . route('eois.edit', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>';
+                    $actions .= '<button data-id="' . $row->id . '" class="text-red-600 hover:text-red-900 mr-2 delete-eoi">Delete</button>';
+                    $actions .= '<a href="' . route('eoisubmission.list', $row->id) . '" class="text-indigo-600 hover:text-indigo-900">View Submissions</a>';
+                    
+                    return $actions;
+                })
+                ->filterColumn('eoi_number', function($query, $keyword) {
+                    $query->where('e.eoi_number', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('title', function($query, $keyword) {
+                    $query->where('e.title', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('status', function($query, $keyword) {
+                    $query->where('e.status', 'like', "%{$keyword}%");
+                })
+                ->rawColumns(['actions'])
+                ->toJson();
+        }
 
         return Inertia::render('eoi/list-eois', [
-            'eois' => $eois,
             'flash' => [
                 'message' => session('message'),
                 'error' => session('error'),

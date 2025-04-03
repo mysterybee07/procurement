@@ -34,7 +34,7 @@ class VendorRating extends Model
      */
     public function eoi()
     {
-        return $this->belongsTo(Eoi::class);
+        return $this->belongsTo(EOI::class);
     }
 
     /**
