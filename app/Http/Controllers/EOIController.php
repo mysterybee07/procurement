@@ -333,6 +333,32 @@ class EOIController extends Controller implements HasMiddleware
                     'ves.status',
                 ]);
 
+                if ($request->filled('product_categories') && is_array($request->product_categories)) {
+                    $categoryMatches = DB::table('vendor_submitted_items as vsi_inner')
+                        ->join('request_items as ri_inner', 'vsi_inner.request_items_id', '=', 'ri_inner.id')
+                        ->join('products as p_inner', 'ri_inner.product_id', '=', 'p_inner.id')
+                        ->join('product_categories as pc_inner', 'p_inner.category_id', '=', 'pc_inner.id')
+                        ->whereIn('pc_inner.category_name', $request->product_categories)
+                        ->groupBy('vsi_inner.vendor_eoi_submission_id')
+                        ->havingRaw('COUNT(DISTINCT pc_inner.id) = ?', [count($request->product_categories)])
+                        ->select('vsi_inner.vendor_eoi_submission_id');
+                
+                    $submittedEois->whereIn('ves.id', $categoryMatches);
+                }
+                
+                if ($request->filled('products') && is_array($request->products)) {
+                    $productMatches = DB::table('vendor_submitted_items as vsi_inner')
+                        ->join('request_items as ri_inner', 'vsi_inner.request_items_id', '=', 'ri_inner.id')
+                        ->join('products as p_inner', 'ri_inner.product_id', '=', 'p_inner.id')
+                        ->whereIn('p_inner.name', $request->products)
+                        ->groupBy('vsi_inner.vendor_eoi_submission_id')
+                        ->havingRaw('COUNT(DISTINCT p_inner.id) = ?', [count($request->products)])
+                        ->select('vsi_inner.vendor_eoi_submission_id');
+                
+                    $submittedEois->whereIn('ves.id', $productMatches);
+                }               
+
+            // Single product category filter (legacy support)
             if ($request->filled('product_category')) {
                 $categoryMatches = DB::table('vendor_submitted_items as vsi_inner')
                     ->join('request_items as ri_inner', 'vsi_inner.request_items_id', '=', 'ri_inner.id')
@@ -344,9 +370,8 @@ class EOIController extends Controller implements HasMiddleware
                 $submittedEois->whereIn('ves.id', $categoryMatches);
             }
 
-            // Product filter
+            // Single product filter (legacy support)
             if ($request->filled('product')) {
-                // Use a subquery to find submissions with matching products
                 $productMatches = DB::table('vendor_submitted_items as vsi_inner')
                     ->join('request_items as ri_inner', 'vsi_inner.request_items_id', '=', 'ri_inner.id')
                     ->join('products as p_inner', 'ri_inner.product_id', '=', 'p_inner.id')
@@ -356,7 +381,7 @@ class EOIController extends Controller implements HasMiddleware
                 $submittedEois->whereIn('ves.id', $productMatches);
             }
 
-            // Rating filter logic
+            // Rating filter logic (unchanged)
             $orderColumn = 'ves.submission_date';
             if ($request->filled('rating_filter')) {
                 switch ($request->rating_filter) {
@@ -387,7 +412,7 @@ class EOIController extends Controller implements HasMiddleware
                 }
             }
 
-            // Price range filter
+            // Price range filter (unchanged)
             if ($request->filled('min_price')) {
                 $submittedEois->where('ves.items_total_price', '>=', $request->min_price);
             }
@@ -395,7 +420,7 @@ class EOIController extends Controller implements HasMiddleware
                 $submittedEois->where('ves.items_total_price', '<=', $request->max_price);
             }
 
-            // Delivery date range filter
+            // Delivery date range filter (unchanged)
             if ($request->filled('start_delivery_date')) {
                 $submittedEois->whereDate('ves.delivery_date', '>=', $request->start_delivery_date);
             }
@@ -403,7 +428,7 @@ class EOIController extends Controller implements HasMiddleware
                 $submittedEois->whereDate('ves.delivery_date', '<=', $request->end_delivery_date);
             }
 
-            // Group by vendor submission fields only - let the product/category filters handle product filtering
+            // Group by vendor submission fields only
             $submittedEois->groupBy([
                 'ves.id',
                 'ves.vendor_id',
@@ -445,7 +470,9 @@ class EOIController extends Controller implements HasMiddleware
         return Inertia::render('eoi/list-submissions-by-eoi', [
             'eoi_id' => $eoiId, 
             'eoi_number' => $eoi->eoi_number,
-            'eoi_status'=>$eoi->status, 
+            'eoi_status' => $eoi->status,
+            // 'categories' => $categories,
+            // 'products' => $products,
             'flash' => [
                 'message' => session('message'),
                 'error' => session('error'),

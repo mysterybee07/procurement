@@ -41,8 +41,15 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
   const [maxPrice, setMaxPrice] = useState("");
   const [startDeliveryDate, setStartDeliveryDate] = useState<Date | null>(null);
   const [endDeliveryDate, setEndDeliveryDate] = useState<Date | null>(null);
-  const [productCategory, setProductCategory] = useState("");
-  const [product, setProduct] = useState("");
+  
+  // Changed from string to string[] for multiselect
+  const [selectedProductCategories, setSelectedProductCategories] = useState<string[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  
+  // Dropdown state management
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+  
   const [showFilters, setShowFilters] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<string[]>([]);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
@@ -64,8 +71,20 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
     if (maxPrice) params.append("max_price", maxPrice);
     if (startDeliveryDate) params.append("start_delivery_date", formatDate(startDeliveryDate));
     if (endDeliveryDate) params.append("end_delivery_date", formatDate(endDeliveryDate));
-    if (productCategory) params.append("product_category", productCategory);
-    if (product) params.append("product", product);
+    
+    // Handle multiple selected categories
+    if (selectedProductCategories.length > 0) {
+      selectedProductCategories.forEach(category => {
+        params.append("product_categories[]", category);
+      });
+    }
+    
+    // Handle multiple selected products
+    if (selectedProducts.length > 0) {
+      selectedProducts.forEach(product => {
+        params.append("products[]", product);
+      });
+    }
     
     const queryString = params.toString();
     return queryString ? `${url}?${queryString}` : url;
@@ -103,14 +122,89 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
     setMaxPrice("");
     setStartDeliveryDate(null);
     setEndDeliveryDate(null);
-    setProductCategory("");
-    setProduct("");
+    setSelectedProductCategories([]);
+    setSelectedProducts([]);
     
     // Reset datatable
     if (dataTable) {
       dataTable.ajax.url(`/eoi-submission/${eoi_id}`).load();
     }
   };
+
+  // Toggle category selection
+  const toggleCategorySelection = (category: string) => {
+    setSelectedProductCategories(prev => {
+      if (prev.includes(category)) {
+        return prev.filter(c => c !== category);
+      } else {
+        return [...prev, category];
+      }
+    });
+  };
+
+  // Toggle product selection
+  const toggleProductSelection = (product: string) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(product)) {
+        return prev.filter(p => p !== product);
+      } else {
+        return [...prev, product];
+      }
+    });
+  };
+
+  // Select all categories
+  const selectAllCategories = () => {
+    setSelectedProductCategories([...availableCategories]);
+  };
+
+  // Deselect all categories
+  const deselectAllCategories = () => {
+    setSelectedProductCategories([]);
+  };
+
+  // Select all products
+  const selectAllProducts = () => {
+    setSelectedProducts([...availableProducts]);
+  };
+
+  // Deselect all products
+  const deselectAllProducts = () => {
+    setSelectedProducts([]);
+  };
+
+  // Format the display text for dropdowns
+  const getCategoryDisplayText = () => {
+    if (selectedProductCategories.length === 0) return "All Categories";
+    if (selectedProductCategories.length === 1) return selectedProductCategories[0];
+    if (selectedProductCategories.length === availableCategories.length) return "All Categories";
+    return `${selectedProductCategories.length} categories selected`;
+  };
+
+  const getProductDisplayText = () => {
+    if (selectedProducts.length === 0) return "All Products";
+    if (selectedProducts.length === 1) return selectedProducts[0];
+    if (selectedProducts.length === availableProducts.length) return "All Products";
+    return `${selectedProducts.length} products selected`;
+  };
+
+  // Handle clicks outside of the dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.category-dropdown')) {
+        setIsCategoryDropdownOpen(false);
+      }
+      if (!target.closest('.product-dropdown')) {
+        setIsProductDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // DataTable reference callback
   const dataTableRef = (dtInstance: any) => {
@@ -203,38 +297,152 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
                 </div>
               </div>
 
-              {/* Product category filter */}
-              <div className="mb-4">
-                <label className="block font-semibold mb-2">Product Category:</label>
-                <select
-                  value={productCategory}
-                  onChange={(e) => setProductCategory(e.target.value)}
-                  className="border p-2 rounded w-full"
+              {/* Product category multiselect dropdown */}
+              <div className="mb-4 relative category-dropdown">
+                <label className="block font-semibold mb-2">Product Categories:</label>
+                <div 
+                  className="border p-2 rounded w-full flex justify-between items-center cursor-pointer bg-white"
+                  onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
                 >
-                  <option value="">All Categories</option>
-                  {availableCategories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
+                  <div className="truncate">
+                    {getCategoryDisplayText()}
+                  </div>
+                  <div>
+                    <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Dropdown content */}
+                {isCategoryDropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg">
+                    <div className="sticky top-0 bg-white p-2 border-b flex justify-between">
+                      <button 
+                        className="text-blue-600 text-sm hover:underline" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectAllCategories();
+                        }}
+                      >
+                        Select All
+                      </button>
+                      <button 
+                        className="text-blue-600 text-sm hover:underline" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deselectAllCategories();
+                        }}
+                      >
+                        Deselect All
+                      </button>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {availableCategories.map((category) => (
+                        <div 
+                          key={category} 
+                          className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleCategorySelection(category);
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            id={`category-${category}`}
+                            checked={selectedProductCategories.includes(category)}
+                            onChange={() => {}} // Handled by div click
+                            className="mr-2"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <label 
+                            htmlFor={`category-${category}`}
+                            className="cursor-pointer w-full"
+                          >
+                            {category}
+                          </label>
+                        </div>
+                      ))}
+                      {availableCategories.length === 0 && (
+                        <div className="p-2 text-gray-500 text-sm">No categories available</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Product filter */}
-              <div className="mb-4">
-                <label className="block font-semibold mb-2">Product:</label>
-                <select
-                  value={product}
-                  onChange={(e) => setProduct(e.target.value)}
-                  className="border p-2 rounded w-full"
+              {/* Product multiselect dropdown */}
+              <div className="mb-4 relative product-dropdown">
+                <label className="block font-semibold mb-2">Products:</label>
+                <div 
+                  className="border p-2 rounded w-full flex justify-between items-center cursor-pointer bg-white"
+                  onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
                 >
-                  <option value="">All Products</option>
-                  {availableProducts.map((prod) => (
-                    <option key={prod} value={prod}>
-                      {prod}
-                    </option>
-                  ))}
-                </select>
+                  <div className="truncate">
+                    {getProductDisplayText()}
+                  </div>
+                  <div>
+                    <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Dropdown content */}
+                {isProductDropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg">
+                    <div className="sticky top-0 bg-white p-2 border-b flex justify-between">
+                      <button 
+                        className="text-blue-600 text-sm hover:underline" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectAllProducts();
+                        }}
+                      >
+                        Select All
+                      </button>
+                      <button 
+                        className="text-blue-600 text-sm hover:underline" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deselectAllProducts();
+                        }}
+                      >
+                        Deselect All
+                      </button>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {availableProducts.map((product) => (
+                        <div 
+                          key={product} 
+                          className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleProductSelection(product);
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            id={`product-${product}`}
+                            checked={selectedProducts.includes(product)}
+                            onChange={() => {}} // Handled by div click
+                            className="mr-2"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <label 
+                            htmlFor={`product-${product}`}
+                            className="cursor-pointer w-full"
+                          >
+                            {product}
+                          </label>
+                        </div>
+                      ))}
+                      {availableProducts.length === 0 && (
+                        <div className="p-2 text-gray-500 text-sm">No products available</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
