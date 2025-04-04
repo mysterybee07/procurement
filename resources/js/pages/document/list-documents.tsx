@@ -6,7 +6,10 @@ import DeleteModal from '@/components/delete-modal';
 import DocumentModalForm from './document-form';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'All Documents', href: '/dashboard' },
+    {
+        title: 'All Documents',
+        href: '/dashboard'
+    },
 ];
 
 interface Document {
@@ -85,7 +88,7 @@ export default function ListDocument({ documents, flash }: PageProps) {
                                                         isEditing={true}
                                                         document={document}
                                                         buttonLabel="Edit"
-                                                        // onSuccess={onSuccess}
+                                                    // onSuccess={onSuccess}
                                                     />
                                                     <DeleteModal
                                                         title="Delete Document"

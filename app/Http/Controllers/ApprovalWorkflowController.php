@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ApprovalWorkflow;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class ApprovalWorkflowController extends Controller
 {
@@ -20,7 +22,11 @@ class ApprovalWorkflowController extends Controller
      */
     public function create()
     {
-        //
+        $roles = Role::all();
+        // dd($roles);
+        return Inertia::render('approval-workflow/approval-workflow-form',[
+            'roles'=>$roles,
+        ]);
     }
 
     /**

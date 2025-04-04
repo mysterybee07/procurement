@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApprovalWorkflowController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EOIController;
 use App\Http\Controllers\PermissionController;
@@ -10,8 +11,6 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\VendorEOISubmissionController;
-use App\Models\Requisition;
-use App\Models\VendorEOISubmission;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -109,6 +108,10 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     ->name('roles.permissions');
     Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])
     ->name('roles.updatePermissions');
+
+    // approval workflows route
+    Route::get('/approval-workflow/create', [ApprovalWorkflowController::class, 'create'])->name('approval-workflow.create');
+
 
 
     // Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
