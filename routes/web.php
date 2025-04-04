@@ -110,8 +110,12 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     ->name('roles.updatePermissions');
 
     // approval workflows route
-    Route::get('/approval-workflow/create', [ApprovalWorkflowController::class, 'create'])->name('approval-workflow.create');
-
+    Route::get('/approval-workflows', [ApprovalWorkflowController::class, 'index'])->name('approval-workflows.index');
+    Route::get('/approval-workflows/create', [ApprovalWorkflowController::class, 'create'])->name('approval-workflow.create');
+    Route::post('/approval-workflows', [ApprovalWorkflowController::class, 'store'])->name('approval-workflows.store');
+    Route::get('/approval-workflows/{workflow}/edit', [ApprovalWorkflowController::class, 'edit'])->name('approval-workflows.edit');
+    Route::put('/approval-workflows/{workflow}', [ApprovalWorkflowController::class, 'update'])->name('approval-workflows.update');
+    Route::delete('/approval-workflows/{workflow}', [ApprovalWorkflowController::class, 'destroy'])->name('approval-workflows.destroy');
 
 
     // Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');

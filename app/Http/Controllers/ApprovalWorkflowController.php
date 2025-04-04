@@ -14,7 +14,7 @@ class ApprovalWorkflowController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('approval-workflow/list-approval-workflows');
     }
 
     /**
