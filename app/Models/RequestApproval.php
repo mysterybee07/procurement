@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class RequestApproval extends Model
 {
     use HasFactory;
 
-    protected $table = 'request_approval';
+    protected $table = 'request_approvals';
     
     protected $fillable = [
         'entity_id',
@@ -26,14 +27,14 @@ class RequestApproval extends Model
         'action_date' => 'datetime',
     ];
 
-    /**
-     * Get the approvable entity (polymorphic).
-     * This could be a purchase request, invoice, time-off request, etc.
-     */
-    // public function approvable(): MorphTo
-    // {
-    //     return $this->morphTo('approvable', 'entity_type', 'entity_id');
-    // }
+   
+    //  Get the approvable entity (polymorphic).
+    //  This could be a eoi, purchase request, invoice, time-off request, etc.
+    
+    public function approvable(): MorphTo
+    {
+        return $this->morphTo('approvable', 'entity_type', 'entity_id');
+    }
 
     /**
      * Get the approval step associated with this request.

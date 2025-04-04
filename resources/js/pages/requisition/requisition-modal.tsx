@@ -57,7 +57,6 @@ export default function DirectRequisitionModal({
     products,
     onSuccess,
     onClose,
-    // initialSelectedIds = [],
     isOpen
 }: Props) {
     const dateInput = useRef<HTMLInputElement>(null);

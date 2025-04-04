@@ -16,7 +16,6 @@ class ApprovalWorkflow extends Model
         'approval_workflow_type',
         'is_active'
     ];
-
     /**
      * Get the steps for this workflow.
      */
