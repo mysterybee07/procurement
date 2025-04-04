@@ -75,7 +75,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
   useEffect(() => {
     const fetchProductData = async () => {
       try {
-        const response = await fetch(`/api/eoi/${eoi_id}/products`);
+        const response = await fetch(`/eoi/${eoi_id}/products`);
         if (response.ok) {
           const data = await response.json();
           setAvailableProducts(data.products || []);

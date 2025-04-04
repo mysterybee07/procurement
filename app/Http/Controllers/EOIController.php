@@ -313,9 +313,12 @@ class EOIController extends Controller implements HasMiddleware
                 ->leftJoin('vendors as v', 'ves.vendor_id', '=', 'v.id')
                 ->leftJoin('users as u', 'v.user_id', '=', 'u.id')
                 ->leftJoin('vendor_ratings as vr', 'ves.id', '=', 'vr.vendor_eoi_submission_id')
-                // For product and category filters
-                ->leftJoin('vendor_submitted_items as vsi', 'ves.id', '=', 'vsi.vendor_eoi_submission_id')
-                ->leftJoin('request_items as ri', 'vsi.id','=', 'ri.id')
+                ->leftJoin('vendor_submitted_items as vsi', function($join) {
+                    $join->on('ves.id', '=', 'vsi.vendor_eoi_submission_id');
+                })
+                ->leftJoin('request_items as ri', function($join) {
+                    $join->on('vsi.request_items_id', '=', 'ri.id');
+                })
                 ->leftJoin('products as p', 'ri.product_id', '=', 'p.id')
                 ->leftJoin('product_categories as pc', 'p.category_id', '=', 'pc.id')
                 ->where('ves.eoi_id', $eoiId)
@@ -328,17 +331,30 @@ class EOIController extends Controller implements HasMiddleware
                     'ves.items_total_price',
                     'ves.delivery_date',
                     'ves.status',
-                ])
-                ->groupBy([
-                    'ves.id',
-                    'ves.vendor_id',
-                    'v.vendor_name',
-                    'u.phone',
-                    'ves.submission_date',
-                    'ves.items_total_price',
-                    'ves.delivery_date',
-                    'ves.status',
                 ]);
+
+            if ($request->filled('product_category')) {
+                $categoryMatches = DB::table('vendor_submitted_items as vsi_inner')
+                    ->join('request_items as ri_inner', 'vsi_inner.request_items_id', '=', 'ri_inner.id')
+                    ->join('products as p_inner', 'ri_inner.product_id', '=', 'p_inner.id')
+                    ->join('product_categories as pc_inner', 'p_inner.category_id', '=', 'pc_inner.id')
+                    ->where('pc_inner.category_name', $request->product_category)
+                    ->select('vsi_inner.vendor_eoi_submission_id');
+                    
+                $submittedEois->whereIn('ves.id', $categoryMatches);
+            }
+
+            // Product filter
+            if ($request->filled('product')) {
+                // Use a subquery to find submissions with matching products
+                $productMatches = DB::table('vendor_submitted_items as vsi_inner')
+                    ->join('request_items as ri_inner', 'vsi_inner.request_items_id', '=', 'ri_inner.id')
+                    ->join('products as p_inner', 'ri_inner.product_id', '=', 'p_inner.id')
+                    ->where('p_inner.name', $request->product)
+                    ->select('vsi_inner.vendor_eoi_submission_id');
+                    
+                $submittedEois->whereIn('ves.id', $productMatches);
+            }
 
             // Rating filter logic
             $orderColumn = 'ves.submission_date';
@@ -387,15 +403,17 @@ class EOIController extends Controller implements HasMiddleware
                 $submittedEois->whereDate('ves.delivery_date', '<=', $request->end_delivery_date);
             }
 
-            // Product category filter
-            if ($request->filled('product_category')) {
-                $submittedEois->where('pc.name', $request->product_category);
-            }
-
-            // Product filter
-            if ($request->filled('product')) {
-                $submittedEois->where('p.name', $request->product);
-            }
+            // Group by vendor submission fields only - let the product/category filters handle product filtering
+            $submittedEois->groupBy([
+                'ves.id',
+                'ves.vendor_id',
+                'v.vendor_name',
+                'u.phone',
+                'ves.submission_date',
+                'ves.items_total_price',
+                'ves.delivery_date',
+                'ves.status',
+            ]);
 
             // Apply ordering in descending order
             $submittedEois->orderByDesc($orderColumn);
@@ -433,5 +451,5 @@ class EOIController extends Controller implements HasMiddleware
                 'error' => session('error'),
             ],
         ]);
-    } 
+    }
 }

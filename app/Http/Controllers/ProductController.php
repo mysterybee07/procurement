@@ -123,4 +123,33 @@ class ProductController extends Controller implements HasMiddleware
             ? back()->with('message', $result['message'])
             : back()->withErrors(['error' => $result['message']]);
     }
+
+    public function getEOIProductsAndCategories($eoiId)
+    {
+        $products = DB::table('vendor_submitted_items as vsi')
+        ->join('vendor_eoi_submissions as ves', 'vsi.vendor_eoi_submission_id', '=', 'ves.id')
+        ->join('request_items as ri', 'vsi.id','=', 'ri.id')
+        ->join('products as p', 'ri.product_id', '=', 'p.id')
+        ->where('ves.eoi_id', $eoiId)
+        ->select('p.name')
+        ->distinct()
+        ->pluck('p.name')
+        ->toArray();
+
+        $categories = DB::table('vendor_submitted_items as vsi')
+            ->join('vendor_eoi_submissions as ves', 'vsi.vendor_eoi_submission_id', '=', 'ves.id')
+            ->join('request_items as ri', 'vsi.id','=', 'ri.id')
+            ->join('products as p', 'ri.product_id', '=', 'p.id')
+            ->join('product_categories as pc', 'p.category_id', '=', 'pc.id')
+            ->where('ves.eoi_id', $eoiId)
+            ->select('pc.category_name')
+            ->distinct()
+            ->pluck('pc.category_name')
+            ->toArray();
+
+        return response()->json([
+            'products' => $products,
+            'categories' => $categories
+        ]);
+    }
 }
