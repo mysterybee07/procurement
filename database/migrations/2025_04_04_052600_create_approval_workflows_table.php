@@ -16,7 +16,10 @@ return new class extends Migration
             $table->string('workflow_name');
             $table->decimal('min_amount', 15, 2)->nullable();
             $table->decimal('max_amount', 15, 2)->nullable();
-            $table->string('approval_workflow_type');
+            $table->enum('approval_workflow_type', [      
+                'parallel',
+                'sequential'
+            ])->default('sequential');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
