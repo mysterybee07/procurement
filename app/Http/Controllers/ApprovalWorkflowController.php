@@ -8,15 +8,48 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
+use Yajra\DataTables\Contracts\DataTable;
+use Yajra\DataTables\DataTables;
 
 class ApprovalWorkflowController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render('approval-workflow/list-approval-workflows');
+        // $approvalWorkflows= ApprovalWorkflow::with('approvalSteps')->get();
+        // dd($approvalWorkflows);
+        if($request->ajax() && $request->expectsJson()){
+            $approvalWorkflows = DB::table('approval_workflows as aw')
+                ->join('approval_steps as as', 'as.approval_workflow_id', '=', 'aw.id')
+                ->select([
+                    'aw.id',
+                    'aw.workflow_name',
+                    'aw.approval_workflow_type',
+                    DB::raw('COUNT(as.step_number) as step_count')
+                ])
+                ->groupBy('aw.id', 'aw.workflow_name', 'aw.approval_workflow_type');
+
+            return DataTables::of($approvalWorkflows)
+                ->filterColumn('workflow_name', function($query, $keyword){
+                    $query->where('aw.workflow_name','like',"%{$keyword}%");
+                })
+                ->addColumn('actions', function ($row) {
+                    return '<a href="'.route('approval-workflows.edit', $row->id).'" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>' .
+                    '<a href="'.route('approval-workflow.show', $row->id).'" class="text-indigo-600 hover:text-indigo-900 mr-3">Details</a>' .
+                        '<button data-id="'.$row->id.'" class="text-red-600 hover:text-red-900 delete-workflow">Delete</button>';
+                })
+                ->rawColumns(['actions'])
+                ->toJson();
+        }
+
+        return Inertia::render('approval-workflow/list-approval-workflows',[
+            'flash'=>[
+                'message'=>session('message'),
+                'error'=>session('error'),
+            ]
+        ]);
     }
 
     /**

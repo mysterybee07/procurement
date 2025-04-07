@@ -112,6 +112,7 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     // approval workflows route
     Route::get('/approval-workflows', [ApprovalWorkflowController::class, 'index'])->name('approval-workflows.index');
     Route::get('/approval-workflows/create', [ApprovalWorkflowController::class, 'create'])->name('approval-workflow.create');
+    Route::get('/approval-workflows/{workflow}', [ApprovalWorkflowController::class, 'show'])->name('approval-workflow.show');
     Route::post('/approval-workflows', [ApprovalWorkflowController::class, 'store'])->name('approval-workflows.store');
     Route::get('/approval-workflows/{workflow}/edit', [ApprovalWorkflowController::class, 'edit'])->name('approval-workflows.edit');
     Route::put('/approval-workflows/{workflow}', [ApprovalWorkflowController::class, 'update'])->name('approval-workflows.update');
