@@ -37,8 +37,8 @@ class ApprovalWorkflowController extends Controller
                 })
                 ->addColumn('actions', function ($row) {
                     return '<a href="'.route('approval-workflows.edit', $row->id).'" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>' .
-                    '<a href="'.route('approval-workflow.show', $row->id).'" class="text-indigo-600 hover:text-indigo-900 mr-3">Details</a>' .
-                        '<button data-id="'.$row->id.'" class="text-red-600 hover:text-red-900 delete-workflow">Delete</button>';
+                            '<a href="'.route('approval-workflow.show', $row->id).'" class="text-indigo-600 hover:text-indigo-900 mr-3">Details</a>' .
+                            '<button data-id="'.$row->id.'" class="text-red-600 hover:text-red-900 delete-workflow">Delete</button>';
                 })
                 ->rawColumns(['actions'])
                 ->toJson();

@@ -418,7 +418,7 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
               {/* Display selected requisition IDs */}
               {requisitionIds.length > 0 && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Selected Requisition IDs ({requisitionIds.length})</label>
+                  <label className="block text-sm font-medium mb-1">Selected Requisition</label>
                   <div className="p-2 border rounded bg-white">
                     {requisitionIds.join(', ')}
                   </div>

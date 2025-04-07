@@ -27,11 +27,6 @@ interface RequisitionFormData {
   [key: string]: any;
 }
 
-// Define a more specific type for form errors
-// interface FormErrors {
-//   [key: string]: string;
-// }
-
 interface Props {
   products: Product[];
   isEditing: boolean;
@@ -43,45 +38,8 @@ interface Props {
     urgency?: string;
     status?: string;
     request_items?: RequestItem[];
-    
   }
 }
-
-// interface SimpleRichTextEditorProps {
-//   value: string;
-//   onChange: (value: string) => void;
-//   placeholder?: string;
-// }
-
-// const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onChange, placeholder }) => {
-//   return (
-//     <div className="border rounded">
-//       <div className="flex gap-2 p-2 border-b bg-gray-50">
-//         <button className="p-1 hover:bg-gray-200 rounded" title="Bold">
-//           <Bold size={16} />
-//         </button>
-//         <button className="p-1 hover:bg-gray-200 rounded" title="Italic">
-//           <Italic size={16} />
-//         </button>
-//         <button className="p-1 hover:bg-gray-200 rounded" title="Bullet List">
-//           <List size={16} />
-//         </button>
-//         <button className="p-1 hover:bg-gray-200 rounded" title="Insert Link">
-//           <Link size={16} />
-//         </button>
-//         <button className="p-1 hover:bg-gray-200 rounded" title="Insert Image">
-//           <Image size={16} />
-//         </button>
-//       </div>
-//       <textarea
-//         value={value}
-//         onChange={(e) => onChange(e.target.value)}
-//         className="w-full p-2 min-h-24 focus:outline-none"
-//         placeholder={placeholder}
-//       />
-//     </div>
-//   );
-// };
 
 const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisition }) => {
   const defaultItem: RequestItem = {
@@ -103,7 +61,7 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
   ];
 
   // Form initialization with type-safe errors
-  const { data, setData, post, put, errors, processing, reset } = useForm<RequisitionFormData>({
+  const { data, setData, post, put, errors, processing, reset, clearErrors } = useForm<RequisitionFormData>({
     id: requisition?.id || 0,
     title: requisition?.title || '',
     description: requisition?.description || '',
@@ -120,34 +78,6 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
       : [{ ...defaultItem }],
   });
 
- 
-
-  // Form submission state
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionType, setSubmissionType] = useState<'draft' | 'submitted' | 'updated'>('draft');
-
-  // Handle form submission
-  useEffect(() => {
-    if (isSubmitting) {
-      if (isEditing) {
-        put(`/requisitions/${data.id}`, {
-          onSuccess: () => {
-            reset();
-            setIsSubmitting(false);
-          },
-        });
-      } else {
-        post('/requisitions', {
-          onSuccess: () => {
-            reset();
-            setIsSubmitting(false);
-          },
-        });
-      }
-    }
-  }, [isSubmitting]);
-
-
   const handleItemChange = (
     index: number,
     field: string,
@@ -159,6 +89,12 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
       [field]: field === 'product_id' ? Number(value) : value
     };
     setData('requestItems', updatedItems);
+    
+    // Clear specific field error when the field is modified
+    const errorKey = `requestItems.${index}.${field}`;
+    if (errors[errorKey]) {
+      clearErrors(errorKey);
+    }
   };
 
   const addNewItem = () => {
@@ -170,35 +106,72 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
 
   const removeItem = (index: number) => {
     if (data.requestItems.length > 1) {
-      setData('requestItems', data.requestItems.filter((_, i) => i !== index));
+      const updatedItems = data.requestItems.filter((_, i) => i !== index);
+      setData('requestItems', updatedItems);
+      
+      // Clear errors for removed item
+      Object.keys(errors).forEach(key => {
+        if (key.startsWith(`requestItems.${index}`)) {
+          clearErrors(key);
+        }
+      });
     }
   };
 
-   // Form submission handlers
-   const saveAsDraft = (e: React.FormEvent) => {
+  // Form submission handlers
+  const saveAsDraft = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear any previous errors before submission
+    clearErrors();
+    
+    // Set the status and submit
     setData('status', 'draft');
-    setSubmissionType('draft');
-    setIsSubmitting(true);
+    
+    if (isEditing) {
+      put(`/requisitions/${data.id}`);
+    } else {
+      post('/requisitions');
+    }
   };
 
   const submitForApproval = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear any previous errors before submission
+    clearErrors();
+    
+    // Set the status and submit
     setData('status', 'submitted');
-    setSubmissionType('submitted');
-    setIsSubmitting(true);
+    
+    if (isEditing) {
+      put(`/requisitions/${data.id}`);
+    } else {
+      post('/requisitions');
+    }
   };
 
   const updateRequisition = (e: React.FormEvent) => {
     e.preventDefault();
-    setData('status', 'draft');
-    setSubmissionType('draft');
-    setIsSubmitting(true);
+    
+    // Clear any previous errors before submission
+    clearErrors();
+    
+    // Update requisition
+    put(`/requisitions/${data.id}`);
   };
 
   // Helper function to safely get error messages
   const getErrorMessage = (field: string) => {
     return errors[field] || '';
+  };
+
+  // Clear a specific field error when input changes
+  const handleInputChange = (field: string, value: string) => {
+    setData(field, value);
+    if (errors[field]) {
+      clearErrors(field);
+    }
   };
 
   return (
@@ -218,26 +191,14 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
                   type="text"
                   name="title"
                   value={data.title}
-                  onChange={(e) => setData('title', e.target.value)}
-                  className="w-full p-2 border rounded"
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  className={`w-full p-2 border rounded ${errors.title ? 'border-red-500' : ''}`}
                   required
                 />
                 {errors.title && (
                   <p className="mt-1 text-sm text-red-600">{errors.title}</p>
                 )}
               </div>
-
-              {/* <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Description*</label>
-                <SimpleRichTextEditor
-                  value={data.description}
-                  onChange={(value) => setData('description', value)}
-                  placeholder="Enter a detailed description of this Requisition..."
-                />
-                {errors.description && (
-                  <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-                )}
-              </div> */}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="mb-4">
@@ -246,8 +207,8 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
                     type="date"
                     name="required_date"
                     value={data.required_date}
-                    onChange={(e) => setData('required_date', e.target.value)}
-                    className="w-full p-2 border rounded"
+                    onChange={(e) => handleInputChange('required_date', e.target.value)}
+                    className={`w-full p-2 border rounded ${errors.required_date ? 'border-red-500' : ''}`}
                     required
                   />
                   {errors.required_date && (
@@ -260,7 +221,7 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
                   <select
                     name="urgency"
                     value={data.urgency}
-                    onChange={(e) => setData('urgency', e.target.value)}
+                    onChange={(e) => handleInputChange('urgency', e.target.value)}
                     className="w-full p-2 border rounded"
                   >
                     <option value="low">Low</option>
@@ -299,7 +260,7 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
                       name="product_id"
                       value={item.product_id}
                       onChange={(e) => handleItemChange(index, 'product_id', e.target.value)}
-                      className="w-full p-2 border rounded"
+                      className={`w-full p-2 border rounded ${getErrorMessage(`requestItems.${index}.product_id`) ? 'border-red-500' : ''}`}
                       required
                     >
                       <option value={0}>Select an item</option>
@@ -339,7 +300,7 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
                         name="required_quantity"
                         value={item.required_quantity}
                         onChange={(e) => handleItemChange(index, 'required_quantity', e.target.value)}
-                        className="w-full p-2 border rounded"
+                        className={`w-full p-2 border rounded ${getErrorMessage(`requestItems.${index}.required_quantity`) ? 'border-red-500' : ''}`}
                         required
                       />
                       {getErrorMessage(`requestItems.${index}.required_quantity`) && (

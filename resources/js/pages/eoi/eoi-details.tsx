@@ -226,7 +226,7 @@ export default function EOIDetails({ eoi, aggregatedItems, flash, organizationNa
             )}
             <hr />
             <div className="flex justify-end space-x-4">
-              {eoi.status === 'open' && (
+              {eoi.status === "open" && user.is_vendor && (
                 <Button
                   type="button"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-md px-4 py-2 mt-4"
@@ -237,10 +237,11 @@ export default function EOIDetails({ eoi, aggregatedItems, flash, organizationNa
               )}
             </div>
             <div>
-              {!(eoi.status === "published" || eoi.status === "closed" || eoi.status === "under_selection") && (
+              {!(eoi.status === "published" || eoi.status === "closed" || eoi.status === "under_selection" || eoi.status === "open") && !user.permissions.includes('publish eoi') && (
                 <PublishEOIModal eoiId={eoi.id} />
               )}
             </div>
+
           </div>
         </div>
       </div>

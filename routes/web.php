@@ -139,8 +139,8 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::get('/vendor/eois/{eoi}', [EOIController::class, 'show'])->name('eois.show');
         // Route::get('/vendor/submitted-eois', [VendorEOISubmissionController::class, 'index'])->name('vendoreois.index');
-        Route::get('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'create'])->middleware('isEOIOpen');
-        Route::post('/vendor/{eoi}/submission', [VendorEOISubmissionController::class, 'store']);
+        Route::get('/vendor/{eoiId}/submission', [VendorEOISubmissionController::class, 'create'])->middleware('isEOIOpen');
+        Route::post('/vendor/{eoiId}/submission', [VendorEOISubmissionController::class, 'store']);
     });
 
     // Add this route in your 

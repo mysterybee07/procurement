@@ -54,6 +54,7 @@ class PermissionSeeder extends Seeder
             'edit eois',
             'delete eois',
             'show eois',
+            'publish eois',
 
             // Role management
             'view roles',

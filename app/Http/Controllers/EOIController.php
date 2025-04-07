@@ -26,8 +26,7 @@ class EOIController extends Controller implements HasMiddleware
             new Middleware('permission:create eois', only: ['create']),
             new Middleware('permission:edit eois', only: ['edit']),
             new Middleware('permission:delete eois', only: ['destroy']),
-            // new Middleware('permission:assign permissions to eois', only: ['assignPermissionsToRole']),
-            // new Middleware('permission:update role permissions', only: ['updatePermissions']),
+            new Middleware('permission:publish eois', only:['publishEOI']),
         ];
     }
     /**
