@@ -241,4 +241,12 @@ class ApprovalWorkflowController extends Controller
         return $entityMap[strtolower($entityType)] ?? null;
     }
     
+
+    public function approverDashboard()
+    {
+        // echo"Hello world";
+        // dd($this);
+
+        return Inertia::render('approval-workflow/approval-dashboard');
+    }
 }
