@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\EOIRequest;
+use App\Models\ApprovalWorkflow;
 use App\Models\Document;
 use App\Models\EOI;
 use App\Models\Product;
@@ -155,6 +156,7 @@ class EOIController extends Controller implements HasMiddleware
     public function show(EOI $eoi)
     {
         $eoi->load('createdBy', 'documents', 'requisitions.requestItems.product.category');
+        $approvalWorkflows=ApprovalWorkflow::select('id','workflow_name')->get();
 
         $aggregatedItems = [];
 
@@ -182,7 +184,8 @@ class EOIController extends Controller implements HasMiddleware
         // dd($aggregatedItems);
         return Inertia::render('eoi/eoi-details', [
             'eoi' => $eoi,
-            'aggregatedItems' => array_values($aggregatedItems), 
+            'aggregatedItems' => array_values($aggregatedItems),
+            'approvalWorkflows'=>$approvalWorkflows, 
             'flash' => [
                 'message' => session('message'),
                 'error' => session('error'),

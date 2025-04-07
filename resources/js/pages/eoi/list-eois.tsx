@@ -140,10 +140,7 @@ export default function ListEOI({ flash }: EoiProps) {
                     button.addEventListener('click', (e) => {
                       e.preventDefault();
                       const id = (e.currentTarget as HTMLElement).dataset.id;
-                      
-                      // You would need to implement the deletion confirmation here
-                      // This depends on how your DeleteModal component works
-                      // For now, let's just redirect to the delete route
+
                       if (confirm('Are you sure you want to delete this EOI?')) {
                         router.delete(route('eois.destroy', id));
                       }

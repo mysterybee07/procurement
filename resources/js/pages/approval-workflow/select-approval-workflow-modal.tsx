@@ -19,9 +19,10 @@ import {
 interface SelectWorkflowModalProps {
     approval_workflows: {
         id: number; 
-        name: string 
+        workflow_name: string 
     }[];
     entity_id: number;
+    // entity_type:string;
 }
 
 export default function SelectWorkflowModal({ approval_workflows, entity_id }: SelectWorkflowModalProps) {
@@ -40,7 +41,7 @@ export default function SelectWorkflowModal({ approval_workflows, entity_id }: S
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        post(`/requests/${entity_id}/set-workflow`, {
+        post(`/assign-approval-workflows/${entity_id}`, {
             preserveScroll: true,
             onSuccess: () => closeModal(),
             onError: () => selectRef.current?.focus(),
@@ -78,7 +79,7 @@ export default function SelectWorkflowModal({ approval_workflows, entity_id }: S
                                     <SelectContent>
                                         {approval_workflows.map((workflow) => (
                                             <SelectItem key={workflow.id} value={workflow.id.toString()}>
-                                                {workflow.name}
+                                                {workflow.workflow_name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -88,8 +89,8 @@ export default function SelectWorkflowModal({ approval_workflows, entity_id }: S
 
                             <Button>
                                 <a
-                                    href="/approval-workflow/create"
-                                    className="text-sm text-blue-600 hover:underline"
+                                    href="/approval-workflows/create"
+                                    className=""
                                 >
                                     + Create New Workflow
                                 </a>

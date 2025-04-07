@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ApprovalWorkflowRequest;
+use App\Models\ApprovalStep;
 use App\Models\ApprovalWorkflow;
+use App\Models\RequestApproval;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 use Yajra\DataTables\Contracts\DataTable;
@@ -121,7 +124,7 @@ class ApprovalWorkflowController extends Controller
      */
     public function edit(ApprovalWorkflow $approvalWorkflow)
     {
-        //
+        
     }
 
     /**
@@ -139,4 +142,103 @@ class ApprovalWorkflowController extends Controller
     {
         //
     }
+
+    public function assignWorkflow(Request $request, $entityId)
+    {
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
+            'approval_workflow_id' => 'required|exists:approval_workflows,id',
+        ]);
+        $entity_type = 'eoi';
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $workflow = ApprovalWorkflow::findOrFail($request->approval_workflow_id);
+        
+        // Update the entity with the selected workflow
+        $entityClass = $this->getEntityModelClass($entity_type);
+        
+        if (!$entityClass) {
+            return back()->withErrors(['entity_type' => 'Invalid entity type']);
+        }
+        
+        $entity = $entityClass::findOrFail($entityId);
+
+        if (!is_null($entity->approval_workflow_id)) {
+            return back()->withErrors(['approval_workflow_id' => 'This entity already has an assigned workflow.']);
+        }
+
+        $entity->approval_workflow_id = $workflow->id;
+        
+        // update the status field
+        if (isset($entity->status) && $entity->status === 'draft') {
+            $entity->status = 'submitted';
+        }
+
+        $entity->save();
+        
+        // Create initial approval record if workflow is sequential
+        if ($workflow->approval_workflow_type === 'sequential') {
+
+            // Get the first step in the workflow
+            $firstStep = ApprovalStep::where('approval_workflow_id', $workflow->id)
+                ->orderBy('step_number', 'asc')
+                ->first();
+                
+            if ($firstStep) {
+                // Set current approval step on the entity
+                if (isset($entity->current_approval_step)) {
+                    $entity->current_approval_step = $firstStep->step_name;
+                    $entity->save();
+                }
+                
+                // Create request approval entry
+                RequestApproval::create([
+                    'entity_id' => $entityId,
+                    'entity_type' => $entity_type,
+                    'status' => 'pending',
+                    'approval_step_id' => $firstStep->id,
+                ]);
+            }
+        } else if ($workflow->approval_workflow_type === 'parallel') {
+            // For parallel workflow, create approval entries for all steps at once
+            $steps = ApprovalStep::where('approval_workflow_id', $workflow->id)
+                ->orderBy('step_number', 'asc')
+                ->get();
+                
+            foreach ($steps as $step) {
+                RequestApproval::create([
+                    'entity_id' => $entityId,
+                    'entity_type' => $entity_type,
+                    'status' => 'pending',
+                    'approval_step_id' => $step->id,
+                ]);
+            }
+            
+            // Set the first step as current
+            if (isset($entity->current_approval_step) && count($steps) > 0) {
+                $entity->current_approval_step = $steps[0]->step_name;
+                $entity->save();
+            }
+        }
+
+        return redirect()->route('eois.index')->with('message', 'Approval workflow has been assigned successfully');
+    }
+    
+    /**
+     * Get the fully qualified class name for a given entity type
+     */
+    private function getEntityModelClass($entityType)
+    {
+        // Map entity types to their respective model classes
+        $entityMap = [
+            'eoi' => \App\Models\EOI::class,
+            // Add other entity types as needed
+        ];
+        
+        return $entityMap[strtolower($entityType)] ?? null;
+    }
+    
 }

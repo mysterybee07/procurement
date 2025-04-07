@@ -5,8 +5,14 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import PublishEOIModal from '@/components/publish-eoi-modal';
+import SelectWorkflowModal from '../approval-workflow/select-approval-workflow-modal';
 
 // Interfaces
+
+interface ApprovalWorkflow {
+  id: number;
+  workflow_name: string;
+}
 interface Product {
   id: number;
   name: string;
@@ -60,18 +66,26 @@ interface AggregatedItem {
 
 interface EOIProps {
   eoi: Eoi;
-  aggregatedItems: AggregatedItem[]; // Added to match backend data
+  aggregatedItems: AggregatedItem[];
+  approvalWorkflows: ApprovalWorkflow[]; 
   flash: {
     message: string;
     error: string;
   };
-  organizationName?: string; // Made optional since it might be hardcoded
-  organizationAddress?: string; // Made optional since it might be hardcoded
+  organizationName?: string;
+  organizationAddress?: string; 
 }
 
-export default function EOIDetails({ eoi, aggregatedItems, flash, organizationName = "Whetstone Associates", organizationAddress = "Sankhamul, Kathmandu" }: EOIProps) {
+export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, flash, organizationName = "Whetstone Associates", organizationAddress = "Sankhamul, Kathmandu" }: EOIProps) {
   const { auth } = usePage().props as any;
   const user = auth?.user;
+  console.log(approvalWorkflows);
+
+  // const approvalWorkflows = [
+  //   { id: 1, name: 'Workflow 1' },
+  //   { id: 2, name: 'Workflow 2' },
+  //   { id: 3, name: 'Workflow 3' },
+  // ];
 
   // Helper function to format date
   const formatDate = (dateString: string) => {
@@ -241,7 +255,7 @@ export default function EOIDetails({ eoi, aggregatedItems, flash, organizationNa
                 <PublishEOIModal eoiId={eoi.id} />
               )}
             </div>
-
+            <SelectWorkflowModal approval_workflows={approvalWorkflows} entity_id={eoi.id} />
           </div>
         </div>
       </div>
