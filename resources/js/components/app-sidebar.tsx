@@ -75,6 +75,12 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
         permission: 'view eois'
     },
     {
+        title: 'Approvals',
+        href: '/approvals',
+        icon: LayoutGrid,
+        permission: 'view eois'
+    },
+    {
         title: 'Open EOIs',
         href: '/vendor/eois',
         icon: LayoutGrid,

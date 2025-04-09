@@ -6,11 +6,6 @@ import { Bold, Italic, List, Link, Image, Calendar } from 'lucide-react';
 import DocumentModalForm from '../document/document-form'
 import DirectRequisitionModal from '../requisition/requisition-modal';
 
-// interface ApprovalWorkflow {
-//   id: number;
-//   name: string;
-// }
-
 interface Document {
   id: number;
   name: string;
@@ -43,7 +38,6 @@ interface SimpleRichTextEditorProps {
 }
 
 interface Props {
-  // approvalWorkflows: ApprovalWorkflow[];
   requiredDocuments: Document[];
   products: Product[],
   isEditing: boolean;
@@ -53,8 +47,6 @@ interface Props {
     description?: string;
     document_id?: number;
     status?: string;
-    // approval_workflow_id?: number;
-    // submission_deadline?: string;
     evaluation_criteria?: string;
     eoi_number?: string;
     allow_partial_item_submission?: boolean;
@@ -126,7 +118,7 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
     eoi_number: '',
     allow_partial_item_submission: false,
     documents: [],
-    requisition_ids: [], // Initialize requisition_ids
+    requisition_ids: [],
   });
 
   // Get requisition IDs from URL on component mount
@@ -206,16 +198,29 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
     setData('documents', []);
   };
 
+  // Modified to automatically select the new document
   const handleDocumentCreated = (newDocument: Document) => {
     setDocuments([...documents, newDocument]);
+    // Automatically select the newly added document
     setData('documents', [...data.documents, newDocument.id]);
     setIsDocumentModalOpen(false);
   };
 
-  // Handle requisition selection from modal
+  // Modified to handle requisition selection from modal - ensure it adds to existing selection
   const handleRequisitionSelected = (selectedIds: number[]) => {
-    setRequisitionIds(selectedIds);
-    setData('requisition_ids', selectedIds);
+    // Filter out any IDs that are already in the requisitionIds array
+    const newIds = selectedIds.filter(id => !requisitionIds.includes(id));
+    
+    // If there are new IDs, add them to the existing ones
+    if (newIds.length > 0) {
+      const updatedIds = [...requisitionIds, ...newIds];
+      setRequisitionIds(updatedIds);
+      setData('requisition_ids', updatedIds);
+    } else {
+      // Otherwise just set as is (might be removing items)
+      setRequisitionIds(selectedIds);
+      setData('requisition_ids', selectedIds);
+    }
   };
 
   // Handle opening the requisition modal
@@ -229,7 +234,7 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
   };
 
   // Form submission handlers
-  const handleSubmit = (e: React.FormEvent, status: 'draft' | 'submitted') => {
+  const handleSubmit = (e: React.FormEvent, status: 'draft') => {
     e.preventDefault();
     setData('status', status);
 
@@ -298,7 +303,7 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
                   <DocumentModalForm
                     isEditing={false}
                     buttonLabel="Add New Document"
-                  // onSuccess={handleDocumentCreated}
+                    onSuccess={handleDocumentCreated} // Make sure this prop is passed correctly
                   />
                 </div>
                 <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
@@ -369,7 +374,6 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
                 </div>
               </div>
 
-
               <div className="mb-4">
                 <div className="flex justify-between">
                   <div className="flex items-center">
@@ -438,7 +442,7 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
               {isEditing ? (
                 <button
                   type="button"
-                  onClick={(e) => handleSubmit(e, data.status as 'draft' | 'submitted')}
+                  onClick={(e) => handleSubmit(e, data.status as 'draft')}
                   disabled={processing}
                   className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                 >
@@ -450,18 +454,18 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
                     type="button"
                     onClick={(e) => handleSubmit(e, 'draft')}
                     disabled={processing}
-                    className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
+                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-gray-600 disabled:opacity-50"
                   >
-                    {processing ? 'Saving...' : 'Save as Draft'}
+                    {processing ? 'Saving...' : 'Create EOI'}
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={(e) => handleSubmit(e, 'submitted')}
                     disabled={processing}
                     className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                   >
                     {processing ? 'Submitting...' : 'Submit for Approval'}
-                  </button>
+                  </button> */}
                 </>
               )}
             </div>

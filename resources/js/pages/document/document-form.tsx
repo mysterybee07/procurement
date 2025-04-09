@@ -4,14 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import InputError from '@/components/input-error';
 
+interface Document {
+  id: number;
+  name: string;
+}
+
 interface DocumentModalProps {
   isEditing: boolean;
-  document?: {
-    id?: number;
-    name: string;
-  };
+  document?: Document; // Explicitly define the document type as optional
   buttonLabel?: string;
-  onSuccess?: () => void;
+  onSuccess?: (document: Document) => void;
 }
 
 export default function DocumentFormModal({ isEditing, document, buttonLabel = "Add New Document", onSuccess }: DocumentModalProps) {
@@ -28,7 +30,7 @@ export default function DocumentFormModal({ isEditing, document, buttonLabel = "
   useEffect(() => {
     if (isEditing && document) {
       setData({
-        id: document.id?.toString() || '',
+        id: document.id.toString(), // Ensure id is a string
         name: document.name || '',
       });
     } else {      
@@ -42,18 +44,28 @@ export default function DocumentFormModal({ isEditing, document, buttonLabel = "
     if (isEditing && document?.id) {
       put(route('documents.update', document.id), {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (page) => {
           handleClose();
-          if (onSuccess) onSuccess();
+          if (onSuccess) {
+            onSuccess({
+              id: document.id,
+              name: data.name
+            });
+          }
         },
         onError: () => nameInput.current?.focus(),
       });
     } else {
       post(route('documents.store'), {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (page) => {
           handleClose();
-          if (onSuccess) onSuccess();
+          if (onSuccess) {
+            onSuccess({
+              id: page.props.createdDocument?.id || 0,
+              name: data.name
+            });
+          }
         },
         onError: () => nameInput.current?.focus(),
       });

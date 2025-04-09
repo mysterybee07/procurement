@@ -119,7 +119,7 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::put('/approval-workflows/{workflow}', [ApprovalWorkflowController::class, 'update'])->name('approval-workflows.update');
     Route::delete('/approval-workflows/{workflow}', [ApprovalWorkflowController::class, 'destroy'])->name('approval-workflows.destroy');
     Route::post('/assign-approval-workflows/{entityType}/{entityId}', [ApprovalWorkflowController::class, 'assignWorkflow'])->name('approval-workflows.assign');
-    Route::get('/approver-dashboard', [ApprovalController::class, 'approverDashboard'])->name('approval-workflows.dashboard');
+    Route::get('/approvals', [ApprovalController::class, 'approverDashboard'])->name('approval-workflows.dashboard');
 
 
     Route::post('/entity/{entityId}/approve',[ApprovalController::class,'approve'])->name('entity.approve');

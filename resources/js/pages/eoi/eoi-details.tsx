@@ -67,13 +67,13 @@ interface AggregatedItem {
 interface EOIProps {
   eoi: Eoi;
   aggregatedItems: AggregatedItem[];
-  approvalWorkflows: ApprovalWorkflow[]; 
+  approvalWorkflows: ApprovalWorkflow[];
   flash: {
     message: string;
     error: string;
   };
   organizationName?: string;
-  organizationAddress?: string; 
+  organizationAddress?: string;
 }
 
 export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, flash, organizationName = "Whetstone Associates", organizationAddress = "Sankhamul, Kathmandu" }: EOIProps) {
@@ -251,11 +251,15 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
               )}
             </div>
             <div>
-              {!(eoi.status === "published" || eoi.status === "closed" || eoi.status === "under_selection" || eoi.status === "open") && !user.permissions.includes('publish eoi') && (
-                <PublishEOIModal eoiId={eoi.id} />
-              )}
+              {eoi.status === "approved" &&
+                !["published", "closed", "under_selection", "open", "draft"].includes(eoi.status) &&
+                !user.permissions.includes('publish eoi') && (
+                  <PublishEOIModal eoiId={eoi.id} />
+                )}
             </div>
-            <SelectWorkflowModal approval_workflows={approvalWorkflows} entity_id={eoi.id} entity_type='eoi' />
+            {eoi.status === "draft" && (
+              <SelectWorkflowModal approval_workflows={approvalWorkflows} entity_id={eoi.id} entity_type='eoi' />
+            )}
           </div>
         </div>
       </div>

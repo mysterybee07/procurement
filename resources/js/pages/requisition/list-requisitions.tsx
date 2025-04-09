@@ -4,6 +4,7 @@ import AppLayout from "@/layouts/app-layout";
 import { type BreadcrumbItem } from "@/types";
 import DataTable from "@/components/datatable";
 import Confirmation from "@/components/confirmation-modal";
+// import Tooltip from "@/components/tooltip";
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -55,6 +56,32 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
     confirm("Please select Requisitions First");
   };
 
+  const canCreateEOI = (row: any) => {
+    if (row.status !== "submitted" ) return false;
+    if (row.eoi_id) return false;
+    
+    // Check if all products have enough stock
+    const quantities = row.quantities.split(',').map((q: string) => parseInt(q.trim()));
+    const inStock = row.in_stock.split(',').map((s: string) => parseInt(s.trim()));
+    
+    return quantities.some((q: number, i: number) => q > inStock[i]);
+  };
+
+  const getCheckboxTooltip = (row: any) => {
+    if (row.status !== "submitted") return "required items already provided";
+    if (row.eoi_id) return "EOI already created for this requisition";
+    
+    // Check if all products can be fulfilled from stock
+    const quantities = row.quantities.split(',').map((q: string) => parseInt(q.trim()));
+    const inStock = row.in_stock.split(',').map((s: string) => parseInt(s.trim()));
+    
+    const canFulfill = quantities.every((q: number, i: number) => q <= inStock[i]);
+    
+    if (canFulfill) return "All items can be fulfilled from stock - no need for EOI";
+    
+    return "Select this requisition for EOI creation";
+  };
+
   const columns = [
     {
       data: "select",
@@ -64,9 +91,23 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
       searchable: false,
       visible: user?.permissions?.includes("create eois"),
       render: function (data: any, type: any, row: any) {
-        const disabled = row.status !== "submitted" || row.eoi_id;
-        return `<input type="checkbox" class="requisition-select h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" 
-                data-id="${row.id}" ${disabled ? "disabled" : ""}>`;
+        const disabled = !canCreateEOI(row);
+        const tooltip = getCheckboxTooltip(row);
+        
+        return `
+          <div class="relative">
+            <input 
+              type="checkbox" 
+              class="requisition-select h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" 
+              data-id="${row.id}" 
+              ${disabled ? "disabled" : ""}
+              title="${tooltip}"
+            >
+            ${disabled ? `
+              <div class="absolute inset-0 cursor-not-allowed" title="${tooltip}"></div>
+            ` : ''}
+          </div>
+        `;
       },
     },
     {
@@ -96,7 +137,7 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
       title: "In Stock",
       className: "px-6 py-4 whitespace-nowrap",
       orderable: false,
-      visible: user?.permission?.includes("create eois"),
+      visible: user?.permissions?.includes("create eois"),
     },
     {
       data: "required_date",
@@ -120,7 +161,6 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
       orderable: false,
       searchable: false,
     },
-  
   ];
 
   return (

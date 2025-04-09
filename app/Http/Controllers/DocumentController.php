@@ -60,17 +60,21 @@ class DocumentController extends Controller implements HasMiddleware
         DB::beginTransaction();
         
         try {
-            
             $data = $request->validated();
             
-            // Create the new role
-            Document::create(['name' => $data['name']]);
+            // Create the new document and get the instance
+            $document = Document::create(['name' => $data['name']]);
                         
             DB::commit();
             
-            return redirect()->back()->with(
-                'message', 'Document created successfully'
-            );
+            // Return with the created document directly as part of the Inertia props
+            return back()
+                ->with('message', 'Document created successfully')
+                ->with('createdDocument', [
+                    'id' => $document->id,
+                    'name' => $document->name
+                ]);
+                
         } catch (\Exception $e) {
             DB::rollBack();
             
