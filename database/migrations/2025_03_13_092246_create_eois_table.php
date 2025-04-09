@@ -32,6 +32,7 @@ return new class extends Migration
             $table->string('current_approval_step')->nullable();
             $table->unsignedBigInteger('approval_workflow_id')->nullable();
             $table->date('submission_deadline')->nullable();
+            $table->date('submission_opening_date')->nullable();
             $table->text('evaluation_criteria')->nullable();
             $table->string('eoi_number')->unique();
             $table->boolean('allow_partial_item_submission')->default(false);

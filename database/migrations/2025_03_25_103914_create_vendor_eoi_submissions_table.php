@@ -23,6 +23,7 @@ public function up(): void
             'under_review',   
             'rejected',       
         ])->default('draft');
+        $table->integer('submitted_quantity');
         $table->string('terms_and_conditions')->nullable();
         $table->text('remarks')->nullable();
         $table->date('delivery_date');

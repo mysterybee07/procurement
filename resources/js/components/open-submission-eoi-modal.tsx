@@ -4,25 +4,25 @@ import { FormEventHandler, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-interface PublishEOIModalProps {
+interface OpenEOIModalProps {
     eoiId: number;
 }
 
-export default function PublishEOIModal({ eoiId }: PublishEOIModalProps) {
+export default function OpenEOIModal({ eoiId }: OpenEOIModalProps) {
     const inputRef = useRef<HTMLInputElement>(null);
-    const { data, setData, processing, reset, errors, clearErrors, put } = useForm<{ submission_opening_date: string, eoiId: number }>({
-        submission_opening_date: '',
+    const { data, setData, processing, reset, errors, clearErrors, put } = useForm<{ submission_deadline: string, eoiId: number }>({
+        submission_deadline: '',
         eoiId: eoiId,
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setData('submission_opening_date', e.target.value);
+        setData('submission_deadline', e.target.value);
     };
 
-    const PublishEOI: FormEventHandler = (e) => {
+    const OpenEOI: FormEventHandler = (e) => {
         e.preventDefault();
 
-        put(`/eois/${eoiId}/publish`, {
+        put(`/eois/${eoiId}/open`, {
             preserveScroll: true,
             onSuccess: () => closeModal(),
             onError: () => inputRef.current?.focus(),
@@ -40,28 +40,28 @@ export default function PublishEOIModal({ eoiId }: PublishEOIModalProps) {
             <div className="space-y-4 rounded-lg border p-4 dark:border-yellow-200/10 dark:bg-yellow-700/10">
                 <Dialog>
                     <DialogTrigger asChild>
-                        <Button className='bg-green-400 text-black'>Publish</Button>
+                        <Button className='bg-green-400 text-black'>Open EOI For Submission</Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <DialogTitle>Confirm Publishment</DialogTitle>
+                        <DialogTitle>Confirm Open</DialogTitle>
                         <DialogDescription>
-                           Enter the submission opening date for the vendor to submit their bid.
+                           Enter the submission deadline date for the vendor to submit their bid.
                         </DialogDescription>
-                        <form className="space-y-6" onSubmit={PublishEOI}>
+                        <form className="space-y-6" onSubmit={OpenEOI}>
                             <div className="mb-4">
-                                <label className="block text-sm font-medium mb-1">Opening Date</label>
+                                <label className="block text-sm font-medium mb-1">Submission Deadline</label>
                                 <div className="relative">
                                     <input
                                         type="date"
-                                        name="submission_opening_date"
-                                        value={data.submission_opening_date}
+                                        name="submission_deadline"
+                                        value={data.submission_deadline}
                                         onChange={handleChange}
                                         ref={inputRef}
                                         className="w-full p-2 border rounded"
                                     />
                                 </div>
-                                {errors.submission_opening_date && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.submission_opening_date}</p>
+                                {errors.submission_deadline && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.submission_deadline}</p>
                                 )}
                             </div>
                             <DialogFooter className="gap-2">
@@ -72,7 +72,7 @@ export default function PublishEOIModal({ eoiId }: PublishEOIModalProps) {
                                 </DialogClose>
 
                                 <Button variant="default" type="submit" disabled={processing}>
-                                    Publish
+                                    Open
                                 </Button>
                             </DialogFooter>
                         </form>

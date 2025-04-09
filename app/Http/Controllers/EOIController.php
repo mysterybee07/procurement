@@ -267,17 +267,36 @@ class EOIController extends Controller implements HasMiddleware
             ->with('message', 'Expression of Interest deleted successfully.');
     }
 
-    public function publishEOI(Request $request, EOI $eoi)
+    public function openEOI(Request $request, EOI $eoi)
     {
         $request->validate([
             'submission_deadline' => 'required|date|after:today',
         ]);
 
         // dd($request);
-        // if ($eoi->status!=='approved') {
-        //     return redirect()->back()
-        //         ->with('error', 'EOI cannot be published because it has not been approved.');
-        // }
+        if ($eoi->status!=='published') {
+            return redirect()->back()
+                ->with('error', 'EOI cannot be open because it has not been approved.');
+        }
+
+        $eoi->update([
+            'status' => 'open',
+            'eoi_opening_date' => $request['eoi_opening_date'],
+        ]);
+
+        return redirect()->back()
+            ->with('message', 'EOI published successfully.');
+    }
+    public function publishEOI(Request $request, EOI $eoi)
+    {
+        $request->validate([
+            'submission_deadline' => 'required|date|after:today',
+        ]);
+
+        if ($eoi->status!=='approved') {
+            return redirect()->back()
+                ->with('error', 'EOI cannot be published because it has not been approved.');
+        }
 
         $eoi->update([
             'status' => 'published',

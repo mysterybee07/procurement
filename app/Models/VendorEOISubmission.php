@@ -13,6 +13,7 @@ class VendorEOISubmission extends Model
         'vendor_id',
         'submission_date',
         'status',
+        'submitted_quantity',
         'terms_and_conditions',
         'delivery_date',
         'remarks',

@@ -6,6 +6,7 @@ import { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import PublishEOIModal from '@/components/publish-eoi-modal';
 import SelectWorkflowModal from '../approval-workflow/select-approval-workflow-modal';
+import OpenEOIModal from '@/components/open-submission-eoi-modal';
 
 // Interfaces
 
@@ -228,7 +229,7 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
             </section>
 
             {/* Submission Deadline */}
-            {(eoi.status === "published" || eoi.status === "under_selection") && (
+            {(eoi.status === "open" || eoi.status === "under_selection") && (
               <div className="mb-6 p-4 bg-gray-100 rounded text-red-600">
                 <span className="font-semibold">Submission Deadline: </span>
                 {new Date(eoi.submission_deadline) < new Date() ? (
@@ -256,6 +257,9 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
                 !user.permissions.includes('publish eoi') && (
                   <PublishEOIModal eoiId={eoi.id} />
                 )}
+              {eoi.status === "published" && (
+                <OpenEOIModal eoiId={eoi.id} />
+              )}
             </div>
             {eoi.status === "draft" && (
               <SelectWorkflowModal approval_workflows={approvalWorkflows} entity_id={eoi.id} entity_type='eoi' />

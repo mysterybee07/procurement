@@ -20,6 +20,7 @@ class EOI extends Model
         'status',
         'current_approval_step',
         'approval_workflow_id',
+        'submission_opening_date',
         'submission_deadline',
         'evaluation_criteria',
         'eoi_number',
