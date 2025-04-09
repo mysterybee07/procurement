@@ -6,6 +6,7 @@ use App\Http\Requests\ApprovalWorkflowRequest;
 use App\Models\ApprovalStep;
 use App\Models\ApprovalWorkflow;
 use App\Models\RequestApproval;
+use App\Services\EntityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -144,100 +145,42 @@ class ApprovalWorkflowController extends Controller
         //
     }
 
-    public function assignWorkflow(Request $request, $entityId)
+    public function assignWorkflow(Request $request, $entityType, $entityId, EntityService $entityService)
     {
-        // Validate the incoming request
         $validator = Validator::make($request->all(), [
             'approval_workflow_id' => 'required|exists:approval_workflows,id',
-            // 'entity_type' => 'required|string|in:\App\Models\EOI', 
         ]);
-    
+
         if ($validator->fails()) {
             return back()->withErrors($validator);
         }
-    
-        $entityType = "\App\Models\EOI";
-    
-        $entityClass = $this->getEntityModelClass($entityType);
-    
-        if (!$entityClass) {
+
+        $entityClass = $entityService->getEntityModelClass($entityType);
+
+        if (!$entityClass || !class_exists($entityClass)) {
             return back()->withErrors(['entity_type' => 'Invalid entity type']);
         }
-    
+
         $workflow = ApprovalWorkflow::findOrFail($request->approval_workflow_id);
         $entity = $entityClass::findOrFail($entityId);
-    
+        // dd($entity);
+
         if (!is_null($entity->approval_workflow_id)) {
             return back()->withErrors([
                 'approval_workflow_id' => 'This entity already has an assigned workflow.'
             ]);
         }
-    
-        DB::beginTransaction();
-    
+
         try {
-            $entity->approval_workflow_id = $workflow->id;
-    
-            if (isset($entity->status) && $entity->status === 'draft') {
-                $entity->status = 'submitted';
-            }
-    
-            $entity->save();
-    
-            if ($workflow->approval_workflow_type === 'sequential') {
-                $firstStep = ApprovalStep::where('approval_workflow_id', $workflow->id)
-                    ->orderBy('step_number', 'asc')
-                    ->first();
-    
-                if ($firstStep) {
-                    $entity->current_approval_step = $firstStep->step_name;
-                    $entity->save();
-    
-                    RequestApproval::create([
-                        'entity_id' => $entityId,
-                        'entity_type' => $entityType,
-                        'status' => 'pending',
-                        'approval_step_id' => $firstStep->id,
-                    ]);
-                }
-    
-            } else if ($workflow->approval_workflow_type === 'parallel') {
-                $steps = ApprovalStep::where('approval_workflow_id', $workflow->id)
-                    ->orderBy('step_number', 'asc')
-                    ->get();
-    
-                foreach ($steps as $step) {
-                    RequestApproval::create([
-                        'entity_id' => $entityId,
-                        'entity_type' => $entityType,
-                        'status' => 'pending',
-                        'approval_step_id' => $step->id,
-                    ]);
-                }
-    
-                if (count($steps) > 0) {
-                    $entity->current_approval_step = $steps[0]->step_name;
-                    $entity->save();
-                }
-            }
-    
-            DB::commit();
-    
-            return redirect()->route('eois.index')->with('message', 'Approval workflow has been assigned successfully');
-    
+            app(\App\Services\ApprovalWorkflowService::class)
+                ->assignWorkflowToEntity($entity, $workflow, $entityType);
+
+            return redirect()->route('eois.index')->with(
+                'message', 'Approval workflow has been assigned successfully'
+            );
         } catch (\Exception $e) {
-            DB::rollBack();
             return back()->withErrors(['error' => 'Failed to assign workflow.']);
         }
     }
     
-    private function getEntityModelClass($entityType)
-    {
-        $entityMap = [
-            '\App\Models\EOI' => \App\Models\EOI::class,
-            // Add more entity types here as needed
-        ];
-    
-        return $entityMap[$entityType] ?? null;
-    }
 }

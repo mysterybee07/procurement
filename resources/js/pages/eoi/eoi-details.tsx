@@ -255,7 +255,7 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
                 <PublishEOIModal eoiId={eoi.id} />
               )}
             </div>
-            <SelectWorkflowModal approval_workflows={approvalWorkflows} entity_id={eoi.id} />
+            <SelectWorkflowModal approval_workflows={approvalWorkflows} entity_id={eoi.id} entity_type='eoi' />
           </div>
         </div>
       </div>

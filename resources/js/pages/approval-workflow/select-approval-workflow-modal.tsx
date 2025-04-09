@@ -5,7 +5,6 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
 import {
     Dialog,
     DialogClose,
@@ -18,30 +17,30 @@ import {
 
 interface SelectWorkflowModalProps {
     approval_workflows: {
-        id: number; 
-        workflow_name: string 
+        id: number;
+        workflow_name: string;
     }[];
     entity_id: number;
-    // entity_type:string;
+    entity_type: string;
 }
 
-export default function SelectWorkflowModal({ approval_workflows, entity_id }: SelectWorkflowModalProps) {
+export default function SelectWorkflowModal({
+    approval_workflows,
+    entity_id,
+    entity_type,
+}: SelectWorkflowModalProps) {
     const selectRef = useRef<HTMLSelectElement>(null);
 
-    const { data, setData, post, processing, reset, errors, clearErrors } = useForm<{
-        approval_workflow_id: string;
-        entity_type: string;
-        entity_id: number;
-    }>({
+    const { data, setData, post, processing, reset, errors, clearErrors } = useForm({
         approval_workflow_id: '',
-        entity_type: '', 
-        entity_id: 0,
+        entity_type,
+        entity_id,
     });
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        post(`/assign-approval-workflows/${entity_id}`, {
+        post(`/assign-approval-workflows/${entity_type}/${entity_id}`, {
             preserveScroll: true,
             onSuccess: () => closeModal(),
             onError: () => selectRef.current?.focus(),
@@ -87,22 +86,16 @@ export default function SelectWorkflowModal({ approval_workflows, entity_id }: S
                                 <InputError message={errors.approval_workflow_id} />
                             </div>
 
-                            <Button>
-                                <a
-                                    href="/approval-workflows/create"
-                                    className=""
-                                >
-                                    + Create New Workflow
-                                </a>
+                            <Button asChild variant="outline">
+                                <a href="/approval-workflows/create">+ Create New Workflow</a>
                             </Button>
 
                             <DialogFooter className="gap-2">
                                 <DialogClose asChild>
-                                    <Button variant="secondary" onClick={closeModal}>
+                                    <Button type="button" variant="secondary" onClick={closeModal}>
                                         Cancel
                                     </Button>
                                 </DialogClose>
-
                                 <Button type="submit" disabled={processing}>
                                     Save
                                 </Button>

@@ -113,30 +113,40 @@ const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ flash, requestApp
   );
 
   const handleAction = (id: number, action: 'approve' | 'reject') => {
-
-     router.post(route('entity.approve', { requestApprovalId: id }), {
-      comments: '',
-    }, {
-      onSuccess: () => {
-        setSuccessMessage('Request approved successfully');
-        setTimeout(() => setSuccessMessage(null), 3000);
-      },
-      onError: (errors) => {
-        console.error(errors);
-        setError('Failed to approve request');
-      }
-    });
-  
-    if (action === 'reject') {
-      // You can define a similar reject route or use a modal for comments, etc.
-      console.log(`Rejecting item ${id}`);
+    if (action === 'approve') {
+      router.post(route('entity.approve', { entityId: id }), {
+        comments: '', // Add any comments you want to send
+      }, {
+        onSuccess: () => {
+          setSuccessMessage('Request approved successfully');
+          setTimeout(() => setSuccessMessage(null), 3000);
+        },
+        onError: (errors) => {
+          console.error(errors);
+          setError('Failed to approve request');
+        }
+      });
+    } else if (action === 'reject') {
+      // Handle the rejection route
+      router.post(route('entity.reject', { entityId: id }), {
+        comments: '', // Add any comments you want to send for rejection
+      }, {
+        onSuccess: () => {
+          setSuccessMessage('Request rejected successfully');
+          setTimeout(() => setSuccessMessage(null), 3000);
+        },
+        onError: (errors) => {
+          console.error(errors);
+          setError('Failed to reject request');
+        }
+      });
     }
   };
+
 
   const handleViewDetails = (item: ApprovalItem) => {
     // Implement your view details logic here
     console.log('View details for', item);
-    // You would typically navigate to a details page or open a modal
   };
 
   // Render approval cards
