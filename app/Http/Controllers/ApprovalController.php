@@ -162,11 +162,58 @@ class ApprovalController extends Controller
 
     private function updateEntityStatus($approvalItem, $status)
     {
-        $entity = $this->getEntityInstance($approvalItem->entity_type, $approvalItem->entity_id);
-        if ($entity) {
-            $entity->status = $status;
-            $entity->current_approval_step = null;
-            $entity->save();
+        try {
+            $entityClass = app(EntityService::class)->getEntityModelClass($approvalItem->entity_type);
+
+            // Check if the class is valid and exists
+            if ($entityClass && class_exists($entityClass)) {
+                $entity = $entityClass::find($approvalItem->entity_id);
+                
+                if ($entity) {
+                    if ($status === 'approved') {
+                        $entity->status = $status;
+                        $entity->current_approval_step = 'approved by all required approvers';
+                        
+                        // Check if there is a next step in the approval process
+                        $nextStep = ApprovalStep::where('approval_workflow_id', $approvalItem->step->approval_workflow_id)
+                            ->where('step_number', '>', $approvalItem->step->step_number)
+                            ->orderBy('step_number', 'asc')
+                            ->first();
+                        
+                        // If there is a next step, update the current approval step
+                        if ($nextStep) {
+                            $entity->current_approval_step = 'waiting for ' . $nextStep->step_name;
+                        }
+                    }
+                    elseif ($status === 'rejected') {
+                        $entity->status = $status;
+                        
+                        // Get the approver's role from the approval step
+                        $approverRole = $approvalItem->step->approver_role;  
+                        
+                        // Set the current approval step to 'rejected by <approver_role>'
+                        $entity->current_approval_step = 'rejected by ' . $approverRole;
+                    }
+
+                    // Save the updated entity
+                    $entity->save();
+                    
+                    // Return success message
+                    return redirect()->back()->with('message', 'Entity status updated successfully.');
+                } else {
+                    // Entity not found in the database
+                    // \Log::error("Entity not found for type {$approvalItem->entity_type} and ID {$approvalItem->entity_id}");
+                    return redirect()->back()->withErrors(['error' => 'Entity not found.']);
+                }
+            } else {
+                // Invalid entity type or class does not exist
+                // \Log::error("Invalid entity class for type {$approvalItem->entity_type}");
+                return redirect()->back()->withErrors(['error' => 'Invalid entity type.']);
+            }
+        } catch (\Exception $e) {
+            // Log the exception and return a general error message
+            // \Log::error('Error updating entity status: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['error' => 'An error occurred while updating the entity status. Please try again later.']);
         }
     }
 
