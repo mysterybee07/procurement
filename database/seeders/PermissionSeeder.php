@@ -63,6 +63,18 @@ class PermissionSeeder extends Seeder
             'delete roles',
             'assign permissions to roles',
             'update role permissions',
+
+            // approval workflows
+            'view approval workflows',
+            'create approval workflows',
+            'edit approval workflows',
+            'delete approval workflows',
+            'assign workflows',
+
+            // approvals
+
+            'view approvals',
+            'approve and reject requests'
         ];
 
         foreach ($permissions as $permission) {

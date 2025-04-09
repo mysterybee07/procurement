@@ -254,7 +254,7 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
             <div>
               {eoi.status === "approved" &&
                 !["published", "closed", "under_selection", "open", "draft"].includes(eoi.status) &&
-                !user.permissions.includes('publish eoi') && (
+                user.permissions.includes('publish eois') && (
                   <PublishEOIModal eoiId={eoi.id} />
                 )}
               {eoi.status === "published" && (

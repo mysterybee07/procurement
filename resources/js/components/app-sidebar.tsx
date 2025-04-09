@@ -26,12 +26,6 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
         icon: LayoutGrid,
         permission: 'view roles'
     },
-    // {
-    //     title: 'Permissions',
-    //     href: '/permissions',
-    //     icon: LayoutGrid,
-    //     permission: 'view permissions'
-    // },
     {
         title: 'Product Category',
         href: '/categories',
@@ -72,13 +66,13 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
         title: 'Approval Workflows',
         href: '/approval-workflows',
         icon: LayoutGrid,
-        permission: 'view eois'
+        permission: 'view approval workflows'
     },
     {
         title: 'Approvals',
         href: '/approvals',
         icon: LayoutGrid,
-        permission: 'view eois'
+        permission: 'view approvals'
     },
     {
         title: 'Open EOIs',

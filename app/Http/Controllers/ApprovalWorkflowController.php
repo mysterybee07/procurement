@@ -8,6 +8,7 @@ use App\Models\ApprovalWorkflow;
 use App\Models\RequestApproval;
 use App\Services\EntityService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -15,12 +16,25 @@ use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 use Yajra\DataTables\Contracts\DataTable;
 use Yajra\DataTables\DataTables;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ApprovalWorkflowController extends Controller
+
+class ApprovalWorkflowController extends Controller implements HasMiddleware
 {
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view approval workflows', only: ['index']),
+            new Middleware('permission:create approval workflows', only: ['create']),
+            new Middleware('permission:edit approval workflows', only: ['edit']),
+            new Middleware('permission:delete approval workflows', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */
+
     public function index(Request $request)
     {
         // $approvalWorkflows= ApprovalWorkflow::with('approvalSteps')->get();

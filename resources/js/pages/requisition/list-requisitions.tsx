@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import AppLayout from "@/layouts/app-layout";
 import { type BreadcrumbItem } from "@/types";
 import DataTable from "@/components/datatable";
-import Confirmation from "@/components/confirmation-modal";
-// import Tooltip from "@/components/tooltip";
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -53,11 +51,11 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
   };
 
   const showMessage = () => {
-    confirm("Please select Requisitions First");
+    alert("Please select Requisitions First");
   };
 
   const canCreateEOI = (row: any) => {
-    if (row.status !== "submitted" ) return false;
+    if (row.status !== "submitted") return false;
     if (row.eoi_id) return false;
     
     // Check if all products have enough stock
@@ -80,6 +78,30 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
     if (canFulfill) return "All items can be fulfilled from stock - no need for EOI";
     
     return "Select this requisition for EOI creation";
+  };
+
+  // Handle the submission of a requisition
+  const handleSubmitRequisition = (requisitionId: number) => {
+    // Direct submission without confirmation
+    router.post(route("requisitions.submit", requisitionId), {}, {
+      onSuccess: () => {
+        // Refresh the table after submission
+        const table = $('#requisition-table').DataTable();
+        if (table) table.ajax.reload();
+      }
+    });
+  };
+
+  // Handle the deletion of a requisition
+  const handleDeleteRequisition = (requisitionId: number) => {
+    // Direct deletion without confirmation
+    router.delete(route("requisitions.destroy", requisitionId), {
+      onSuccess: () => {
+        // Refresh the table after deletion
+        const table = $('#requisition-table').DataTable();
+        if (table) table.ajax.reload();
+      }
+    });
   };
 
   const columns = [
@@ -163,6 +185,40 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
     },
   ];
 
+  // Setup event handlers after table is drawn
+  useEffect(() => {
+    // Global event listeners for submit and delete buttons
+    const handleButtonClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      
+      // Handle submit button clicks
+      if (target.classList.contains('submit-requisition')) {
+        e.preventDefault();
+        const submitId = target.getAttribute('data-submit-id');
+        if (submitId) {
+          handleSubmitRequisition(parseInt(submitId));
+        }
+      }
+      
+      // Handle delete button clicks
+      if (target.classList.contains('delete-requisition')) {
+        e.preventDefault();
+        const deleteId = target.getAttribute('data-id');
+        if (deleteId) {
+          handleDeleteRequisition(parseInt(deleteId));
+        }
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('click', handleButtonClick);
+    
+    // Cleanup on component unmount
+    return () => {
+      document.removeEventListener('click', handleButtonClick);
+    };
+  }, []);
+
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Requisitions" />
@@ -171,7 +227,7 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
         <div className="w-full mx-auto sm:px-6 lg:px-8">
           <h2 className="text-xl font-bold mb-4">Recent Requisitions</h2>
 
-          {/* Flash Message */}
+          {/* Flash Messages */}
           {flash.message && (
             <div className="mb-4 text-green-600 bg-green-100 border border-green-400 px-4 py-2 rounded-md">
               {flash.message}
@@ -208,6 +264,7 @@ export default function ListRequisition({ flash }: RequisitionDataTableProps) {
 
             <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
               <DataTable
+                id="requisition-table"
                 columns={columns}
                 ajaxUrl="/requisitions"
                 onDrawCallback={() => {

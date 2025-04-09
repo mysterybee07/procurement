@@ -7,11 +7,24 @@ use App\Models\RequestApproval;
 use App\Models\User;
 use App\Services\EntityService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
-class ApprovalController extends Controller
+class ApprovalController extends Controller implements HasMiddleware
 {
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view approvals', only: ['approverDashboard']),
+            new Middleware('permission:approve and reject requests', only: ['approve', 'reject']),
+            // new Middleware('permission:edit approval workflows', only: ['edit']),
+            // new Middleware('permission:delete approval workflows', only: ['destroy']),
+        ];
+    }
+
     public function approverDashboard(EntityService $entityService)
     {
         $user = Auth::user();

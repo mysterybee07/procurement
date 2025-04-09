@@ -70,7 +70,7 @@ class RequisitionController extends Controller implements HasMiddleware
                     $query->where('r.status', '!=', 'draft')
                         ->orWhere(function($query) use ($currentUserId) {
                             $query->where('r.status', '=', 'draft')
-                                    ->where('r.requester', '=', $currentUserId);
+                                  ->where('r.requester', '=', $currentUserId);
                         });
                 });
             }
@@ -109,15 +109,23 @@ class RequisitionController extends Controller implements HasMiddleware
                     return $row->id;
                 })
                 ->addColumn('actions', function ($row) {
+                    // Start with the view action which is always available
                     $actions = '<a href="' . route('requisitions.show', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">View</a>';
                     
-                    // Check if user can edit
-                    if (auth()->id() == $row->requester && $row->status == 'draft') {
+                    // Get current user ID for comparison
+                    $currentUserId = auth()->id();
+                    
+                    // Debug information
+                    $actions .= "<!-- Debug: userId=$currentUserId, requesterId=$row->requester_id, status='$row->status' -->";
+                    
+                    // Check if user can edit or submit
+                    // The key fix here is comparing with requester_id, not requester
+                    if ($currentUserId == $row->requester_id && $row->status == 'draft') {
                         $actions .= '<a href="' . route('requisitions.edit', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>';
                         $actions .= '<button data-submit-id="' . $row->id . '" class="text-indigo-600 hover:text-indigo-900 mr-2 submit-requisition">Submit</button>';
                     }
                     
-                    // Add delete button
+                    // Add delete button (assuming all users can delete)
                     $actions .= '<button data-id="' . $row->id . '" class="text-red-600 hover:text-red-900 delete-requisition">Delete</button>';
                     
                     return $actions;
@@ -142,8 +150,7 @@ class RequisitionController extends Controller implements HasMiddleware
                 'error' => session('error'),
             ]
         ]);
-    }
-    
+    } 
     
 
     /**

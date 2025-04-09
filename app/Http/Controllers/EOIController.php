@@ -281,7 +281,7 @@ class EOIController extends Controller implements HasMiddleware
 
         $eoi->update([
             'status' => 'open',
-            'eoi_opening_date' => $request['eoi_opening_date'],
+            'submission_deadline' => $request['submission_deadline'],
         ]);
 
         return redirect()->back()
@@ -290,7 +290,7 @@ class EOIController extends Controller implements HasMiddleware
     public function publishEOI(Request $request, EOI $eoi)
     {
         $request->validate([
-            'submission_deadline' => 'required|date|after:today',
+            'submission_opening_date' => 'required|date|after:today',
         ]);
 
         if ($eoi->status!=='approved') {
@@ -300,7 +300,7 @@ class EOIController extends Controller implements HasMiddleware
 
         $eoi->update([
             'status' => 'published',
-            'submission_deadline' => $request['submission_deadline'],
+            'submission_opening_date' => $request['submission_opening_date'],
             'publish_date' => now(),
         ]);
 
