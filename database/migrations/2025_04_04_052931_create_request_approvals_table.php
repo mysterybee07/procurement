@@ -15,7 +15,11 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('entity_id');
             $table->string('entity_type');
-            $table->string('status');
+            $table->enum('status',[
+                'pending',
+                'approved',
+                'rejected',
+            ])->default('pending');
             $table->text('comments')->nullable();
             $table->timestamp('action_date')->nullable();
             $table->unsignedBigInteger('approval_step_id')->nullable();

@@ -2,61 +2,76 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RequestApproval extends Model
 {
-    use HasFactory;
-
-    protected $table = 'request_approvals';
-    
     protected $fillable = [
-        'entity_id',
         'entity_type',
-        'status',
-        'comments', 
-        'action_date',
+        'entity_id',
         'approval_step_id',
-        'delegate_to',
-        'approver_id'
+        'approved_id',
+        'action_date',
+        'status',
+        'comments',
     ];
 
-    protected $casts = [
-        'action_date' => 'datetime',
-    ];
-
-   
-    //  Get the approvable entity (polymorphic).
-    //  This could be a eoi, purchase request, invoice, time-off request, etc.
-    
-    public function approvable(): MorphTo
+    /**
+     * Polymorphic relation to the entity being approved (e.g., requisition, purchase order).
+     */
+    public function entity(): MorphTo
     {
-        return $this->morphTo('approvable', 'entity_type', 'entity_id');
+        return $this->morphTo('entity', 'entity_type', 'entity_id');
     }
 
     /**
-     * Get the approval step associated with this request.
+     * Relation to the current step of the approval workflow.
      */
-    public function approvalStep()
+    public function step(): BelongsTo
     {
         return $this->belongsTo(ApprovalStep::class, 'approval_step_id');
     }
 
     /**
-     * Get the delegated user for this approval request.
+     * Convenient access to the workflow via the step.
+     * This is not a direct relation, but lets you access $approval->workflow.
      */
-    public function delegate()
+    public function workflow()
     {
-        return $this->belongsTo(User::class, 'delegate_to');
+        return $this->step?->workflow();
     }
 
     /**
-     * Get the user who approved this request.
+     * Relation to the user who approved the request (if already approved).
      */
-    public function approver()
+    public function approver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'approver_id');
+        return $this->belongsTo(User::class, 'approved_by');
     }
+
+    /**
+     * Scope to filter only pending approvals.
+     */
+    // public function scopePending($query)
+    // {
+    //     return $query->where('status', 'pending');
+    // }
+
+    // /**
+    //  * Check if this approval has been completed.
+    //  */
+    // public function isApproved(): bool
+    // {
+    //     return $this->status === 'approved';
+    // }
+
+    // /**
+    //  * Check if this approval is currently pending.
+    //  */
+    // public function isPending(): bool
+    // {
+    //     return $this->status === 'pending';
+    // }
 }

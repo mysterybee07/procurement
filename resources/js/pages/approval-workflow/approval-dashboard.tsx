@@ -1,599 +1,396 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, CheckCircle, XCircle, AlertTriangle, FileText, User, Calendar } from 'lucide-react';
+import AppLayout from '@/layouts/app-layout';
+import { Head, router } from '@inertiajs/react';
+import { BreadcrumbItem } from '@/types';
 
-// Define types for our data model
+interface Entity {
+  title: string;
+  id: number;
+  [key: string]: any;
+}
+
 interface ApprovalStep {
   id: number;
   step_number: number;
   step_name: string;
   approver_role: string;
-  status?: 'approved' | 'rejected' | 'pending' | 'not_started';
-  completed_by?: string | null;
-  completed_date?: string | null;
+  status?: string;
+  action_date?: string | null;
   comments?: string | null;
   delegated_to?: string;
   is_mandatory?: boolean;
-  allow_delegation?: boolean;
-}
-
-interface Workflow {
-  id: number;
-  workflow_name: string;
-  approval_workflow_type: 'sequential' | 'parallel';
 }
 
 interface ApprovalItem {
   id: number;
   entity_id: number;
   entity_type: string;
-  entity_name: string;
-  eoi_number: string;
-  created_date: string;
   current_step: ApprovalStep;
-  workflow: Workflow;
-  steps: ApprovalStep[];
+  entity: Entity;
+  step: ApprovalStep[];
   estimated_budget: number;
   deadline: string;
-  status?: 'approved' | 'rejected';
+  status?: string;
   action_date?: string;
 }
 
-interface Delegate {
-  id: number;
-  name: string;
-  role: string;
+interface ApproverDashboardProps {
+  requestApprovals: ApprovalItem[];
+  flash: {
+    message?: string;
+    error?: string;
+  };
 }
 
-const ApproverDashboard: React.FC = () => {
+const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ flash, requestApprovals }) => {
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalItem[]>([]);
   const [completedApprovals, setCompletedApprovals] = useState<ApprovalItem[]>([]);
-  const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null);
-  const [comment, setComment] = useState<string>('');
-  const [delegateUser, setDelegateUser] = useState<string>('');
-  const [availableDelegates, setAvailableDelegates] = useState<Delegate[]>([]);
   const [tab, setTab] = useState<'pending' | 'completed'>('pending');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Simulated data - replace with API calls in production
+  const breadcrumbs: BreadcrumbItem[] = [
+    {
+      title: 'Requisitions',
+      href: route('requisitions.index')
+    },
+    {
+      title: 'Approval Dashboard',
+      href: '#'
+    }
+  ];
+
+  // Format date to be more readable
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Process the approval data when component mounts
   useEffect(() => {
-    const fetchApprovals = async (): Promise<void> => {
-      // Simulated pending approvals
-      const mockPendingApprovals: ApprovalItem[] = [
-        {
-          id: 1,
-          entity_id: 101,
-          entity_type: 'eoi',
-          entity_name: 'IT Infrastructure Upgrade EOI',
-          eoi_number: 'EOI-2025-0042',
-          created_date: '2025-04-01T10:30:00',
-          current_step: {
-            id: 3,
-            step_number: 2,
-            step_name: 'Finance Approval',
-            approver_role: 'FINANCE_DIR',
-            is_mandatory: true,
-            allow_delegation: true
-          },
-          workflow: {
-            id: 1,
-            workflow_name: 'High Value EOI Approval',
-            approval_workflow_type: 'sequential'
-          },
-          steps: [
-            { 
-              id: 2, 
-              step_number: 1, 
-              step_name: 'Department Manager Review', 
-              approver_role: 'DEPT_MANAGER',
-              status: 'approved',
-              completed_by: 'John Smith',
-              completed_date: '2025-04-02T14:22:00',
-              comments: 'Scope and budget are aligned with department goals'
-            },
-            { 
-              id: 3, 
-              step_number: 2, 
-              step_name: 'Finance Approval', 
-              approver_role: 'FINANCE_DIR',
-              status: 'pending',
-              completed_by: null,
-              completed_date: null,
-              comments: null
-            },
-            { 
-              id: 4, 
-              step_number: 3, 
-              step_name: 'Executive Approval', 
-              approver_role: 'EXECUTIVE',
-              status: 'not_started',
-              completed_by: null,
-              completed_date: null,
-              comments: null
-            }
-          ],
-          estimated_budget: 175000,
-          deadline: '2025-05-15'
-        }
-      ];
-
-      // Simulated completed approvals
-      const mockCompletedApprovals: ApprovalItem[] = [
-        {
-          id: 3,
-          entity_id: 100,
-          entity_type: 'eoi',
-          entity_name: 'Software Development Services EOI',
-          eoi_number: 'EOI-2025-0040',
-          created_date: '2025-03-25T11:20:00',
-          status: 'approved',
-          action_date: '2025-03-28T15:45:00',
-          current_step: {
-            id: 8,
-            step_number: 2,
-            step_name: 'Finance Approval',
-            approver_role: 'FINANCE_DIR',
-            is_mandatory: true,
-            allow_delegation: false
-          },
-          workflow: {
-            id: 2,
-            workflow_name: 'Standard EOI Approval',
-            approval_workflow_type: 'sequential'
-          },
-          steps: [
-            { 
-              id: 7, 
-              step_number: 1, 
-              step_name: 'Department Manager Review', 
-              approver_role: 'DEPT_MANAGER',
-              status: 'approved',
-              completed_by: 'John Smith',
-              completed_date: '2025-03-26T10:15:00',
-              comments: 'Looks good, requirements are clear'
-            },
-            { 
-              id: 8, 
-              step_number: 2, 
-              step_name: 'Finance Approval', 
-              approver_role: 'FINANCE_DIR',
-              status: 'approved',
-              completed_by: 'Jane Doe',
-              completed_date: '2025-03-28T15:45:00',
-              comments: 'Budget approved'
-            }
-          ],
-          estimated_budget: 45000,
-          deadline: '2025-04-15'
-        }
-      ];
-
-      setPendingApprovals(mockPendingApprovals);
-      setCompletedApprovals(mockCompletedApprovals);
-      setAvailableDelegates([
-        { id: 201, name: 'Alice Johnson', role: 'FINANCE_MANAGER' },
-        { id: 202, name: 'Bob Williams', role: 'FINANCE_ANALYST' },
-        { id: 203, name: 'Carol Davis', role: 'FINANCE_DIRECTOR' }
-      ]);
-    };
-
-    fetchApprovals();
-  }, []);
-
-  const handleApprove = (): void => {
-    if (!selectedItem) return;
-    
-    const updatedItem = JSON.parse(JSON.stringify(selectedItem)) as ApprovalItem;
-    const updatedStep = updatedItem.steps.find(
-      step => step.id === updatedItem.current_step.id
-    );
-    
-    if (!updatedStep) return;
-    
-    updatedStep.status = 'approved';
-    updatedStep.comments = comment;
-    updatedStep.completed_by = 'Current User';
-    updatedStep.completed_date = new Date().toISOString();
-
-    if (updatedItem.workflow.approval_workflow_type === 'sequential') {
-      const currentStepIndex = updatedItem.steps.findIndex(
-        step => step.id === updatedItem.current_step.id
-      );
-      
-      if (currentStepIndex < updatedItem.steps.length - 1) {
-        const nextStep = updatedItem.steps[currentStepIndex + 1];
-        nextStep.status = 'pending';
-        updatedItem.current_step = nextStep;
-      } else {
-        const updatedPendingApprovals = pendingApprovals.filter(
-          item => item.id !== updatedItem.id
+    try {
+      if (requestApprovals) {
+        // Filter approvals based on status
+        const pending = requestApprovals.filter(item =>
+          item.status === 'pending' || !item.status
         );
-        setPendingApprovals(updatedPendingApprovals);
-        setCompletedApprovals([...completedApprovals, {...updatedItem, status: 'approved'}]);
-        setSelectedItem(null);
-        setComment('');
-        return;
+
+        const completed = requestApprovals.filter(item =>
+          item.status === 'approved' || item.status === 'rejected'
+        );
+
+        setPendingApprovals(pending);
+        setCompletedApprovals(completed);
       }
+    } catch (err) {
+      setError('Error processing approval data');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
+  }, [requestApprovals]);
 
-    const updatedPendingApprovals = pendingApprovals.map(item =>
-      item.id === updatedItem.id ? updatedItem : item
-    );
-    
-    setPendingApprovals(updatedPendingApprovals);
-    setSelectedItem(updatedItem);
-    setComment('');
-  };
+  // Filter approvals based on search term
+  const filteredPendingApprovals = pendingApprovals.filter(item =>
+    item.entity_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.entity?.title && item.entity.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (item.current_step?.step_name && item.current_step.step_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    item.id.toString().includes(searchTerm)
+  );
 
-  const handleReject = (): void => {
-    if (!selectedItem || !comment) return;
-    
-    const updatedItem = JSON.parse(JSON.stringify(selectedItem)) as ApprovalItem;
-    const updatedStep = updatedItem.steps.find(
-      step => step.id === updatedItem.current_step.id
-    );
-    
-    if (!updatedStep) return;
-    
-    updatedStep.status = 'rejected';
-    updatedStep.comments = comment;
-    updatedStep.completed_by = 'Current User';
-    updatedStep.completed_date = new Date().toISOString();
+  const filteredCompletedApprovals = completedApprovals.filter(item =>
+    item.entity_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.entity?.title && item.entity.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (item.current_step?.step_name && item.current_step.step_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    item.id.toString().includes(searchTerm)
+  );
 
-    const updatedPendingApprovals = pendingApprovals.filter(
-      item => item.id !== updatedItem.id
-    );
-    setPendingApprovals(updatedPendingApprovals);
-    setCompletedApprovals([...completedApprovals, {...updatedItem, status: 'rejected'}]);
-    
-    setSelectedItem(null);
-    setComment('');
-  };
+  const handleAction = (id: number, action: 'approve' | 'reject') => {
 
-  const handleDelegate = (): void => {
-    if (!selectedItem || !delegateUser) return;
-    
-    const updatedItem = JSON.parse(JSON.stringify(selectedItem)) as ApprovalItem;
-    const updatedStep = updatedItem.steps.find(
-      step => step.id === updatedItem.current_step.id
-    );
-    
-    if (!updatedStep) return;
-    
-    updatedStep.delegated_to = delegateUser;
-    
-    const updatedPendingApprovals = pendingApprovals.map(item =>
-      item.id === updatedItem.id ? updatedItem : item
-    );
-    
-    setPendingApprovals(updatedPendingApprovals);
-    setSelectedItem(null);
-    setDelegateUser('');
-  };
-
-  const getStatusBadge = (status: string | undefined): JSX.Element => {
-    switch(status) {
-      case 'approved':
-        return <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Approved</span>;
-      case 'rejected':
-        return <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Rejected</span>;
-      case 'pending':
-        return <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>;
-      default:
-        return <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Not Started</span>;
+     router.post(route('entity.approve', { requestApprovalId: id }), {
+      comments: '',
+    }, {
+      onSuccess: () => {
+        setSuccessMessage('Request approved successfully');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      },
+      onError: (errors) => {
+        console.error(errors);
+        setError('Failed to approve request');
+      }
+    });
+  
+    if (action === 'reject') {
+      // You can define a similar reject route or use a modal for comments, etc.
+      console.log(`Rejecting item ${id}`);
     }
+  };
+
+  const handleViewDetails = (item: ApprovalItem) => {
+    // Implement your view details logic here
+    console.log('View details for', item);
+    // You would typically navigate to a details page or open a modal
+  };
+
+  // Render approval cards
+  const renderApprovalCards = (approvals: ApprovalItem[]) => {
+    return (
+      <div className="grid grid-cols-1 gap-4">
+        {approvals.map((item) => (
+          <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+            <div className="px-6 py-4 flex justify-between items-center bg-gray-50 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <span className="mr-2">{item.entity?.title || "Untitled Request"}</span>
+                </h3>
+              </div>
+              <div className="px-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-500">Budget</div>
+                    <div className="mt-1 text-sm text-gray-900 font-medium">
+                      ${item.estimated_budget?.toLocaleString() || '0'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-medium text-gray-500">Deadline</div>
+                    <div className="mt-1 text-sm text-gray-900 font-medium">
+                      {formatDate(item.deadline)}
+                    </div>
+                  </div>
+                </div>
+
+                {item.step && item.step.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-sm font-medium text-gray-500 mb-2">Approval Progress</div>
+                    <div className="flex items-center space-x-2">
+                      {item.step.map((step, index) => (
+                        <div
+                          key={step.id}
+                          className={`h-2 flex-1 rounded-full ${step.status === 'approved' ? 'bg-green-500' :
+                            step.status === 'rejected' ? 'bg-red-500' :
+                              step.step_number < (item.current_step?.step_number || 0) ? 'bg-blue-500' :
+                                'bg-gray-200'
+                            }`}
+                          title={`Step ${step.step_number}: ${step.step_name}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(item.status)}`}>
+                {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Pending'}
+              </span> */}
+            </div>
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-end space-x-2">
+              {tab === 'pending' ? (
+                <>
+                  <button
+                    className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded text-sm font-medium flex items-center"
+                    onClick={() => handleAction(item.id, 'approve')}
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Approve
+                  </button>
+                  <button
+                    className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded text-sm font-medium flex items-center"
+                    onClick={() => handleAction(item.id, 'reject')}
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Reject
+                  </button>
+                  <button
+                    className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm font-medium flex items-center"
+                    onClick={() => handleViewDetails(item)}
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    Details
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm font-medium flex items-center"
+                  onClick={() => handleViewDetails(item)}
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  View Details
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Approval Dashboard</h1>
-      
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="flex -mb-px">
-            <button
-              className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
-                tab === 'pending' 
-                  ? 'border-blue-500 text-blue-600' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={() => setTab('pending')}
-            >
-              Pending Approvals
-            </button>
-            <button
-              className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
-                tab === 'completed' 
-                  ? 'border-blue-500 text-blue-600' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={() => setTab('completed')}
-            >
-              Completed Approvals
-            </button>
-          </nav>
-        </div>
-        
-        <div className="p-4">
-          {tab === 'pending' ? (
-            pendingApprovals.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No pending approvals at this time.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EOI Number</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Step</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {pendingApprovals.map((item) => {
-                      const currentStepStatus = item.steps.find(s => s.id === item.current_step.id)?.status || 'pending';
-                      return (
-                        <tr 
-                          key={item.id}
-                          className={`${selectedItem?.id === item.id ? 'bg-blue-50' : 'hover:bg-gray-50'} cursor-pointer`}
-                          onClick={() => setSelectedItem(item)}
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.eoi_number}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.entity_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.current_step.step_name}
-                            {getStatusBadge(currentStepStatus)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${item.estimated_budget.toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-1 text-gray-400" />
-                              {new Date(item.deadline).toLocaleDateString()}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedItem(item);
-                              }}
-                              className="text-blue-600 hover:text-blue-900 mr-2"
-                            >
-                              Review
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )
-          ) : (
-            completedApprovals.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No completed approvals to display.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EOI Number</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed By</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {completedApprovals.map((item) => {
-                      const completedBy = item.steps.find(s => s.id === item.current_step.id)?.completed_by || 'N/A';
-                      return (
-                        <tr 
-                          key={item.id}
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => setSelectedItem(item)}
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.eoi_number}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.entity_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {getStatusBadge(item.status)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {completedBy}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.action_date ? new Date(item.action_date).toLocaleDateString() : 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedItem(item);
-                              }}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              View Details
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
-        </div>
-      </div>
-      
-      {selectedItem && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">
-              {selectedItem.entity_name}
-            </h2>
-            <button 
-              onClick={() => setSelectedItem(null)}
-              className="text-gray-400 hover:text-gray-500"
-            >
-              <span className="sr-only">Close</span>
-              <XCircle className="h-5 w-5" />
-            </button>
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title="Approver Dashboard" />
+
+      <div className="py-6">
+        <div className="w-full mx-auto sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Approval Dashboard</h1>
           </div>
-          
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-medium text-gray-900 mb-2">EOI Details</h3>
-                <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-                  <div className="sm:col-span-1">
-                    <dt className="text-sm font-medium text-gray-500">EOI Number</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{selectedItem.eoi_number}</dd>
-                  </div>
-                  <div className="sm:col-span-1">
-                    <dt className="text-sm font-medium text-gray-500">Created Date</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {new Date(selectedItem.created_date).toLocaleDateString()}
-                    </dd>
-                  </div>
-                  <div className="sm:col-span-1">
-                    <dt className="text-sm font-medium text-gray-500">Estimated Budget</dt>
-                    <dd className="mt-1 text-sm text-gray-900">${selectedItem.estimated_budget.toLocaleString()}</dd>
-                  </div>
-                  <div className="sm:col-span-1">
-                    <dt className="text-sm font-medium text-gray-500">Deadline</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {new Date(selectedItem.deadline).toLocaleDateString()}
-                    </dd>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <dt className="text-sm font-medium text-gray-500">Workflow Type</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{selectedItem.workflow.workflow_name}</dd>
-                  </div>
-                </dl>
+
+          {/* Flash Messages */}
+          {flash.message && (
+            <div className="mb-4 text-green-600 bg-green-100 border border-green-400 px-4 py-2 rounded-md">
+              {flash.message}
+            </div>
+          )}
+          {flash.error && (
+            <div className="mb-4 text-red-600 bg-red-100 border border-red-400 px-4 py-2 rounded-md">
+              {flash.error}
+            </div>
+          )}
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 flex items-center">
+              <div className="flex-shrink-0 bg-blue-100 rounded-full p-3">
+                <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
               </div>
-              
-              <div>
-                <h3 className="font-medium text-gray-900 mb-2">Approval Steps</h3>
-                <ol className="relative border-l border-gray-200 ml-3">
-                  {selectedItem.steps.map((step) => (
-                    <li key={step.id} className="mb-6 ml-6">
-                      <span className={`absolute flex items-center justify-center w-6 h-6 rounded-full -left-3 ring-8 ring-white
-                        ${step.status === 'approved' ? 'bg-green-100' : 
-                          step.status === 'rejected' ? 'bg-red-100' : 
-                          step.status === 'pending' ? 'bg-yellow-100' : 'bg-gray-100'}`}>
-                        {step.status === 'approved' ? <CheckCircle className="w-3 h-3 text-green-800" /> : 
-                          step.status === 'rejected' ? <XCircle className="w-3 h-3 text-red-800" /> : 
-                          step.status === 'pending' ? <Clock className="w-3 h-3 text-yellow-800" /> : 
-                          <AlertTriangle className="w-3 h-3 text-gray-800" />}
-                      </span>
-                      <h4 className="flex items-center mb-1 text-sm font-semibold text-gray-900">
-                        {step.step_name}
-                        <span className="ml-2">{getStatusBadge(step.status)}</span>
-                      </h4>
-                      {step.completed_by && (
-                        <p className="mb-2 text-xs font-normal text-gray-500">
-                          <span className="font-medium text-gray-700">{step.completed_by}</span> on {new Date(step.completed_date || '').toLocaleString()}
-                        </p>
-                      )}
-                      {step.comments && (
-                        <p className="mb-2 text-sm italic text-gray-600">
-                          "{step.comments}"
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ol>
+              <div className="ml-4">
+                <h2 className="text-lg font-semibold text-gray-900">Pending Approvals</h2>
+                <p className="text-3xl font-bold text-blue-600">{pendingApprovals.length}</p>
               </div>
             </div>
-            
-            {tab === 'pending' && selectedItem.steps.find(s => s.id === selectedItem.current_step.id)?.status === 'pending' && (
-              <div className="mt-6 border-t border-gray-200 pt-6">
-                <h3 className="font-medium text-gray-900 mb-4">Actions</h3>
-                
-                <div className="mb-4">
-                  <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">
-                    Comment
-                  </label>
-                  <textarea
-                    id="comment"
-                    rows={3}
-                    className="shadow-sm block w-full sm:text-sm border border-gray-300 rounded-md p-2"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Add your comments or feedback here..."
+
+            <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 flex items-center">
+              <div className="flex-shrink-0 bg-green-100 rounded-full p-3">
+                <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <h2 className="text-lg font-semibold text-gray-900">Approved</h2>
+                <p className="text-3xl font-bold text-green-600">
+                  {completedApprovals.filter(item => item.status === 'approved').length}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500 flex items-center">
+              <div className="flex-shrink-0 bg-red-100 rounded-full p-3">
+                <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <h2 className="text-lg font-semibold text-gray-900">Rejected</h2>
+                <p className="text-3xl font-bold text-red-600">
+                  {completedApprovals.filter(item => item.status === 'rejected').length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow mb-6">
+            <div className="border-b border-gray-200">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-center p-4">
+                <div className="flex mb-4 md:mb-0">
+                  <button
+                    className={`mr-4 py-2 px-4 rounded-md text-center font-medium text-sm ${tab === 'pending'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    onClick={() => setTab('pending')}
+                  >
+                    Pending Approvals ({pendingApprovals.length})
+                  </button>
+                  <button
+                    className={`py-2 px-4 rounded-md text-center font-medium text-sm ${tab === 'completed'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    onClick={() => setTab('completed')}
+                  >
+                    Completed Approvals ({completedApprovals.length})
+                  </button>
+                </div>
+
+                {/* Search field */}
+                <div className="relative w-full md:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 text-sm"
+                    placeholder="Search approvals..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                
-                <div className="flex flex-wrap gap-4">
-                  <button
-                    onClick={handleApprove}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                  >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Approve
-                  </button>
-                  
-                  <button
-                    onClick={handleReject}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    disabled={!comment}
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Reject
-                  </button>
-                  
-                  {selectedItem.current_step.allow_delegation && (
-                    <div className="inline-flex items-center">
-                      <select
-                        className="mx-2 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                        value={delegateUser}
-                        onChange={(e) => setDelegateUser(e.target.value)}
-                      >
-                        <option value="">Select delegate</option>
-                        {availableDelegates.map((user) => (
-                          <option key={user.id} value={user.name}>
-                            {user.name} ({user.role})
-                          </option>
-                        ))}
-                      </select>
-                      
-                      <button
-                        onClick={handleDelegate}
-                        disabled={!delegateUser}
-                        className="ml-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        <User className="mr-2 h-4 w-4" />
-                        Delegate
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
-            )}
-            
-            <div className="mt-6 border-t border-gray-200 pt-6">
-              <button
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                onClick={() => {
-                  alert(`Viewing full details for ${selectedItem.entity_name}`);
-                }}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                View Full EOI Details
-              </button>
+            </div>
+
+            <div className="p-6">
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              ) : tab === 'pending' ? (
+                filteredPendingApprovals.length === 0 ? (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    <h3 className="mt-2 text-lg font-medium text-gray-900">No pending approvals</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {searchTerm ? `No pending approvals match your search "${searchTerm}".` : 'You don\'t have any pending approvals at this time.'}
+                    </p>
+                  </div>
+                ) : (
+                  renderApprovalCards(filteredPendingApprovals)
+                )
+              ) : (
+                filteredCompletedApprovals.length === 0 ? (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <h3 className="mt-2 text-lg font-medium text-gray-900">No completed approvals</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {searchTerm ? `No completed approvals match your search "${searchTerm}".` : 'You don\'t have any completed approvals to display.'}
+                    </p>
+                  </div>
+                ) : (
+                  renderApprovalCards(filteredCompletedApprovals)
+                )
+              )}
             </div>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

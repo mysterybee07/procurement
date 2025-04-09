@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\ApprovalWorkflowController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EOIController;
@@ -117,8 +118,12 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::get('/approval-workflows/{workflow}/edit', [ApprovalWorkflowController::class, 'edit'])->name('approval-workflows.edit');
     Route::put('/approval-workflows/{workflow}', [ApprovalWorkflowController::class, 'update'])->name('approval-workflows.update');
     Route::delete('/approval-workflows/{workflow}', [ApprovalWorkflowController::class, 'destroy'])->name('approval-workflows.destroy');
-    Route::post('/assign-approval-workflows/{entity_id}', [ApprovalWorkflowController::class, 'assignWorkflow'])->name('approval-workflows.assign');
-    Route::get('/approver-dashboard', [ApprovalWorkflowController::class, 'approverDashboard'])->name('approval-workflows.dashboard');
+    Route::post('/assign-approval-workflows/{entityId}', [ApprovalWorkflowController::class, 'assignWorkflow'])->name('approval-workflows.assign');
+    Route::get('/approver-dashboard', [ApprovalController::class, 'approverDashboard'])->name('approval-workflows.dashboard');
+
+
+    Route::post('/entity/{requestApprovalId}/approve',[ApprovalController::class,'approve'])->name('entity.approve');
+    // Route::get('/entity/{entityId}/reject',[ApprovalController::class,'approve'])->name('entity.reject');
 
 
     // Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
