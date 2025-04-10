@@ -86,20 +86,26 @@ class VendorRatingService
     private function calculateSubmissionCompletenessScore(VendorEOISubmission $submission)
     {
         $items = $submission->vendorSubmittedItems;
-        
-        if (!$items) {
-            return 5; 
+    
+        if (!$items || $items->isEmpty()) {
+            return 5;
         }
-        
-        $totalRequired = $items->RequestItem->sum('required_quantity');
+    
+        $totalRequired = $items->sum(function ($item) {
+            return optional($item->requestItem)->required_quantity ?? 0;
+        });
+        // dd($totalRequired);
+    
         $totalSubmitted = $items->sum('submitted_quantity');
-
-        if ($totalRequired == 0 || $items->count() == 0) {
-            return 5; 
+        // dd($totalSubmitted);
+    
+        if ($totalRequired==0 || $totalRequired==$totalSubmitted) {
+            return 5;
         }
-
+    
         return 5 * ($totalSubmitted / max($totalRequired, 1)) / max($items->count(), 1);
     }
+    
 
     private function calculateAdjustedPrice(VendorEOISubmission $submission)
     {

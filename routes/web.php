@@ -92,6 +92,7 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::delete('/eois/{eoi}', [EOIController::class, 'destroy'])->name('eois.destroy');
     Route::put('/eois/{eoi}/publish', [EOIController::class, 'publishEOI'])->name('eois.publish');
     Route::put('/eois/{eoi}/open', [EOIController::class, 'openEOI'])->name('eois.open');
+    Route::put('/eois/{eoi}/close', [EOIController::class, 'closeEOI'])->name('eois.close');
 
     // eoi-submission route
     Route::get('/eoi-submission/{eoi}', [EOIController::class, 'listVendorSubmissionByEoi'])->name('eoisubmission.list');

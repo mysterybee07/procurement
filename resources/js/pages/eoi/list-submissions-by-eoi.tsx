@@ -351,7 +351,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
                             type="checkbox"
                             id={`category-${category}`}
                             checked={selectedProductCategories.includes(category)}
-                            onChange={() => {}} // Handled by div click
+                            onChange={() => {}} 
                             className="mr-2"
                             onClick={(e) => e.stopPropagation()}
                           />

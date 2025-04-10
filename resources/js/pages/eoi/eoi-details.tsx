@@ -257,7 +257,7 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
                 user.permissions.includes('publish eois') && (
                   <PublishEOIModal eoiId={eoi.id} />
                 )}
-              {eoi.status === "published" && (
+              {user.permissions.includes('fulfill requisitionItem') && eoi.status === "published" && (
                 <OpenEOIModal eoiId={eoi.id} />
               )}
             </div>

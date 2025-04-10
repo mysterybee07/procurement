@@ -492,8 +492,8 @@ class EOIController extends Controller implements HasMiddleware
             'eoi_id' => $eoiId, 
             'eoi_number' => $eoi->eoi_number,
             'eoi_status' => $eoi->status,
-            // 'categories' => $categories,
-            // 'products' => $products,
+            'categories' => $categories,
+            'products' => $products,
             'flash' => [
                 'message' => session('message'),
                 'error' => session('error'),

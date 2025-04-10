@@ -119,21 +119,21 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
   };
 
   // Form submission handlers
-  const saveAsDraft = (e: React.FormEvent) => {
-    e.preventDefault();
+  // const saveAsDraft = (e: React.FormEvent) => {
+  //   e.preventDefault();
     
-    // Clear any previous errors before submission
-    clearErrors();
+  //   // Clear any previous errors before submission
+  //   clearErrors();
     
-    // Set the status and submit
-    setData('status', 'draft');
+  //   // Set the status and submit
+  //   setData('status', 'draft');
     
-    if (isEditing) {
-      put(`/requisitions/${data.id}`);
-    } else {
-      post('/requisitions');
-    }
-  };
+  //   if (isEditing) {
+  //     put(`/requisitions/${data.id}`);
+  //   } else {
+  //     post('/requisitions');
+  //   }
+  // };
 
   const submitForApproval = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,7 +142,7 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
     clearErrors();
     
     // Set the status and submit
-    setData('status', 'submitted');
+    setData('status', 'draft');
     
     if (isEditing) {
       put(`/requisitions/${data.id}`);
@@ -334,21 +334,21 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
                   </button>
                 ) : (
                   <>
-                    <button
+                    {/* <button
                       type="button"
                       onClick={saveAsDraft}
                       disabled={processing}
                       className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
                     >
                       {processing ? 'Saving...' : 'Save as Draft'}
-                    </button>
+                    </button> */}
                     <button
                       type="button"
                       onClick={submitForApproval}
                       disabled={processing}
                       className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                     >
-                      {processing ? 'Submitting...' : 'Submit for Approval'}
+                      {processing ? 'Submitting...' : 'Submit Requisition'}
                     </button>
                   </>
                 )}

@@ -10,11 +10,10 @@ class VendorSubmittedItems extends Model
         'vendor_eoi_submission_id',
         'request_items_id',
         // 'product_name',
-        // 'required_quantity',
+        'submitted_quantity',
         'actual_unit_price',
         'actual_product_total_price',
         'discount_rate',
-        // 'can_provide'
     ];
 
     public function vendorEOISubmission()

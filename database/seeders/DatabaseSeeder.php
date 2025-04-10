@@ -82,7 +82,7 @@ class DatabaseSeeder extends Seeder
             'vendor_name' => 'Tech Solutions',
             'registration_number' => 'REG-67890',
             'pan_number' => 'ABCDE5678G',
-            'user_id' => 3,
+            'user_id' => 4,
             'in_contact_person' => 'Jane',
         ]);
 
@@ -101,7 +101,7 @@ class DatabaseSeeder extends Seeder
             'vendor_name' => 'Tech Solutions 2',
             'registration_number' => 'REG-67891',
             'pan_number' => 'ABCDE5678H',
-            'user_id' => 4,
+            'user_id' => 5,
             'in_contact_person' => 'Will Smith',
         ]);
         
@@ -120,7 +120,7 @@ class DatabaseSeeder extends Seeder
             'vendor_name' => 'Tech Solutions ',
             'registration_number' => 'REG-67892',
             'pan_number' => 'ABCDE5678I',
-            'user_id' => 5,
+            'user_id' => 6,
             'in_contact_person' => 'Smith',
         ]);
     }

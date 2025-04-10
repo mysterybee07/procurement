@@ -21,6 +21,7 @@ class VendorSubmissionRequest extends FormRequest
      */
     public function rules(): array
     {
+        // dd($this);
         return [
             'eoi_id' => 'required|exists:eois,id',
             'vendor_id' => 'required|exists:users,id',
@@ -34,6 +35,7 @@ class VendorSubmissionRequest extends FormRequest
             'submittedItems.*.actual_unit_price' => 'required|numeric|min:0',
             'submittedItems.*.actual_product_total_price' => 'required|numeric|min:0',
             'submittedItems.*.discount_rate' => 'nullable|numeric|min:0|max:100',
+            'submittedItems.*.submitted_quantity' => 'required|integer|min:1',
             'submittedItems.*.additional_specifications' => 'nullable|string',
             'submittedDocuments' => 'required|array',
             'submittedDocuments.*.document_id' => 'required|exists:documents,id',

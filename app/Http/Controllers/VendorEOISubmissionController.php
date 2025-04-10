@@ -89,48 +89,50 @@ class VendorEOISubmissionController extends Controller
      */
     public function create($eoiId)
     {
-        $eoi = EOI::with('documents', 'requisitions.requestItems.product')->findOrFail($eoiId);
+        $eoi = EOI::with([
+            'documents',
+            'requisitions.requestItems.product.category'
+        ])->findOrFail($eoiId);
     
         $requestItems = $eoi->requisitions->flatMap(function ($requisition) {
-            return $requisition->requestItems->filter(function ($item) {
-                return $item->required_quantity > $item->provided_quantity; 
-            });
+            return $requisition->requestItems;
         });
     
-        // Transform the filtered request items
+        // Transform request items with direct category reference
         $transformedRequestItems = $requestItems->map(function ($item) {
             return [
                 'id' => $item->id,
-                'required_quantity' => $item->required_quantity - $item->provided_quantity, 
-                'additional_specifications' => $item->additional_specifications ?? null,
+                'required_quantity' => $item->required_quantity - ($item->provided_quantity ?? 0),
+                'additional_specifications' => $item->additional_specifications,
                 'product' => [
-                    'id'   => $item->product->id,
+                    'id' => $item->product->id,
                     'name' => $item->product->name,
                 ],
-            ];
-        })->values();
-    
-        // Transform documents
-        $transformedDocuments = $eoi->documents->map(function ($document) {
-            return [
-                'id' => $document->id,
-                'name' => $document->name,
-                'file_path' => $document->file_path,
+                'category' => $item->product->category ? [
+                    'id' => $item->product->category->id,
+                    'category_name' => $item->product->category->category_name,
+                ] : null,
+                'provided_quantity' => $item->provided_quantity
             ];
         })->values();
     
         return Inertia::render('vendor/vendor-side/eoi-submission-form', [
             'requestItems' => $transformedRequestItems,
-            'documents' => $transformedDocuments,
-            'eoi_id'    => $eoi->id,
-            'eoi_number'=> $eoi->eoi_number,
-            'vendor_id' => auth()->id(),            
-            'vendor_name' => auth()->user()->name, 
+            'documents' => $eoi->documents->map(function ($document) {
+                return [
+                    'id' => $document->id,
+                    'name' => $document->name,
+                    'file_path' => $document->file_path,
+                ];
+            }),
+            'eoi_id' => $eoi->id,
+            'eoi_number' => $eoi->eoi_number,
+            'vendor_id' => auth()->id(),
+            'vendor_name' => auth()->user()->name,
             'vendor_address' => auth()->user()->address,
+            'allow_partial_submission' => $eoi->allow_partial_submission ?? false,
         ]);
     }
-    
-
 
     /**
      * Store a newly created resource in storage.
@@ -145,7 +147,7 @@ class VendorEOISubmissionController extends Controller
                 return back()->withErrors(['error' => 'The selected user is not a registered vendor.']);
             }
     
-            // existing submission check
+            // Check for existing submission
             $existingSubmission = VendorEoiSubmission::where('eoi_id', $request->eoi_id)
                                                       ->where('vendor_id', $vendor->id)
                                                       ->first();
@@ -153,8 +155,15 @@ class VendorEOISubmissionController extends Controller
                 return back()->withErrors(['error' => 'The vendor has already submitted for this EOI.']);
             }
     
-            $termsAndConditionsPath = handleFileUpload($request, 'terms_and_conditions', 'terms_and_conditions', $request->eoi_id);
+            // Handle terms & conditions file upload
+            $termsAndConditionsPath = null;
+            if ($request->hasFile('terms_and_conditions')) {
+                $termsAndConditionsPath = $request->file('terms_and_conditions')->store(
+                    "terms_and_conditions/{$request->eoi_id}", 'public'
+                );
+            }
     
+            // Create main submission
             $submission = VendorEoiSubmission::create([
                 'eoi_id' => $request->eoi_id,
                 'vendor_id' => $vendor->id,
@@ -163,30 +172,39 @@ class VendorEOISubmissionController extends Controller
                 'remarks' => $request->remarks,
                 'terms_and_conditions' => $termsAndConditionsPath,
                 'items_total_price' => $request->items_total_price,
-                'status' => 'submitted',
+                'status' => $request->status ?? 'submitted',
             ]);
     
-            foreach ($request->submittedItems as $item) {
-                VendorSubmittedItems::create([
-                    'vendor_eoi_submission_id' => $submission->id,
-                    'request_items_id' => $item['request_items_id'],
-                    'actual_unit_price' => $item['actual_unit_price'],
-                    'actual_product_total_price' => $item['actual_product_total_price'],
-                    'discount_rate' => $item['discount_rate'] ?? null,
-                    'additional_specifications' => $item['additional_specifications'] ?? null,
-                ]);
+            // Handle submitted items
+            $submittedItems = $request->input('submittedItems', []);
+            foreach ($submittedItems as $item) {
+                if (!empty($item['request_items_id'])) {
+                    VendorSubmittedItems::create([
+                        'vendor_eoi_submission_id' => $submission->id,
+                        'request_items_id' => $item['request_items_id'],
+                        'actual_unit_price' => $item['actual_unit_price'],
+                        'actual_product_total_price' => $item['actual_product_total_price'],
+                        'discount_rate' => $item['discount_rate'] ?? null,
+                        'submitted_quantity' => $item['submitted_quantity'],
+                        'additional_specifications' => $item['additional_specifications'] ?? null,
+                    ]);
+                }
             }
     
-            foreach ($request->submittedDocuments as $index => $doc) {
-                $documentId = $doc['document_id'];
-                $filePath = handleFileUpload($request, "submittedDocuments.$index.file", 'eoi_documents', $request->eoi_id);
+            // Handle submitted documents (fix for nested FormData structure)
+            $submittedDocuments = $request->input('submittedDocuments', []);
+            foreach ($submittedDocuments as $index => $doc) {
+                $uploadedFile = $request->file("submittedDocuments.$index.file");
+                $documentId = $doc['document_id'] ?? null;
     
-                if ($filePath) {
+                if ($uploadedFile && $uploadedFile->isValid()) {
+                    $path = $uploadedFile->store("eoi_documents/{$request->eoi_id}", 'public');
+    
                     VendorEoiDocument::create([
                         'document_id' => $documentId,
                         'vendor_id' => $vendor->id,
                         'eoi_submission_id' => $submission->id,
-                        'file_path' => $filePath,
+                        'file_path' => $path,
                     ]);
                 }
             }
@@ -195,12 +213,13 @@ class VendorEOISubmissionController extends Controller
             return redirect()->route('vendoreois.index')->with('message', 'EOI submitted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('EOI submission error', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return redirect()->back()->with('error', 'EOI submitted successfully');
+            Log::error('EOI submission error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return redirect()->back()->with('error', 'Failed to submit EOI: ' . $e->getMessage());
         }
-    }
-    
-    
+    }  
 
     /**
      * Display the specified resource.
@@ -220,6 +239,25 @@ class VendorEOISubmissionController extends Controller
                 'error' => session('error'),
             ],
         ]);
+    }
+
+
+    // Close the submission
+    public function closeEOI(EOI $eoi)
+    {
+        if ($eoi->status!=='opened') {
+            return redirect()->back()
+                ->with('error', 'EOI cannot be published because it has not been approved.');
+        }
+
+        $eoi->update([
+            'status' => 'closed',
+            'submission_deadline' => now(),
+            // 'publish_date' => now(),
+        ]);
+
+        return redirect()->back()
+            ->with('message', 'EOI submission closed successfully.');
     }
 
     /**
