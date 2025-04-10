@@ -32,9 +32,22 @@ interface ListSubmissionByEoiProps {
   eoi_id: number;
   eoi_number: string;
   eoi_status: string;
+  categories: string[];  // Added to match controller data
+  products: string[];    // Added to match controller data
+  flash?: {
+    message?: string;
+    error?: string;
+  };
 }
 
-const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_number, eoi_status }) => {
+const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ 
+  eoi_id, 
+  eoi_number, 
+  eoi_status,
+  categories,  // Use props provided by controller 
+  products,    // Use props provided by controller
+  flash 
+}) => {
   // State for filters
   const [ratingFilter, setRatingFilter] = useState("");
   const [minPrice, setMinPrice] = useState("");
@@ -51,8 +64,6 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
   
   const [showFilters, setShowFilters] = useState(false);
-  const [availableProducts, setAvailableProducts] = useState<string[]>([]);
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [dataTable, setDataTable] = useState<any>(null);
 
   // Format dates for the API query
@@ -89,24 +100,6 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
     const queryString = params.toString();
     return queryString ? `${url}?${queryString}` : url;
   };
-
-  // Effect to fetch products and categories on mount
-  useEffect(() => {
-    const fetchProductData = async () => {
-      try {
-        const response = await fetch(`/eoi/${eoi_id}/products`);
-        if (response.ok) {
-          const data = await response.json();
-          setAvailableProducts(data.products || []);
-          setAvailableCategories(data.categories || []);
-        }
-      } catch (error) {
-        console.error("Error fetching product data:", error);
-      }
-    };
-
-    fetchProductData();
-  }, [eoi_id]);
 
   // Apply filters
   const applyFilters = () => {
@@ -155,7 +148,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
 
   // Select all categories
   const selectAllCategories = () => {
-    setSelectedProductCategories([...availableCategories]);
+    setSelectedProductCategories([...categories]);
   };
 
   // Deselect all categories
@@ -165,7 +158,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
 
   // Select all products
   const selectAllProducts = () => {
-    setSelectedProducts([...availableProducts]);
+    setSelectedProducts([...products]);
   };
 
   // Deselect all products
@@ -177,14 +170,14 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
   const getCategoryDisplayText = () => {
     if (selectedProductCategories.length === 0) return "All Categories";
     if (selectedProductCategories.length === 1) return selectedProductCategories[0];
-    if (selectedProductCategories.length === availableCategories.length) return "All Categories";
+    if (selectedProductCategories.length === categories.length) return "All Categories";
     return `${selectedProductCategories.length} categories selected`;
   };
 
   const getProductDisplayText = () => {
     if (selectedProducts.length === 0) return "All Products";
     if (selectedProducts.length === 1) return selectedProducts[0];
-    if (selectedProducts.length === availableProducts.length) return "All Products";
+    if (selectedProducts.length === products.length) return "All Products";
     return `${selectedProducts.length} products selected`;
   };
 
@@ -206,7 +199,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
     };
   }, []);
 
-  // DataTable reference callback
+  // DataTable reference callback - corrected to use tableRef properly
   const dataTableRef = (dtInstance: any) => {
     setDataTable(dtInstance);
   };
@@ -216,6 +209,18 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
       <Head title={`EOIs - ${eoi_number}`} />
       <div className="container mx-auto p-4">
         <h2 className="text-xl font-bold mb-4">Submitted EOIs for {eoi_number}</h2>
+        
+        {flash?.message && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
+            {flash.message}
+          </div>
+        )}
+        
+        {flash?.error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+            {flash.error}
+          </div>
+        )}
         
         <div className="flex items-center justify-between w-full mb-4">
           <Button
@@ -338,7 +343,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
                       </button>
                     </div>
                     <div className="max-h-60 overflow-y-auto">
-                      {availableCategories.map((category) => (
+                      {categories.map((category) => (
                         <div 
                           key={category} 
                           className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
@@ -363,7 +368,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
                           </label>
                         </div>
                       ))}
-                      {availableCategories.length === 0 && (
+                      {categories.length === 0 && (
                         <div className="p-2 text-gray-500 text-sm">No categories available</div>
                       )}
                     </div>
@@ -412,7 +417,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
                       </button>
                     </div>
                     <div className="max-h-60 overflow-y-auto">
-                      {availableProducts.map((product) => (
+                      {products.map((product) => (
                         <div 
                           key={product} 
                           className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
@@ -437,7 +442,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ eoi_id, eoi_n
                           </label>
                         </div>
                       ))}
-                      {availableProducts.length === 0 && (
+                      {products.length === 0 && (
                         <div className="p-2 text-gray-500 text-sm">No products available</div>
                       )}
                     </div>

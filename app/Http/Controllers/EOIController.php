@@ -316,7 +316,7 @@ class EOIController extends Controller implements HasMiddleware
             $eoi = EOI::findOrFail($id);
             $eoi->update(['status' => 'under_selection']);
     
-            return redirect()->route('eoisubmission.list')
+            return redirect()->back()
                 ->with('message', 'Vendor has been rated based on their submission. Now you can filter them based on their submission.');
         } catch (\Exception $e) {
             return redirect()->back()
@@ -328,6 +328,28 @@ class EOIController extends Controller implements HasMiddleware
     public function listVendorSubmissionByEoi(Request $request, $eoiId)
     {
         $eoi = EOI::select('eoi_number','status')->where('id', $eoiId)->firstOrFail();
+        
+        // Get categories and products for this EOI
+        $categories = DB::table('vendor_submitted_items as vsi')
+            ->join('request_items as ri', 'vsi.request_items_id', '=', 'ri.id')
+            ->join('products as p', 'ri.product_id', '=', 'p.id')
+            ->join('product_categories as pc', 'p.category_id', '=', 'pc.id')
+            ->join('vendor_eoi_submissions as ves', 'vsi.vendor_eoi_submission_id', '=', 'ves.id')
+            ->where('ves.eoi_id', $eoiId)
+            ->select('pc.category_name')
+            ->distinct()
+            ->pluck('category_name')
+            ->toArray();
+            
+        $products = DB::table('vendor_submitted_items as vsi')
+            ->join('request_items as ri', 'vsi.request_items_id', '=', 'ri.id')
+            ->join('products as p', 'ri.product_id', '=', 'p.id')
+            ->join('vendor_eoi_submissions as ves', 'vsi.vendor_eoi_submission_id', '=', 'ves.id')
+            ->where('ves.eoi_id', $eoiId)
+            ->select('p.name')
+            ->distinct()
+            ->pluck('name')
+            ->toArray();
         
         if ($request->ajax() && $request->expectsJson()) {
             $submittedEois = DB::table('vendor_eoi_submissions as ves')
@@ -492,8 +514,8 @@ class EOIController extends Controller implements HasMiddleware
             'eoi_id' => $eoiId, 
             'eoi_number' => $eoi->eoi_number,
             'eoi_status' => $eoi->status,
-            'categories' => $categories,
-            'products' => $products,
+            'categories' => $categories,  
+            'products' => $products,     
             'flash' => [
                 'message' => session('message'),
                 'error' => session('error'),

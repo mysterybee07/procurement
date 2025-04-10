@@ -130,7 +130,7 @@ class VendorEOISubmissionController extends Controller
             'vendor_id' => auth()->id(),
             'vendor_name' => auth()->user()->name,
             'vendor_address' => auth()->user()->address,
-            'allow_partial_submission' => $eoi->allow_partial_submission ?? false,
+            'allow_partial_item_submission' => $eoi->allow_partial_item_submission ?? false,
         ]);
     }
 

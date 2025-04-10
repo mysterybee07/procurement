@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
@@ -52,6 +53,7 @@ interface VendorEOISubmissionFormData {
         file: File | null;
         fileName?: string;
     }[];
+    no_items_reason?: string; // New field for reason when not submitting items
 }
 
 interface Props {
@@ -62,7 +64,7 @@ interface Props {
     vendor_id: number;
     vendor_name: string;
     vendor_address: string;
-    allow_partial_submission: boolean;
+    allow_partial_item_submission: boolean;
     isEditing?: boolean;
     existingSubmission?: Partial<VendorEOISubmissionFormData>;
 }
@@ -75,12 +77,12 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
     eoi_number,
     vendor_name,
     vendor_address,
-    allow_partial_submission,
+    allow_partial_item_submission,
     isEditing = false,
     existingSubmission
 }) => {
     // Filter out fulfilled items
-    const filteredRequestItems = requestItems.filter(item => 
+    const filteredRequestItems = requestItems.filter(item =>
         !item.provided_quantity || item.required_quantity > (item.provided_quantity || 0)
     );
 
@@ -90,7 +92,7 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
         hasValidCategories: boolean;
     }>((acc, item) => {
         const category = item.category;
-        
+
         if (!category) {
             console.warn(`Skipping item ${item.id} - no category found`);
             return acc;
@@ -102,7 +104,7 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
                 items: []
             };
         }
-        
+
         acc.groupedItems[category.id].items.push(item);
         acc.hasValidCategories = true;
         return acc;
@@ -116,9 +118,18 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
     }));
 
     // State management
-    const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<number[]>(
+        // Initialize with categories from existing submission if editing
+        isEditing && existingSubmission?.submittedItems?.length
+            ? Array.from(new Set(existingSubmission.submittedItems.map(item => {
+                const requestItem = filteredRequestItems.find(ri => ri.id === item.request_items_id);
+                return requestItem?.category?.id;
+            }).filter(Boolean) as number[]))
+            : []
+    );
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionType, setSubmissionType] = useState<'draft' | 'submitted'>('draft');
+    const [isSubmittingItems, setIsSubmittingItems] = useState(true); // New state to track if vendor is submitting items
 
     // Initialize the submitted items with required quantity
     const initialSubmittedItems = filteredRequestItems.map(item => ({
@@ -127,12 +138,11 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
         actual_product_total_price: '',
         discount_rate: '',
         additional_specifications: item.additional_specifications,
-        submitted_quantity: item.required_quantity
+        submitted_quantity: allow_partial_item_submission ? '' : undefined
     }));
 
     // Form setup
     const { data, setData, post, put, errors, processing, reset } = useForm<VendorEOISubmissionFormData>({
-
         id: existingSubmission?.id,
         eoi_id: eoi_id,
         vendor_id: vendor_id,
@@ -147,23 +157,20 @@ const VendorEOISubmissionForm: React.FC<Props> = ({
         submittedDocuments: documents.map(doc => ({
             document_id: doc.id,
             file: null,
-            fileName: '',
+            fileName: existingSubmission?.submittedDocuments?.find(d => d.document_id === doc.id)?.fileName || '',
         })),
+        no_items_reason: existingSubmission?.no_items_reason || '', // Initialize reason field
     });
-console.log(errors);
+
     // Helper functions
     const toggleCategorySelection = (categoryId: number) => {
-        setSelectedCategories(prev => 
-            prev.includes(categoryId) 
-                ? prev.filter(id => id !== categoryId) 
-                : [...prev, categoryId]
-        );
-        
-        // Recalculate total when category selection changes
         const newCategories = selectedCategories.includes(categoryId)
             ? selectedCategories.filter(id => id !== categoryId)
             : [...selectedCategories, categoryId];
-            
+
+        setSelectedCategories(newCategories);
+
+        // Recalculate total when category selection changes
         updateTotalPrice(newCategories);
     };
 
@@ -171,7 +178,10 @@ console.log(errors);
         const totalPrice = data.submittedItems.reduce((total, item) => {
             const requestItem = findRequestItemById(item.request_items_id);
             const categoryId = requestItem?.category?.id;
-            return categoryId && categories.includes(categoryId)
+            const hasPrice = parseFloat(item.actual_unit_price) > 0;
+            const hasQuantity = item.submitted_quantity > 0;
+
+            return categoryId && categories.includes(categoryId) && hasPrice && hasQuantity
                 ? total + parseFloat(item.actual_product_total_price || '0')
                 : total;
         }, 0);
@@ -191,20 +201,12 @@ console.log(errors);
         const updatedItems = [...data.submittedItems];
         updatedItems[index] = { ...updatedItems[index], [field]: value };
 
-        // If partial submission is not allowed, always set submitted_quantity to required_quantity
-        if (!allow_partial_submission && field === 'submitted_quantity') {
-            const requestItem = findRequestItemById(updatedItems[index].request_items_id);
-            if (requestItem) {
-                updatedItems[index].submitted_quantity = requestItem.required_quantity;
-            }
-        }
-
         // Calculate total price if relevant fields change
         if (['actual_unit_price', 'discount_rate', 'submitted_quantity'].includes(field)) {
-            const quantity = field === 'submitted_quantity' 
-                ? Number(value) 
+            const quantity = field === 'submitted_quantity'
+                ? Number(value)
                 : updatedItems[index].submitted_quantity;
-                
+
             const unitPrice = parseFloat(updatedItems[index].actual_unit_price) || 0;
             const discountRate = parseFloat(updatedItems[index].discount_rate || '0') / 100;
             const totalPrice = (quantity * unitPrice) * (1 - discountRate);
@@ -212,20 +214,22 @@ console.log(errors);
             updatedItems[index].actual_product_total_price = totalPrice.toFixed(2);
         }
 
+        // Update the data
+        setData('submittedItems', updatedItems);
+
         // Recalculate total
         const totalPrice = updatedItems.reduce((total, item) => {
             const requestItem = findRequestItemById(item.request_items_id);
             const categoryId = requestItem?.category?.id;
-            return categoryId && selectedCategories.includes(categoryId)
+            const hasPrice = parseFloat(item.actual_unit_price) > 0;
+            const hasQuantity = item.submitted_quantity > 0;
+
+            return categoryId && selectedCategories.includes(categoryId) && hasPrice && hasQuantity
                 ? total + parseFloat(item.actual_product_total_price || '0')
                 : total;
         }, 0);
 
-        setData({
-            ...data,
-            submittedItems: updatedItems,
-            items_total_price: totalPrice.toFixed(2)
-        });
+        setData('items_total_price', totalPrice.toFixed(2));
     };
 
     const handleDocumentUpload = (index: number, file: File) => {
@@ -240,7 +244,13 @@ console.log(errors);
 
     const store = () => {
         const formData = new FormData();
-        
+
+        // Add ID if editing
+        if (isEditing && data.id) {
+            formData.append('id', String(data.id));
+            formData.append('_method', 'PUT');
+        }
+
         // Basic data
         formData.append('eoi_id', String(data.eoi_id || eoi_id));
         formData.append('vendor_id', String(data.vendor_id || vendor_id));
@@ -249,31 +259,47 @@ console.log(errors);
         formData.append('remarks', data.remarks);
         formData.append('items_total_price', data.items_total_price);
         formData.append('status', submissionType);
+        
+        // Add flag and reason if not submitting items
+        formData.append('is_submitting_items', String(isSubmittingItems));
+        if (!isSubmittingItems && data.no_items_reason) {
+            formData.append('no_items_reason', data.no_items_reason);
+        }
 
         // Terms and conditions
         if (data.terms_and_conditions instanceof File) {
             formData.append('terms_and_conditions', data.terms_and_conditions);
         }
 
-        // Items from selected categories only
-        data.submittedItems.forEach((item, index) => {
-            const requestItem = findRequestItemById(item.request_items_id);
-            const categoryId = requestItem?.category?.id;
-            
-            if (categoryId && selectedCategories.includes(categoryId)) {
-                formData.append(`submittedItems[${index}][request_items_id]`, String(item.request_items_id));
-                formData.append(`submittedItems[${index}][actual_unit_price]`, item.actual_unit_price);
-                formData.append(`submittedItems[${index}][actual_product_total_price]`, item.actual_product_total_price);
-                formData.append(`submittedItems[${index}][submitted_quantity]`, String(item.submitted_quantity));
+        // Items from selected categories only - filter out items without price or quantity
+        if (isSubmittingItems) {
+            let itemIndex = 0;
+            data.submittedItems.forEach((item, originalIndex) => {
+                const requestItem = findRequestItemById(item.request_items_id);
+                const categoryId = requestItem?.category?.id;
+                const hasPrice = parseFloat(item.actual_unit_price) > 0;
+                const hasQuantity = item.submitted_quantity > 0;
 
-                if (item.discount_rate) {
-                    formData.append(`submittedItems[${index}][discount_rate]`, item.discount_rate);
+                if (categoryId &&
+                    selectedCategories.includes(categoryId) &&
+                    (submissionType === 'draft' || (hasPrice && hasQuantity))
+                ) {
+                    formData.append(`submittedItems[${itemIndex}][request_items_id]`, String(item.request_items_id));
+                    formData.append(`submittedItems[${itemIndex}][actual_unit_price]`, item.actual_unit_price);
+                    formData.append(`submittedItems[${itemIndex}][actual_product_total_price]`, item.actual_product_total_price);
+                    formData.append(`submittedItems[${itemIndex}][submitted_quantity]`, String(item.submitted_quantity));
+
+                    if (item.discount_rate) {
+                        formData.append(`submittedItems[${itemIndex}][discount_rate]`, item.discount_rate);
+                    }
+                    if (item.additional_specifications) {
+                        formData.append(`submittedItems[${itemIndex}][additional_specifications]`, item.additional_specifications);
+                    }
+
+                    itemIndex++;
                 }
-                if (item.additional_specifications) {
-                    formData.append(`submittedItems[${index}][additional_specifications]`, item.additional_specifications);
-                }
-            }
-        });
+            });
+        }
 
         // Documents
         data.submittedDocuments.forEach((doc, index) => {
@@ -284,51 +310,120 @@ console.log(errors);
         });
 
         // Submit
-        const submitMethod = isEditing && data.id ? put : post;
-        const url = isEditing && data.id 
-            ? `/vendor/eoi-submissions/${data.id}`
+        const url = isEditing && data.id
+            ? `/vendor/${data.id}/submission`
             : `/vendor/${eoi_id}/submission`;
 
-        submitMethod(url, {
-            data: formData,
-            forceFormData: true,
-            onSuccess: () => reset(),
-            onError: () => setIsSubmitting(false)
-        });
+        if (isEditing && data.id) {
+            put(url, {
+                data: formData,
+                forceFormData: true,
+                onSuccess: () => {
+                    setIsSubmitting(false);
+                    reset();
+                },
+                onError: () => setIsSubmitting(false)
+            });
+        } else {
+            post(url, {
+                data: formData,
+                forceFormData: true,
+                onSuccess: () => {
+                    setIsSubmitting(false);
+                    reset();
+                },
+                onError: () => setIsSubmitting(false)
+            });
+        }
     };
 
     useEffect(() => {
-        if (isSubmitting) store();
+        if (isSubmitting && !processing) {
+            store();
+        }
     }, [isSubmitting]);
+
+    // Recalculate total price on initial load
+    useEffect(() => {
+        if (selectedCategories.length > 0) {
+            updateTotalPrice(selectedCategories);
+        }
+    }, []);
+
+    // If existing submission has no items, set isSubmittingItems to false when editing
+    useEffect(() => {
+        if (isEditing && existingSubmission && (!existingSubmission.submittedItems || existingSubmission.submittedItems.length === 0)) {
+            setIsSubmittingItems(false);
+        }
+    }, [isEditing, existingSubmission]);
+
+    const validateForm = () => {
+        // If not submitting items, check if reason is provided
+        if (!isSubmittingItems) {
+            if (!data.no_items_reason) {
+                alert('Please provide a reason for not submitting any items');
+                return false;
+            }
+            return true;
+        }
+        
+        // Otherwise, validate that at least one category is selected
+        if (selectedCategories.length === 0) {
+            alert('Please select at least one category or choose not to submit items');
+            return false;
+        }
+        return true;
+    };
+
+    const validateFullSubmission = () => {
+        // Skip validation if not submitting items
+        if (!isSubmittingItems) {
+            return true;
+        }
+        
+        // Validate that all selected items have prices and quantities
+        const hasInvalidItems = data.submittedItems.some(item => {
+            const requestItem = findRequestItemById(item.request_items_id);
+            const categoryId = requestItem?.category?.id;
+
+            return categoryId &&
+                selectedCategories.includes(categoryId) &&
+                (parseFloat(item.actual_unit_price) <= 0 || item.submitted_quantity <= 0);
+        });
+
+        if (hasInvalidItems) {
+            alert('Please provide valid prices and quantities for all selected items');
+            return false;
+        }
+
+        return true;
+    };
 
     const saveAsDraft = (e: React.FormEvent) => {
         e.preventDefault();
-        if (selectedCategories.length === 0) {
-            alert('Please select at least one category');
-            return;
-        }
+        if (!validateForm()) return;
+
         setSubmissionType('draft');
         setIsSubmitting(true);
     };
 
     const submitForReview = (e: React.FormEvent) => {
         e.preventDefault();
-        if (selectedCategories.length === 0) {
-            alert('Please select at least one category');
-            return;
-        }
+        if (!validateForm()) return;
+        if (!validateFullSubmission()) return;
+
         setSubmissionType('submitted');
         setIsSubmitting(true);
     };
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'EOI Submissions', href: '/vendor/eoi-submissions' },
-        { 
-            title: isEditing ? 'Edit Submission' : 'New Submission', 
+        {
+            title: isEditing ? 'Edit Submission' : 'New Submission',
             href: isEditing ? `/vendor/eoi-submissions/${existingSubmission?.id}/edit` : '/vendor/eoi-submissions/create'
         }
     ];
-
+console.log(errors);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -345,18 +440,17 @@ console.log(errors);
                     {/* Category Selection */}
                     <section className="mb-8 p-6 border rounded-lg bg-gray-50">
                         <h2 className="text-xl font-semibold mb-4">Select Categories</h2>
-                        
+
                         {filteredRequestItems.length > 0 ? (
                             hasValidCategories ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {itemCategories.map(category => (
-                                        <div 
+                                        <div
                                             key={category.id}
-                                            className={`p-4 border rounded cursor-pointer transition-colors ${
-                                                selectedCategories.includes(category.id)
+                                            className={`p-4 border rounded cursor-pointer transition-colors ${selectedCategories.includes(category.id)
                                                 ? 'bg-blue-50 border-blue-300'
                                                 : 'bg-white hover:bg-gray-100'
-                                            }`}
+                                                }`}
                                             onClick={() => toggleCategorySelection(category.id)}
                                         >
                                             <div className="flex items-center justify-between">
@@ -390,10 +484,10 @@ console.log(errors);
                         )}
                     </section>
 
-                    {/* Items Section - Maintain consistent height whether categories are selected or not */}
+                    {/* Items Section */}
                     <section className="mb-8 min-h-64">
                         <h2 className="text-xl font-semibold mb-4">Quoted Items</h2>
-                        
+
                         {hasValidCategories ? (
                             selectedCategories.length > 0 ? (
                                 <>
@@ -404,15 +498,13 @@ console.log(errors);
                                                 <h3 className="font-semibold p-3 bg-gray-200 rounded mb-3">
                                                     {category.name}
                                                 </h3>
-                                                
+
                                                 <table className="w-full border-collapse">
                                                     <thead>
                                                         <tr className="bg-gray-200">
                                                             <th className="p-2 border text-left">Product</th>
-                                                            <th className="p-2 border text-center">Required</th>
-                                                            {allow_partial_submission && (
-                                                                <th className="p-2 border text-center">Submit Qty*</th>
-                                                            )}
+                                                            <th className="p-2 border text-center">Required Quantity</th>
+                                                            <th className="p-2 border text-center">Submit Quantity*</th>
                                                             <th className="p-2 border text-center">Unit Price*</th>
                                                             <th className="p-2 border text-center">Discount (%)</th>
                                                             <th className="p-2 border text-center">Total</th>
@@ -422,7 +514,7 @@ console.log(errors);
                                                         {category.items.map(item => {
                                                             const index = getItemIndexById(item.id);
                                                             if (index === -1) return null;
-                                                            
+
                                                             return (
                                                                 <tr key={item.id} className="hover:bg-gray-50">
                                                                     <td className="p-2 border">
@@ -441,28 +533,35 @@ console.log(errors);
                                                                             className="w-full p-1 text-center bg-transparent border-none"
                                                                         />
                                                                     </td>
-                                                                    {allow_partial_submission && (
-                                                                        <td className="p-2 border">
+                                                                    <td className="p-2 border">
+                                                                        {allow_partial_item_submission ? (
                                                                             <input
                                                                                 type="number"
                                                                                 min="1"
                                                                                 max={item.required_quantity}
-                                                                                value={data.submittedItems[index].submitted_quantity}
+                                                                                value={data.submittedItems[index].submitted_quantity || ''}
                                                                                 onChange={(e) => handleItemChange(
                                                                                     index,
                                                                                     'submitted_quantity',
-                                                                                    Math.max(1, Math.min(item.required_quantity, Number(e.target.value) || 1))
+                                                                                    e.target.value ? Math.max(1, Math.min(item.required_quantity, Number(e.target.value))) : ''
                                                                                 )}
                                                                                 className="w-full p-1 text-center border rounded"
-                                                                                required
+                                                                                placeholder="Enter quantity"
                                                                             />
-                                                                        </td>
-                                                                    )}
+                                                                        ) : (
+                                                                            <input
+                                                                                type="number"
+                                                                                value={item.required_quantity}
+                                                                                readOnly
+                                                                                className="w-full p-1 text-center bg-transparent border-none"
+                                                                            />
+                                                                        )}
+                                                                    </td>
                                                                     <td className="p-2 border">
                                                                         <input
                                                                             type="number"
                                                                             step="0.01"
-                                                                            min="0"
+                                                                            min="0.01"
                                                                             value={data.submittedItems[index].actual_unit_price}
                                                                             onChange={(e) => handleItemChange(index, 'actual_unit_price', e.target.value)}
                                                                             className="w-full p-1 text-center border rounded"
@@ -497,7 +596,7 @@ console.log(errors);
                                             </div>
                                         ))
                                     }
-                                    
+
                                     <div className="flex justify-end border-t pt-4 pr-6">
                                         <div className="text-right font-bold">
                                             Total: {new Intl.NumberFormat('en-US', {
@@ -627,24 +726,22 @@ console.log(errors);
                             type="button"
                             onClick={saveAsDraft}
                             disabled={processing || (!hasValidCategories && !isEditing)}
-                            className={`px-6 py-2 rounded text-white ${
-                                processing 
-                                    ? 'bg-gray-500' 
-                                    : 'bg-gray-600 hover:bg-gray-700'
-                            } disabled:opacity-50`}
+                            className={`px-6 py-2 rounded text-white ${processing
+                                ? 'bg-gray-500'
+                                : 'bg-gray-600 hover:bg-gray-700'
+                                } disabled:opacity-50`}
                         >
                             {processing ? 'Processing...' : isEditing ? 'Update Draft' : 'Save Draft'}
                         </button>
-                        
+
                         <button
                             type="button"
                             onClick={submitForReview}
-                            disabled={processing || !hasValidCategories}
-                            className={`px-6 py-2 rounded text-white ${
-                                processing 
-                                    ? 'bg-blue-500' 
-                                    : 'bg-blue-600 hover:bg-blue-700'
-                            } disabled:opacity-50`}
+                            disabled={processing || (!hasValidCategories && !isEditing)}
+                            className={`px-6 py-2 rounded text-white ${processing
+                                ? 'bg-blue-500'
+                                : 'bg-blue-600 hover:bg-blue-700'
+                                } disabled:opacity-50`}
                         >
                             {processing ? 'Submitting...' : isEditing ? 'Update Submission' : 'Submit for Review'}
                         </button>

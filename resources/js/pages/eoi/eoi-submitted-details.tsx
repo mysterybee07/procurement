@@ -22,6 +22,7 @@ interface VendorSubmittedItem {
     actual_unit_price: string;
     actual_product_total_price: string;
     discount_rate?: string;
+    submitted_quantity:number;
     additional_specifications?: string | null;
     request_item: RequestItem;
 }
@@ -150,7 +151,7 @@ const EOISubmittedDetails: React.FC<Props> = ({ submission, flash }) => {
                                 <thead>
                                     <tr className="bg-gray-100">
                                         <th className="p-3 text-left border border-gray-200">Product</th>
-                                        <th className="p-3 text-center border border-gray-200">Quantity</th>
+                                        <th className="p-3 text-center border border-gray-200">Submitted Quantity</th>
                                         <th className="p-3 text-center border border-gray-200">Unit Price</th>
                                         <th className="p-3 text-center border border-gray-200">Discount</th>
                                         <th className="p-3 text-center border border-gray-200">Total Price</th>
@@ -163,7 +164,7 @@ const EOISubmittedDetails: React.FC<Props> = ({ submission, flash }) => {
                                                 {item.request_item.product.name}
                                             </td>
                                             <td className="p-3 text-center border border-gray-200">
-                                                {item.request_item.required_quantity-item.request_item.provided_quantity}
+                                                {item.submitted_quantity}
                                             </td>
                                             <td className="p-3 text-center border border-gray-200">
                                                 ${parseFloat(item.actual_unit_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
