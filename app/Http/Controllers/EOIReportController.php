@@ -10,7 +10,7 @@ class EOIReportController extends Controller
 {
     public function index()
     {
-        // Raw query to get EOI overview data
+        // Get EOI overview data
         $overview = DB::select("
             SELECT 
                 e.id,
@@ -27,14 +27,22 @@ class EOIReportController extends Controller
             ORDER BY e.created_at DESC
         ");
 
+        // Get statistics
+        $stats = [
+            'total_eois' => DB::table('eois')->count(),
+            'total_vendors' => DB::table('vendors')->count(),
+            'total_requisitions' => DB::table('requisitions')->count(),
+        ];
+
         return Inertia::render('report/eoi-report', [
             'overview' => $overview,
+            'stats' => $stats,
         ]);
     }
 
     public function show($eoi_id)
     {
-        // Raw query to get EOI overview data for all EOIs
+        // Get EOI overview data for all EOIs
         $overview = DB::select("
             SELECT 
                 e.id,
@@ -51,7 +59,7 @@ class EOIReportController extends Controller
             ORDER BY e.created_at DESC
         ");
 
-        // Raw query to get specific EOI submissions
+        // Get specific EOI submissions
         $submissions = DB::select("
             SELECT 
                 ves.id,
@@ -70,28 +78,45 @@ class EOIReportController extends Controller
             ORDER BY ves.submission_date DESC
         ", [$eoi_id]);    
 
-        // Raw query to get item price comparison data
+        // Get item price comparison data
         $comparisons = DB::select("
             SELECT 
-                ri.id as request_item_id,
-                p.name as product_name,
-                ri.required_quantity,
-                AVG(vsi.actual_unit_price) as avg_unit_price,
-                MIN(vsi.actual_unit_price) as min_unit_price,
-                MAX(vsi.actual_unit_price) as max_unit_price,
-                COUNT(DISTINCT ves.vendor_id) as vendor_offers,
-                SUM(vsi.submitted_quantity) as total_offered_quantity
-            FROM request_items ri
-            JOIN products p ON ri.product_id = p.id
-            JOIN requisitions req ON ri.requisition_id = req.id
-            JOIN vendor_submitted_items vsi ON vsi.request_items_id = ri.id
-            JOIN vendor_eoi_submissions ves ON vsi.vendor_eoi_submission_id = ves.id
-            WHERE req.eoi_id = ?
-            GROUP BY ri.id, p.name, ri.required_quantity
-            ORDER BY p.name
+            ri.id as request_item_id,
+            p.name as product_name,
+            ri.required_quantity,
+            AVG(vsi.actual_unit_price) as avg_unit_price,
+            MIN(vsi.actual_unit_price) as min_unit_price,
+            MAX(vsi.actual_unit_price) as max_unit_price,
+            COUNT(DISTINCT ves.vendor_id) as vendor_offers,
+            SUM(vsi.submitted_quantity) as total_offered_quantity,
+            GROUP_CONCAT(DISTINCT bv.best_vendor_name ORDER BY bv.best_vendor_name SEPARATOR ', ') as best_vendor
+        FROM request_items ri
+        JOIN products p ON ri.product_id = p.id
+        JOIN requisitions req ON ri.requisition_id = req.id
+        JOIN vendor_submitted_items vsi ON vsi.request_items_id = ri.id
+        JOIN vendor_eoi_submissions ves ON vsi.vendor_eoi_submission_id = ves.id
+        JOIN vendors v ON ves.vendor_id = v.id
+        -- Subquery for best vendors per item based on minimum price
+        LEFT JOIN (
+            SELECT sub.request_items_id, v.vendor_name as best_vendor_name
+            FROM (
+                SELECT 
+                    vsi.request_items_id,
+                    ves.vendor_id,
+                    MIN(vsi.actual_unit_price) OVER (PARTITION BY vsi.request_items_id) as min_price,
+                    vsi.actual_unit_price
+                FROM vendor_submitted_items vsi
+                JOIN vendor_eoi_submissions ves ON ves.id = vsi.vendor_eoi_submission_id
+            ) as sub
+            JOIN vendors v ON v.id = sub.vendor_id
+            WHERE sub.actual_unit_price = sub.min_price
+        ) as bv ON bv.request_items_id = ri.id
+        WHERE req.eoi_id = ?
+        GROUP BY ri.id, p.name, ri.required_quantity
+        ORDER BY p.name;
         ", [$eoi_id]);
 
-        // Raw query to get approval timeline
+        // Get approval timeline
         $timeline = DB::select("
             SELECT 
                 ra.status,
@@ -106,24 +131,30 @@ class EOIReportController extends Controller
             ORDER BY ra.created_at
         ", [$eoi_id]);
 
+        // Get statistics
+        $stats = [
+            'total_eois' => DB::table('eois')->count(),
+            'total_vendors' => DB::table('vendors')->count(),
+            'total_requisitions' => DB::table('requisitions')->count(),
+        ];
+
         return Inertia::render('report/eoi-report', [
             'overview' => $overview,
             'submissions' => $submissions,
             'comparisons' => $comparisons,
             'timeline' => $timeline,
-            'eoi_id' => (int)$eoi_id
+            'eoi_id' => (int)$eoi_id,
+            'stats' => $stats,
         ]);
     }
     
     public function exportToExcel($eoi_id)
     {
         // Implementation for exporting data to Excel
-        // You would typically use Laravel Excel or a similar package
     }
     
     public function printReport($eoi_id)
     {
         // Implementation for generating a printable report
-        // This could be a PDF view using a package like dompdf
     }
 }
