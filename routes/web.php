@@ -4,6 +4,7 @@ use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\ApprovalWorkflowController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EOIController;
+use App\Http\Controllers\EOIReportController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
@@ -77,9 +78,10 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     // Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::post('/document/{document}/approve', [DocumentController::class, 'approveDocument'])->name('document.approve');
 
     // vendor submitted documents
-    Route::get('/documents/{eoiSubmissionId}', [DocumentController::class, 'show'])->name('eoiDocuments.show');
+    Route::get('/submissions/{eoiSubmissionId}/documents', [DocumentController::class, 'show'])->name('eoiDocuments.show');
 
 
     // eois route
@@ -127,6 +129,10 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::post('/entity/{entityId}/approve',[ApprovalController::class,'approve'])->name('entity.approve');
     Route::post('/entity/{entityId}/reject',[ApprovalController::class,'reject'])->name('entity.reject');
 
+
+    // EOI report
+    Route::get('/reports/eoi', [EOIReportController::class, 'index'])->name('reports.eoi.index');
+    Route::get('/reports/eoi/{eoi_id}', [EOIReportController::class, 'show'])->name('reports.eoi');
 
     // Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
     // // Route::get('/permissions/create', [PermissionController::class, 'create'])->name('permissions.create');

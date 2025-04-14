@@ -208,19 +208,15 @@ const EOISubmittedDetails: React.FC<Props> = ({ submission, flash }) => {
                         <div className="flex justify-between px-8">
                             <div className="flex items-center gap-2">
                                 <ExternalLink className="text-blue-600" size={20} />
-                                <a href={`/documents/${submission.id}`} className="text-md text-gray-600 hover:underline">
+                                <a href={`/submissions/${submission.id}/documents`} className="text-md text-gray-600 hover:underline">
                                     Documents
                                 </a>
                             </div>
-
-
-
                             <div className="flex items-center gap-2">
                                 <ExternalLink className="text-blue-600" size={20} />
                                 <p className="text-md text-gray-600">Terms and Conditions</p>
                             </div>
                         </div>
-
                     </div>
 
                     {/* Action Buttons */}
@@ -231,12 +227,6 @@ const EOISubmittedDetails: React.FC<Props> = ({ submission, flash }) => {
                         >
                             Back
                         </button>
-                        {/* <button
-                            className="px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50"
-                            onClick={() => window.print()}
-                        >
-                            Print
-                        </button> */}
                     </div>
                 </div>
             </div>

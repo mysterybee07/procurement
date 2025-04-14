@@ -11,7 +11,8 @@ class VendorEOIDocument extends Model
         'eoi_submission_id', 
         'document_id', 
         'file_path', 
-        'vendor_id'
+        'vendor_id',
+        'status'
         // 'original_filename'
     ];
 

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
+use Log;
 
 class DocumentController extends Controller implements HasMiddleware
 {
@@ -89,12 +90,21 @@ class DocumentController extends Controller implements HasMiddleware
      */
     public function show($eoiSubmissionId)
     {
-        // dd($eoiSubmissionId);
-        $documents = VendorEOIDocument::select('file_path')
-        ->with('vendor')
-        ->where('eoi_submission_id',$eoiSubmissionId)->get();
-        dd($documents);
+        $documents = VendorEOIDocument::with('vendor', 'document')
+            ->where('eoi_submission_id', $eoiSubmissionId)
+            ->get();
+    
+        return Inertia::render('document/list-vendor-submitted-documents', [
+            'documents' => $documents,
+            'eoiSubmissionId' => $eoiSubmissionId,
+            'flash'=>[
+                'message'=> session('message'),
+                'error'=>session('error'),
+            ]
+        ]);
     }
+
+
 
     /**
      * Show the form for editing the specified resource.
@@ -142,5 +152,23 @@ class DocumentController extends Controller implements HasMiddleware
         return redirect()->route('documents.index')->with(
             'message', "Document Deleted successfully",
         );
+    }
+
+
+    public function approveDocument($docId)
+    {
+        try {
+            $document = VendorEOIDocument::findOrFail($docId);
+            $document->status = 'accepted';
+            $document->save();
+            // dd($document);
+            return redirect()->back()
+                ->with('message', 'Document approved successfully');
+        } catch (\Exception $e) {
+            Log::error('Error approving document: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->with('error', 'Failed to approve document. Please try again.');
+        }
     }
 }

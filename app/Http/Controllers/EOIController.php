@@ -504,7 +504,7 @@ class EOIController extends Controller implements HasMiddleware
                 })
                 ->addColumn('actions', function ($row) {
                     return '<a href="/eoi-submission/'.$row->id.'/details" class="text-green-500 hover:underline">Details</a>'.' '.
-                        '<a href="/vendor/documents/'.$row->vendor_id.'" class="text-blue-500 hover:underline mr-2">View Documents</a>';
+                        '<a href="/submissions/'.$row->id.'/documents" class="text-blue-500 hover:underline mr-2">View Documents</a>';
                 })
                 ->rawColumns(['actions'])
                 ->toJson();

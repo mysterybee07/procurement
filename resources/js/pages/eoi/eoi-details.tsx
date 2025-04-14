@@ -88,6 +88,23 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
   //   { id: 3, name: 'Workflow 3' },
   // ];
 
+  // Add this function inside your EOIDetails component
+  const generateShareableLink = () => {
+    // Create the public URL for this EOI
+    const baseUrl = window.location.origin;
+    const publicUrl = `${baseUrl}/eoi/public/${eoi.id}`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(publicUrl)
+      .then(() => {
+        alert("Link copied to clipboard!");
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+        alert("Failed to copy link");
+      });
+  };
+
   // Helper function to format date
   const formatDate = (dateString: string) => {
     try {
@@ -132,10 +149,22 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
           )}
 
           <div className="p-6 max-w-4xl mx-auto bg-white rounded shadow">
+            <div className='flex justify-end mb-4'>
+            {/* {(eoi.status === "published" || eoi.status === "open") && ( */}
+            <Button
+                  type="button"
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-4 mt-4"
+                  onClick={generateShareableLink}
+                >
+                  Share
+                </Button>
+              {/* )} */}
+              </div>
             {/* Header Section */}
             <header className="mb-8">
-              <h1 className="text-3xl font-bold text-center mb-6">{eoi.title}</h1>
 
+              <h1 className="text-3xl font-bold text-center mb-6">{eoi.title}</h1>
+              
               <div className="flex justify-between mb-4">
                 <div>
                   <span className="font-semibold">EOI Number: </span>
@@ -162,6 +191,7 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
                 <span className="font-semibold">{organizationAddress}</span>
               </div>
             </header>
+
 
             {/* Introduction Section */}
             <section className="mb-6">

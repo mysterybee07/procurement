@@ -214,7 +214,6 @@ class ApprovalController extends Controller implements HasMiddleware
                     // Return success message
                     return redirect()->back()->with('message', 'Entity status updated successfully.');
                 } else {
-                    // Entity not found in the database
                     // \Log::error("Entity not found for type {$approvalItem->entity_type} and ID {$approvalItem->entity_id}");
                     return redirect()->back()->withErrors(['error' => 'Entity not found.']);
                 }
