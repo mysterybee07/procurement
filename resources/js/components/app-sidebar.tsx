@@ -75,6 +75,12 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
         permission: 'view approvals'
     },
     {
+        title: 'Report',
+        href: '/reports/eoi',
+        icon: LayoutGrid,
+        permission: 'view vendors'
+    },
+    {
         title: 'Open EOIs',
         href: '/vendor/eois',
         icon: LayoutGrid,
@@ -86,13 +92,13 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
         icon: LayoutGrid,
         vendorOnly: true
     },
-    
+
 ];
 
 // export function AppSidebar() {
 //     const { auth } = usePage().props as any;
 //     const user = auth?.user;
-    
+
 //     const filteredNavItems = mainNavItems.filter(item => {
 
 //         if (item.vendorOnly) {
@@ -101,7 +107,7 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
 //         }
 
 //         if (!item.permission) return true;
-        
+
 //         return user?.permissions?.includes(item.permission) || 
 //                user?.roles?.some((role: any) => 
 //                    role.permissions?.includes(item.permission)
@@ -136,14 +142,14 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
 export function AppSidebar() {
     const { auth } = usePage().props as any;
     const user = auth?.user;
-    
+
     const filteredNavItems = mainNavItems.filter(item => {
         // Super Admins do not see vendor-only items
         if (user?.is_super_admin) {
             if (item.vendorOnly) {
                 return false;
             }
-            return true; 
+            return true;
         }
 
         // If it's a vendor-only route
@@ -153,10 +159,10 @@ export function AppSidebar() {
 
         // For non-vendor-only routes, check permissions
         if (item.permission) {
-            return user?.permissions?.includes(item.permission) || 
-                   user?.roles?.some((role: any) => 
-                       role.permissions?.includes(item.permission)
-                   );
+            return user?.permissions?.includes(item.permission) ||
+                user?.roles?.some((role: any) =>
+                    role.permissions?.includes(item.permission)
+                );
         }
 
         // If no permission specified, show the item

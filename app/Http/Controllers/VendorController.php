@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\EOI;
+use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Yajra\DataTables\DataTables;
 
 class VendorController extends Controller
 {
@@ -87,5 +89,62 @@ class VendorController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    // List all vendors
+    public function ListAllVendors(Request $request)
+    {
+        if ($request->ajax() && $request->expectsJson()) {
+            $vendors = DB::table('vendors as v')
+                ->leftJoin('users as u', 'v.user_id', '=', 'u.id')
+                ->select([
+                    'v.id',
+                    'v.vendor_name',
+                    'v.registration_number',
+                    'v.pan_number',
+                    // 'v.in_contact_person',
+                    'u.id as user_id', 
+                    // 'u.name',
+                    'u.email',
+                    'u.phone',
+                    // 'u.status'
+                ]);
+
+            return DataTables::of($vendors)
+                ->addColumn('actions', function ($row) {
+                    $actions = '<a href="' . route('vendor.show', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">View Details</a>';
+                    // $actions .= '<a href="' . route('eois.edit', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>';
+                    // $actions .= '<button data-id="' . $row->id . '" class="text-red-600 hover:text-red-900 delete-vendor">Delete</button>';
+                    
+                    return $actions;
+                })
+                ->filterColumn('vendor_name', function($query, $keyword) {
+                    $query->where('v.vendor_name', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('registration_number', function($query, $keyword) {
+                    $query->where('v.registration_number', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('pan_number', function($query, $keyword) {
+                    $query->where('v.pan_number', 'like', "%{$keyword}%");
+                })
+                // ->filterColumn('name', function($query, $keyword) {
+                //     $query->where('u.name', 'like', "%{$keyword}%");
+                // })
+                ->filterColumn('email', function($query, $keyword) {
+                    $query->where('u.email', 'like', "%{$keyword}%");
+                })
+                ->rawColumns(['actions'])
+                ->toJson();
+
+                // dump($vendors);
+        }
+
+
+        return Inertia::render('vendor/admin-side/list-vendor', [
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
+            ]
+        ]);
     }
 }

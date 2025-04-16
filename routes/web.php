@@ -135,6 +135,10 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::get('/reports/eoi/{eoi_id}', [EOIReportController::class, 'show'])->name('reports.eoi');
     Route::get('/reports/eoi/{eoi_id}/export', [EOIReportController::class, 'exportToExcel'])->name('reports.eoi.export');
     Route::get('/reports/eoi/{eoi_id}/print', [EOIReportController::class, 'printReport'])->name('reports.eoi.print');
+
+    // Vendor route
+    Route::get('/vendors',[VendorController::class, 'ListAllVendors'])->name('vendors.list');
+    Route::get('/vendors/{vendor}',[VendorController::class, 'show'])->name('vendor.show');
     
     // Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
     // // Route::get('/permissions/create', [PermissionController::class, 'create'])->name('permissions.create');
