@@ -15,14 +15,16 @@ interface Product {
   name: string;
 }
 
+interface Requisition {
+  id: number;
+}
+
 interface EOIFormData {
   id: number;
   title: string;
   description: string;
   status: string;
-  // approval_workflow_id: number;
   document_id: number;
-  // submission_deadline: string;
   evaluation_criteria: string;
   eoi_number: string;
   allow_partial_item_submission: boolean;
@@ -86,7 +88,7 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({ value, onCh
 };
 
 const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocuments, isEditing, eoi }) => {
-  
+
   const [requisitionIds, setRequisitionIds] = useState<number[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -141,27 +143,30 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
   // Load EOI data when editing
   useEffect(() => {
     if (isEditing && eoi) {
+      const documentIds = Array.isArray(eoi.documents)
+        ? eoi.documents.map(doc => typeof doc === 'object' ? doc.id : doc)
+        : [];
+
+      const reqIds = eoi.requisition_ids ||
+        (Array.isArray(eoi.requisitions) ? eoi.requisitions.map(req => req.id) : []);
+
       setData({
         id: eoi.id || 0,
         title: eoi.title || '',
         description: eoi.description || '',
         document_id: eoi.document_id || 0,
         status: eoi.status || 'draft',
-        // approval_workflow_id: eoi.approval_workflow_id || 0,
-        // submission_deadline: eoi.submission_deadline || '',
         evaluation_criteria: eoi.evaluation_criteria || '',
         eoi_number: eoi.eoi_number || '',
         allow_partial_item_submission: eoi.allow_partial_item_submission || false,
-        documents: eoi.documents || [],
-        requisition_ids: eoi.requisition_ids || requisitionIds, // Use existing or from URL
+        documents: documentIds,
+        requisition_ids: reqIds,
       });
 
       // Set the requisition IDs in the state too
-      if (eoi.requisition_ids) {
-        setRequisitionIds(eoi.requisition_ids);
-      }
+      setRequisitionIds(reqIds);
     }
-  }, [isEditing, eoi, requisitionIds]);
+  }, [isEditing, eoi]);
 
   // Form input handlers
   const handleChange = (
@@ -210,7 +215,7 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
   const handleRequisitionSelected = (selectedIds: number[]) => {
     // Filter out any IDs that are already in the requisitionIds array
     const newIds = selectedIds.filter(id => !requisitionIds.includes(id));
-    
+
     // If there are new IDs, add them to the existing ones
     if (newIds.length > 0) {
       const updatedIds = [...requisitionIds, ...newIds];
@@ -390,33 +395,33 @@ const EOIForm: React.FC<Props> = ({ products, requiredDocuments: initialDocument
                     </label>
                   </div>
                   <div>
-                  {/* Custom button to open modal */}
-                  <button
-                    type="button"
-                    onClick={handleOpenModal}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Add Requisitions
-                  </button>
+                    {/* Custom button to open modal */}
+                    <button
+                      type="button"
+                      onClick={handleOpenModal}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Add Requisitions
+                    </button>
 
-                  {/* Render the modal only when isModalOpen is true */}
-                  {isModalOpen && (
-                    <DirectRequisitionModal
-                      onSuccess={handleRequisitionSelected}
-                      onClose={handleCloseModal}
-                      products={products}
-                      initialSelectedIds={requisitionIds}
-                      isOpen={isModalOpen}
-                    />
-                  )}
+                    {/* Render the modal only when isModalOpen is true */}
+                    {isModalOpen && (
+                      <DirectRequisitionModal
+                        onSuccess={handleRequisitionSelected}
+                        onClose={handleCloseModal}
+                        products={products}
+                        initialSelectedIds={requisitionIds}
+                        isOpen={isModalOpen}
+                      />
+                    )}
 
-                </div>
+                  </div>
                 </div>
                 {errors.allow_partial_item_submission && (
                   <p className="mt-1 text-sm text-red-600">{errors.allow_partial_item_submission}</p>
                 )}
 
-               
+
               </div>
 
               {/* Display selected requisition IDs */}

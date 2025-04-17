@@ -145,8 +145,7 @@ const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ flash, requestApp
 
 
   const handleViewDetails = (item: ApprovalItem) => {
-    // Implement your view details logic here
-    console.log('View details for', item);
+    router.visit(`/eois/${item.entity_id}`);
   };
 
   // Render approval cards

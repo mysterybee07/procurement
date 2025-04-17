@@ -13,8 +13,8 @@ use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 use Str;
-use Validator;
-use function Termwind\render;
+// use Validator;
+// use function Termwind\render;
 
 class UserController extends Controller implements HasMiddleware
 {

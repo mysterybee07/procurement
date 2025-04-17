@@ -10,6 +10,7 @@ class EOIReportController extends Controller
     public function index()
     {
         $results = DB::select("
+            -- EOI data with aggregated information
             SELECT 
                 'eoi' AS type,
                 e.id,
@@ -20,71 +21,73 @@ class EOIReportController extends Controller
                 e.publish_date,
                 e.submission_deadline,
                 e.created_at,
-    
+                
                 -- Requisition & product metrics
-                (SELECT COUNT(*) FROM requisitions r WHERE r.eoi_id = e.id) as total_requisitions,
-                (SELECT COUNT(*) FROM requisitions r JOIN request_items ri ON r.id = ri.requisition_id WHERE r.eoi_id = e.id) as total_requested_products,
-                (
-                    SELECT GROUP_CONCAT(DISTINCT p.name SEPARATOR ', ')
-                    FROM requisitions r
-                    JOIN request_items ri ON ri.requisition_id = r.id
-                    JOIN products p ON p.id = ri.product_id
-                    WHERE r.eoi_id = e.id
-                ) AS products,
-    
+                COUNT(DISTINCT r.id) as total_requisitions,
+                COUNT(DISTINCT ri.id) as total_requested_products,
+                GROUP_CONCAT(DISTINCT p.name SEPARATOR ', ') AS products,
+                
                 -- Submission stats
-                (SELECT COUNT(*) FROM vendor_eoi_submissions ves WHERE ves.eoi_id = e.id) as total_submissions,
-                (SELECT AVG(ves.items_total_price) FROM vendor_eoi_submissions ves WHERE ves.eoi_id = e.id) as avg_total_price,
+                COUNT(DISTINCT ves.id) as total_submissions,
+                AVG(ves.items_total_price) as avg_total_price,
                 
                 -- Min price vendor
-                (
-                    SELECT ves.items_total_price 
-                    FROM vendor_eoi_submissions ves 
-                    WHERE ves.eoi_id = e.id 
-                    ORDER BY ves.items_total_price ASC 
-                    LIMIT 1
-                ) as min_total_price,
-                (
-                    SELECT v.vendor_name 
-                    FROM vendor_eoi_submissions ves
-                    JOIN vendors v ON v.id = ves.vendor_id
-                    WHERE ves.eoi_id = e.id 
-                    ORDER BY ves.items_total_price ASC 
-                    LIMIT 1
+                MIN(ves.items_total_price) as min_total_price,
+                MIN(
+                    CASE WHEN ves.items_total_price = min_prices.min_price 
+                    THEN v.vendor_name ELSE NULL END
                 ) as min_price_vendor,
                 
                 -- Max price vendor
-                (
-                    SELECT ves.items_total_price 
-                    FROM vendor_eoi_submissions ves 
-                    WHERE ves.eoi_id = e.id 
-                    ORDER BY ves.items_total_price DESC 
-                    LIMIT 1
-                ) as max_total_price,
-                (
-                    SELECT v.vendor_name 
-                    FROM vendor_eoi_submissions ves
-                    JOIN vendors v ON v.id = ves.vendor_id
-                    WHERE ves.eoi_id = e.id 
-                    ORDER BY ves.items_total_price DESC 
-                    LIMIT 1
+                MAX(ves.items_total_price) as max_total_price,
+                MIN(
+                    CASE WHEN ves.items_total_price = max_prices.max_price 
+                    THEN v.vendor_name ELSE NULL END
                 ) as max_price_vendor,
                 
                 -- Best vendor (by rating)
-                (
-                    SELECT v.vendor_name
-                    FROM vendor_ratings vr
-                    JOIN vendors v ON v.id = vr.vendor_id
-                    WHERE vr.eoi_id = e.id
-                    ORDER BY vr.overall_rating DESC
-                    LIMIT 1
+                MIN(
+                    CASE WHEN vr.overall_rating = best_vendors.max_rating
+                    THEN v2.vendor_name ELSE NULL END
                 ) as best_vendor
-    
+                
             FROM eois e
             LEFT JOIN approval_workflows aw ON e.approval_workflow_id = aw.id
-    
+            LEFT JOIN requisitions r ON r.eoi_id = e.id
+            LEFT JOIN request_items ri ON ri.requisition_id = r.id
+            LEFT JOIN products p ON p.id = ri.product_id
+            LEFT JOIN vendor_eoi_submissions ves ON ves.eoi_id = e.id
+            LEFT JOIN vendors v ON v.id = ves.vendor_id
+            LEFT JOIN vendor_ratings vr ON vr.eoi_id = e.id
+            LEFT JOIN vendors v2 ON v2.id = vr.vendor_id
+            
+            -- Subqueries to find min and max prices per EOI
+            LEFT JOIN (
+                SELECT eoi_id, MIN(items_total_price) as min_price
+                FROM vendor_eoi_submissions
+                GROUP BY eoi_id
+            ) min_prices ON min_prices.eoi_id = e.id
+            
+            -- Subquery to find max prices per EOI
+            LEFT JOIN (
+                SELECT eoi_id, MAX(items_total_price) as max_price
+                FROM vendor_eoi_submissions
+                GROUP BY eoi_id
+            ) max_prices ON max_prices.eoi_id = e.id
+            
+            -- Subquery to find best vendor rating per EOI
+            LEFT JOIN (
+                SELECT eoi_id, MAX(overall_rating) as max_rating
+                FROM vendor_ratings
+                GROUP BY eoi_id
+            ) best_vendors ON best_vendors.eoi_id = e.id
+            
+            GROUP BY e.id, e.eoi_number, e.title, aw.workflow_name, e.status, 
+                    e.publish_date, e.submission_deadline, e.created_at
+
             UNION ALL
-    
+
+            -- Summary stats row
             SELECT
                 'stats' AS type,
                 NULL AS id,
@@ -107,17 +110,50 @@ class EOIReportController extends Controller
                 NULL AS best_vendor
             FROM requisitions
         ");
-    
+
         return Inertia::render('report/report', [
             'overview' => $results,
         ]);
-    } 
+    }
     
     public function show($eoi_id)
     {
-        // Get all EOI data with a single query
+        // Get all EOI data with optimized query
         $data = DB::select("
-            WITH best_vendors AS (
+            WITH 
+            -- Common Table Expressions for reusable subqueries
+            submission_stats AS (
+                SELECT 
+                    eoi_id,
+                    COUNT(*) as total_submissions,
+                    SUM(CASE WHEN is_shortlisted = 1 THEN 1 ELSE 0 END) as shortlisted_submissions
+                FROM vendor_eoi_submissions
+                GROUP BY eoi_id
+            ),
+            
+            requisition_stats AS (
+                SELECT 
+                    eoi_id,
+                    COUNT(*) as linked_requisitions
+                FROM requisitions
+                GROUP BY eoi_id
+            ),
+            
+            item_pricing AS (
+                SELECT 
+                    ri.id as request_item_id,
+                    AVG(vsi.actual_unit_price) as avg_unit_price,
+                    MIN(vsi.actual_unit_price) as min_unit_price,
+                    MAX(vsi.actual_unit_price) as max_unit_price,
+                    COUNT(DISTINCT ves.vendor_id) as vendor_offers,
+                    SUM(vsi.submitted_quantity) as total_offered_quantity
+                FROM request_items ri
+                JOIN vendor_submitted_items vsi ON vsi.request_items_id = ri.id
+                JOIN vendor_eoi_submissions ves ON vsi.vendor_eoi_submission_id = ves.id
+                GROUP BY ri.id
+            ),
+            
+            best_vendors AS (
                 SELECT 
                     vsi.request_items_id,
                     GROUP_CONCAT(DISTINCT v.vendor_name ORDER BY v.vendor_name SEPARATOR ', ') as best_vendor_names
@@ -130,9 +166,20 @@ class EOIReportController extends Controller
                         MIN(actual_unit_price) as min_price
                     FROM vendor_submitted_items
                     GROUP BY request_items_id
-                ) as min_prices ON vsi.request_items_id = min_prices.request_items_id AND vsi.actual_unit_price = min_prices.min_price
+                ) as min_prices ON vsi.request_items_id = min_prices.request_items_id 
+                                AND vsi.actual_unit_price = min_prices.min_price
                 GROUP BY vsi.request_items_id
-            )            
+            ),
+            
+            submission_items_count AS (
+                SELECT 
+                    vendor_eoi_submission_id,
+                    COUNT(*) as items_submitted
+                FROM vendor_submitted_items
+                GROUP BY vendor_eoi_submission_id
+            )
+            
+            -- Main query using the CTEs
             SELECT 
                 -- EOI overview section
                 e.id,
@@ -142,9 +189,9 @@ class EOIReportController extends Controller
                 e.publish_date,
                 e.submission_deadline,
                 e.created_at,
-                (SELECT COUNT(*) FROM vendor_eoi_submissions ves WHERE ves.eoi_id = e.id) as total_submissions,
-                (SELECT COUNT(*) FROM vendor_eoi_submissions ves WHERE ves.eoi_id = e.id AND ves.is_shortlisted = 1) as shortlisted_submissions,
-                (SELECT COUNT(*) FROM requisitions r WHERE r.eoi_id = e.id) as linked_requisitions,
+                ss.total_submissions,
+                ss.shortlisted_submissions,
+                rs.linked_requisitions,
                 
                 -- Submissions section
                 ves.id as submission_id,
@@ -154,20 +201,18 @@ class EOIReportController extends Controller
                 ves.submission_date,
                 ves.items_total_price,
                 ves.is_shortlisted,
-                (SELECT COUNT(*) FROM vendor_submitted_items vsi WHERE vsi.vendor_eoi_submission_id = ves.id) AS items_submitted,
+                sic.items_submitted,
                 ves.remarks,
                 
                 -- Comparisons section
                 ri.id as request_item_id,
                 p.name as product_name,
                 ri.required_quantity,
-                (SELECT AVG(vsi.actual_unit_price) FROM vendor_submitted_items vsi WHERE vsi.request_items_id = ri.id) as avg_unit_price,
-                (SELECT MIN(vsi.actual_unit_price) FROM vendor_submitted_items vsi WHERE vsi.request_items_id = ri.id) as min_unit_price,
-                (SELECT MAX(vsi.actual_unit_price) FROM vendor_submitted_items vsi WHERE vsi.request_items_id = ri.id) as max_unit_price,
-                (SELECT COUNT(DISTINCT ves_inner.vendor_id) FROM vendor_submitted_items vsi_inner 
-                    JOIN vendor_eoi_submissions ves_inner ON vsi_inner.vendor_eoi_submission_id = ves_inner.id 
-                    WHERE vsi_inner.request_items_id = ri.id) as vendor_offers,
-                (SELECT SUM(vsi.submitted_quantity) FROM vendor_submitted_items vsi WHERE vsi.request_items_id = ri.id) as total_offered_quantity,
+                ip.avg_unit_price,
+                ip.min_unit_price,
+                ip.max_unit_price,
+                ip.vendor_offers,
+                ip.total_offered_quantity,
                 bv.best_vendor_names as best_vendor,
                 
                 -- Timeline section
@@ -179,18 +224,24 @@ class EOIReportController extends Controller
                 aps.step_name
                 
             FROM eois e
-            -- Submissions join
+            -- Overview stats joins
+            LEFT JOIN submission_stats ss ON ss.eoi_id = e.id
+            LEFT JOIN requisition_stats rs ON rs.eoi_id = e.id
+            
+            -- Submissions joins
             LEFT JOIN vendor_eoi_submissions ves ON ves.eoi_id = e.id
             LEFT JOIN vendors v ON ves.vendor_id = v.id
             LEFT JOIN users u ON v.user_id = u.id
+            LEFT JOIN submission_items_count sic ON sic.vendor_eoi_submission_id = ves.id
             
-            -- Comparisons join
+            -- Comparisons joins
             LEFT JOIN requisitions req ON req.eoi_id = e.id
             LEFT JOIN request_items ri ON ri.requisition_id = req.id
             LEFT JOIN products p ON ri.product_id = p.id
+            LEFT JOIN item_pricing ip ON ip.request_item_id = ri.id
             LEFT JOIN best_vendors bv ON bv.request_items_id = ri.id
             
-            -- Timeline join
+            -- Timeline joins
             LEFT JOIN request_approvals ra ON ra.entity_id = e.id AND ra.entity_type = 'eoi'
             LEFT JOIN users approver ON ra.approver_id = approver.id
             LEFT JOIN approval_steps aps ON ra.approval_step_id = aps.id
@@ -199,13 +250,12 @@ class EOIReportController extends Controller
             ORDER BY ves.submission_date DESC, p.name, ra.created_at
         ", [$eoi_id]);
         
-        // Initialize data structure
+        // Rest of your processing code remains the same...
         $overview = null;
         $submissions = [];
         $comparisons = [];
         $timeline = [];
         
-        // Process result rows into structured data
         foreach ($data as $row) {
             if (!$overview) {
                 $overview = [
@@ -222,7 +272,6 @@ class EOIReportController extends Controller
                 ];
             }
             
-            // Process submissions data
             if (!empty($row->submission_id) && !isset($submissions[$row->submission_id])) {
                 $submissions[$row->submission_id] = [
                     'id' => $row->submission_id,
@@ -237,7 +286,6 @@ class EOIReportController extends Controller
                 ];
             }
             
-            // Process comparisons data
             if (!empty($row->request_item_id) && !isset($comparisons[$row->request_item_id])) {
                 $comparisons[$row->request_item_id] = [
                     'request_item_id' => $row->request_item_id,
@@ -252,7 +300,6 @@ class EOIReportController extends Controller
                 ];
             }
             
-            // Process timeline data
             if (!empty($row->approval_id) && !isset($timeline[$row->approval_id])) {
                 $timeline[$row->approval_id] = [
                     'status' => $row->approval_status,
@@ -264,7 +311,6 @@ class EOIReportController extends Controller
             }
         }
         
-        // Ensure we have arrays for Inertia
         $eoiData = [
             'overview' => $overview,
             'submissions' => array_values($submissions),
@@ -279,11 +325,11 @@ class EOIReportController extends Controller
     
     public function exportToExcel($eoi_id)
     {
-        // Implementation for exporting data to Excel
+        
     }
     
     public function printReport($eoi_id)
     {
-        // Implementation for generating a printable report
+        
     }
 }

@@ -48,7 +48,7 @@ class EOIController extends Controller implements HasMiddleware
                     'u.id as creator_id',
                     'u.name as created_by'
                 ]);
-
+    
             return DataTables::of($eois)
                 ->addColumn('requisitions_count', function ($row) {
                     return DB::table('requisitions')
@@ -57,9 +57,17 @@ class EOIController extends Controller implements HasMiddleware
                 })
                 ->addColumn('actions', function ($row) {
                     $actions = '<a href="' . route('eois.show', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">View Details</a>';
-                    $actions .= '<a href="' . route('eois.edit', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>';
-                    $actions .= '<button data-id="' . $row->id . '" class="text-red-600 hover:text-red-900 mr-2 delete-eoi">Delete</button>';
-                    $actions .= '<a href="' . route('eoisubmission.list', $row->id) . '" class="text-indigo-600 hover:text-indigo-900">View Submissions</a>';
+                    
+                    // Show Edit and Delete buttons if status is 'draft' or 'rejected'
+                    if (in_array($row->status, ['draft', 'rejected'])) {
+                        $actions .= '<a href="' . route('eois.edit', $row->id) . '" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>';
+                        $actions .= '<button data-id="' . $row->id . '" class="text-red-600 hover:text-red-900 mr-2 delete-eoi">Delete</button>';
+                    }
+                    
+                    // Show View Submissions button for specific statuses
+                    if (in_array($row->status, ['open', 'closed', 'under_selection'])) {
+                        $actions .= '<a href="' . route('eoisubmission.list', $row->id) . '" class="text-indigo-600 hover:text-indigo-900">View Submissions</a>';
+                    }
                     
                     return $actions;
                 })
@@ -75,7 +83,7 @@ class EOIController extends Controller implements HasMiddleware
                 ->rawColumns(['actions'])
                 ->toJson();
         }
-
+    
         return Inertia::render('eoi/list-eois', [
             'flash' => [
                 'message' => session('message'),
@@ -199,8 +207,11 @@ class EOIController extends Controller implements HasMiddleware
     public function edit(EOI $eoi)
     {
         $eoi->load('documents', 'requisitions');
+        // dd($eoi);
         $products = Product::all();
         $requiredDocuments = Document::all();
+        
+        $eoi->requisition_ids = $eoi->requisitions->pluck('id')->toArray();
         
         return Inertia::render('eoi/eoi-form', [
             'eoi' => $eoi,
@@ -210,19 +221,21 @@ class EOIController extends Controller implements HasMiddleware
             'isEditing' => true
         ]);
     }
-
     /**
      * Update the specified resource in storage.
      */
     public function update(EOIRequest $request, EOI $eoi)
     {
+        if (!in_array($eoi->status, ['draft', 'rejected'])) {
+            return redirect()->back()
+                ->with('error', 'Expression of Interest can only be updated when in draft or rejected status.');
+        }
+    
         $requestData = $request->validated();
-        // dd($requestData);
         
         $eoi->update([
             'title' => $requestData['title'],
             'description' => $requestData['description'],
-            // 'submission_deadline' => $requestData['submission_deadline'],
             'evaluation_criteria' => $requestData['evaluation_criteria'],
             'allow_partial_item_submission' => $requestData['allow_partial_item_submission'] ?? false,
             'status' => $requestData['status'] ?? $eoi->status,
@@ -239,7 +252,6 @@ class EOIController extends Controller implements HasMiddleware
             Requisition::where('eoi_id', $eoi->id)
                 ->update(['eoi_id' => null]);
                 
-            // Then, assign new requisitions
             Requisition::whereIn('id', $requestData['requisition_ids'])
                 ->update(['eoi_id' => $eoi->id]);
         }

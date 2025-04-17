@@ -11,6 +11,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RequisitionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserRegisteredMailController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\VendorEOISubmissionController;
 use Illuminate\Support\Facades\Route;
@@ -140,6 +141,9 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::get('/vendors',[VendorController::class, 'ListAllVendors'])->name('vendors.list');
     Route::get('/vendors/{vendor}',[VendorController::class, 'show'])->name('vendor.show');
     
+
+    // mail
+    Route::get('send-mail',[UserRegisteredMailController::class, 'UserRegisteredMail']);
     // Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
     // // Route::get('/permissions/create', [PermissionController::class, 'create'])->name('permissions.create');
     // Route::post('/permissions', [PermissionController::class, 'store'])->name('permissions.store');

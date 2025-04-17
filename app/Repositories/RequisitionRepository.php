@@ -87,7 +87,6 @@ class RequisitionRepository implements RequisitionInterface
             // Update the requisition
             $requisition->update([
                 'title' => $data['title'],
-                'description' => $data['description'] ?? null,
                 'required_date' => $data['required_date'],
                 'status' => $data['status'],
                 'urgency' => $data['urgency'],

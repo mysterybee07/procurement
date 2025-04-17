@@ -137,27 +137,18 @@ const RequisitionForm: React.FC<Props> = ({ products, isEditing = false, requisi
 
   const submitForApproval = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Clear any previous errors before submission
     clearErrors();
-    
-    // Set the status and submit
-    setData('status', 'draft');
-    
+    setData('status', 'draft'); 
     if (isEditing) {
       put(`/requisitions/${data.id}`);
     } else {
       post('/requisitions');
     }
   };
-
+  
   const updateRequisition = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Clear any previous errors before submission
     clearErrors();
-    
-    // Update requisition
     put(`/requisitions/${data.id}`);
   };
 
