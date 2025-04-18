@@ -87,8 +87,7 @@ class ApprovalWorkflowController extends Controller implements HasMiddleware
      * Store a newly created resource in storage.
      */
     public function store(ApprovalWorkflowRequest $request)
-    {
-        
+    {        
         $validated = $request->validated();
         try {
             DB::beginTransaction();

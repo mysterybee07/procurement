@@ -12,6 +12,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",
+        "@types/dompurify": "^3.2.0",
         "@types/node": "^22.13.5",
         "eslint": "^9.17.0",
         "eslint-config-prettier": "^10.0.1",
@@ -51,6 +52,7 @@
         "datatables.net": "^2.2.2",
         "datatables.net-bs4": "^2.2.2",
         "datatables.net-dt": "^2.2.2",
+        "dompurify": "^3.2.5",
         "globals": "^15.14.0",
         "jquery": "^3.7.1",
         "laravel-vite-plugin": "^1.0",

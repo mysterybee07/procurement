@@ -299,6 +299,22 @@ class EOIController extends Controller implements HasMiddleware
         return redirect()->back()
             ->with('message', 'EOI published successfully.');
     }
+     // Close the submission
+     public function closeEOI(EOI $eoi)
+     {
+         if ($eoi->status!=='open') {
+             return redirect()->back()
+                 ->with('error', 'EOI cannot be published because it has not been approved.');
+         }
+ 
+         $eoi->update([
+             'status' => 'closed',
+             'submission_deadline' => now(),
+         ]);
+ 
+         return redirect()->back()
+             ->with('message', 'EOI submission closed successfully.');
+     }
     public function publishEOI(Request $request, EOI $eoi)
     {
         $request->validate([
@@ -532,6 +548,54 @@ class EOIController extends Controller implements HasMiddleware
                 'message' => session('message'),
                 'error' => session('error'),
             ],
+        ]);
+    }
+
+    public function publicEOIViews($id)
+    {
+        // Find the EOI with relationships
+        $eoi = Eoi::with([
+            'requisitions.requestItems.product.category', 
+            'documents', 
+            'createdBy'
+        ])->findOrFail($id);
+    
+        // Check if EOI is in public status
+        if (!in_array($eoi->status, ['published', 'open'])) {
+            abort(404, 'EOI not available for public viewing');
+        }
+    
+        // Aggregate items for display
+        $aggregatedItems = [];
+    
+        foreach ($eoi->requisitions as $requisition) {
+            foreach ($requisition->requestItems as $item) {
+                if ($item->provided_quantity >= $item->required_quantity) {
+                    continue;
+                }
+    
+                $productId = $item->product->id;
+    
+                if (!isset($aggregatedItems[$productId])) {
+                    $aggregatedItems[$productId] = [
+                        'id' => $productId,
+                        'name' => $item->product->name,
+                        'unit' => $item->product->unit,
+                        'category' => $item->product->category->category_name ?? 'Uncategorized',
+                        'required_quantity' => 0,
+                    ];
+                }
+    
+                $aggregatedItems[$productId]['required_quantity'] += 
+                    ($item->required_quantity - $item->provided_quantity);
+            }
+        }
+    
+        return Inertia::render('eoi/public-eoi-views', [
+            'eoi' => $eoi,
+            'aggregatedItems' => array_values($aggregatedItems), // Convert to indexed array
+            // 'organizationName' => 
+            // 'organizationAddress' => 
         ]);
     }
 }

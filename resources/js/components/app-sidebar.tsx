@@ -78,7 +78,7 @@ const mainNavItems: (NavItem & { permission?: string, vendorOnly?: boolean })[] 
         title: 'Report',
         href: '/reports/eoi',
         icon: LayoutGrid,
-        permission: 'view vendors'
+        permission: 'view reports'
     },
     {
         title: 'Open EOIs',

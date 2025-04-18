@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import { BreadcrumbItem } from '@/types';
+import ApproveModal from '@/components/approve-modal';
+import RejectModal from '@/components/reject-modal';
 
 interface Entity {
   title: string;
@@ -161,21 +163,21 @@ const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ flash, requestApp
                 </h3>
               </div>
               <div className="px-6 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
+                {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> */}
+                  {/* {/* <div>
                     <div className="text-sm font-medium text-gray-500">Budget</div>
                     <div className="mt-1 text-sm text-gray-900 font-medium">
                       ${item.estimated_budget?.toLocaleString() || '0'}
                     </div>
-                  </div>
+                  </div> */}
 
                   <div>
-                    <div className="text-sm font-medium text-gray-500">Deadline</div>
+                    <div className="text-sm font-medium text-gray-500">Status</div>
                     <div className="mt-1 text-sm text-gray-900 font-medium">
-                      {formatDate(item.deadline)}
+                      {(item.status)}
                     </div>
-                  </div>
-                </div>
+                  </div> 
+                {/* </div> */}
 
                 {item.step && item.step.length > 0 && (
                   <div className="mt-4">
@@ -203,16 +205,9 @@ const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ flash, requestApp
             <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-end space-x-2">
               {tab === 'pending' ? (
                 <>
-                  <button
-                    className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded text-sm font-medium flex items-center"
-                    onClick={() => handleAction(item.id, 'approve')}
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    Approve
-                  </button>
-                  <button
+                  <ApproveModal entityId={item.id} />
+                  <RejectModal entityId={item.id} />
+                  {/* <button
                     className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded text-sm font-medium flex items-center"
                     onClick={() => handleAction(item.id, 'reject')}
                   >
@@ -220,7 +215,7 @@ const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ flash, requestApp
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                     Reject
-                  </button>
+                  </button> */}
                   <button
                     className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm font-medium flex items-center"
                     onClick={() => handleViewDetails(item)}

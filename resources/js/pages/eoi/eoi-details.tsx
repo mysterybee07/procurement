@@ -50,6 +50,7 @@ interface Eoi {
   evaluation_criteria: string;
   created_at: string;
   publish_date: string;
+  submission_opening_date: string;
   submission_deadline: string;
   status: string;
   requisitions: Requisition[];
@@ -82,17 +83,10 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
   const user = auth?.user;
   console.log(approvalWorkflows);
 
-  // const approvalWorkflows = [
-  //   { id: 1, name: 'Workflow 1' },
-  //   { id: 2, name: 'Workflow 2' },
-  //   { id: 3, name: 'Workflow 3' },
-  // ];
-
-  // Add this function inside your EOIDetails component
   const generateShareableLink = () => {
     // Create the public URL for this EOI
     const baseUrl = window.location.origin;
-    const publicUrl = `${baseUrl}/eoi/public/${eoi.id}`;
+    const publicUrl = `${baseUrl}/eois/public/${eoi.id}`;
 
     // Copy to clipboard
     navigator.clipboard.writeText(publicUrl)
@@ -121,11 +115,11 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
   // Breadcrumbs
   const breadcrumbs: BreadcrumbItem[] = [
     {
-      title: 'Requisitions',
+      title: 'EOIs',
       href: route('requisitions.index')
     },
     {
-      title: 'Requisition Details',
+      title: 'EOIs Details',
       href: '#'
     }
   ];
@@ -150,21 +144,21 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
 
           <div className="p-6 max-w-4xl mx-auto bg-white rounded shadow">
             <div className='flex justify-end mb-4'>
-            {/* {(eoi.status === "published" || eoi.status === "open") && ( */}
-            <Button
-                  type="button"
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-4 mt-4"
-                  onClick={generateShareableLink}
-                >
-                  Share
-                </Button>
+              {/* {(eoi.status === "published" || eoi.status === "open") && ( */}
+              <Button
+                type="button"
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-4 mt-4"
+                onClick={generateShareableLink}
+              >
+                Share
+              </Button>
               {/* )} */}
-              </div>
+            </div>
             {/* Header Section */}
             <header className="mb-8">
 
               <h1 className="text-3xl font-bold text-center mb-6">{eoi.title}</h1>
-              
+
               <div className="flex justify-between mb-4">
                 <div>
                   <span className="font-semibold">EOI Number: </span>
@@ -175,7 +169,11 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
                     <span className="font-semibold">Publish Date: </span>
                     <span>{formatDate(eoi.publish_date)}</span>
                   </div>
-
+                ) : eoi.status === "opened" || eoi.status === "closed" || eoi.status === "under_selection" ? (
+                  <div>
+                    <span className="font-semibold">Submission Opening Date: </span>
+                    <span>{formatDate(eoi.submission_opening_date)}</span>
+                  </div>
                 ) : (
                   <div>
                     <span className="font-semibold">Created at: </span>
@@ -282,6 +280,7 @@ export default function EOIDetails({ approvalWorkflows, eoi, aggregatedItems, fl
               )}
             </div>
             <div>
+            {/* <PublishEOIModal eoiId={eoi.id} /> */}
               {eoi.status === "approved" &&
                 !["published", "closed", "under_selection", "open", "draft"].includes(eoi.status) &&
                 user.permissions.includes('publish eois') && (

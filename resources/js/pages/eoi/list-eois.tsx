@@ -7,7 +7,7 @@ import DeleteModal from '@/components/delete-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
-    title: 'All Requisitions',
+    title: 'All EOIs',
     href: '/dashboard',
   },
 ];

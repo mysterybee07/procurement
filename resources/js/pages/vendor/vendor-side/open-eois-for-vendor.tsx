@@ -17,6 +17,7 @@ interface Eoi {
   title: string;
   description: string;
   created_at: string;
+  submission_opening_date: string;
   submission_deadline: string;
   status: string;
   requisitions: Array<{
@@ -49,12 +50,6 @@ interface EoiProps {
 export default function ListEOI({ eois, flash, categories }: EoiProps) {
   const [showFullDescriptionMap, setShowFullDescriptionMap] = useState<{ [key: number]: boolean }>({});
 
-  // const toggleDescription = (eoiId: number) => {
-  //   setShowFullDescriptionMap(prev => ({
-  //     ...prev,
-  //     [eoiId]: !prev[eoiId]
-  //   }));
-  // };
   console.log(categories);
   const getDescription = (eoi: Eoi) => {
     const isFullDescriptionShown = showFullDescriptionMap[eoi.id];
@@ -91,8 +86,8 @@ export default function ListEOI({ eois, flash, categories }: EoiProps) {
                   <div className="p-4">
                     <div className="mb-6">
                       <div className='flex justify-between'>
-                      <div className="text-gray-600 my-2">EOI Number: {eoi.eoi_number}</div>
-                      <div>{eoi.status}</div>
+                        <div className="text-gray-600 my-2">EOI Number: {eoi.eoi_number}</div>
+                        <div>{eoi.status}</div>
                       </div>
                       <h3 className="text-xl font-bold">{eoi.title}</h3>
                     </div>
@@ -118,15 +113,21 @@ export default function ListEOI({ eois, flash, categories }: EoiProps) {
                     <div className="border border-gray-100 mb-5"></div>
 
                     <div className="flex flex-col lg:flex-row justify-between mb-4">
-                      {eoi.status === "published" && eoi.submission_deadline ==="" ? (
-                        <div className="text-red-600 mb-3">EOI is not open to submission</div>
-                      ) : new Date(eoi.submission_deadline) < new Date() ? (
-                        <div className="text-red-600 mb-3">Submission deadline crossed</div>
-                      ) : (
+                      {eoi.status === "closed" || eoi.status === "under_selection" ? (
+                        <div className="text-red-600 mb-3">Closed</div>
+                      ) : eoi.status === "open" ? (
+                        new Date(eoi.submission_deadline) < new Date() ? (
+                          <div className="text-red-600 mb-3">Submission deadline crossed</div>
+                        ) : (
+                          <div className="text-orange-700 mb-3">
+                            Submission Deadline: {eoi.submission_deadline}
+                          </div>
+                        )
+                      ) : !eoi.submission_deadline ? (
                         <div className="text-orange-700 mb-3">
-                          Submission Deadline: {eoi.submission_deadline}
+                          Submission Opening Date: {eoi.submission_opening_date}
                         </div>
-                      )}
+                      ) : null}
                       {/* {eoi.status!=="closed"&&(
                       <div className="text-orange-700 mb-3">
                          {eoi.status}

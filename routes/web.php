@@ -17,9 +17,12 @@ use App\Http\Controllers\VendorEOISubmissionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+
+
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
@@ -27,8 +30,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
-Route::middleware(['auth','prevent.vendor'])->group(function () {
+Route::get('/eois/public/{eoi}', [EOIController::class, 'publicEOIViews'])->name('eois.public.show');
 
+Route::middleware(['auth','prevent.vendor'])->group(function () {
     // users route
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
@@ -127,8 +131,8 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
     Route::get('/approvals', [ApprovalController::class, 'approverDashboard'])->name('approval-workflows.dashboard');
 
 
-    Route::post('/entity/{entityId}/approve',[ApprovalController::class,'approve'])->name('entity.approve');
-    Route::post('/entity/{entityId}/reject',[ApprovalController::class,'reject'])->name('entity.reject');
+    Route::put('/entity/{entityId}/approve',[ApprovalController::class,'approve'])->name('entity.approve');
+    Route::put('/entity/{entityId}/reject',[ApprovalController::class,'reject'])->name('entity.reject');
 
 
     // EOI report
@@ -167,6 +171,8 @@ Route::middleware(['auth','prevent.vendor'])->group(function () {
         Route::get('/vendor/{eoiId}/submission', [VendorEOISubmissionController::class, 'create'])->middleware('isEOIOpen');
         Route::post('/vendor/{eoiId}/submission', [VendorEOISubmissionController::class, 'store']);
     });
+
+
 
     // Add this route in your 
 

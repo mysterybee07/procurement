@@ -241,25 +241,6 @@ class VendorEOISubmissionController extends Controller
         ]);
     }
 
-
-    // Close the submission
-    public function closeEOI(EOI $eoi)
-    {
-        if ($eoi->status!=='opened') {
-            return redirect()->back()
-                ->with('error', 'EOI cannot be published because it has not been approved.');
-        }
-
-        $eoi->update([
-            'status' => 'closed',
-            'submission_deadline' => now(),
-            // 'publish_date' => now(),
-        ]);
-
-        return redirect()->back()
-            ->with('message', 'EOI submission closed successfully.');
-    }
-
     /**
      * Show the form for editing the specified resource.
      */

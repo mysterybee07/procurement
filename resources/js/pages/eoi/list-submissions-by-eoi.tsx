@@ -7,6 +7,7 @@ import { Button } from "@headlessui/react";
 import BeginSelectionModal from "@/components/vendor-selection-modal";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import CloseEOIModal from "@/components/close-submission-modal";
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: "Submitted EOIs", href: "/dashboard" },
@@ -40,13 +41,13 @@ interface ListSubmissionByEoiProps {
   };
 }
 
-const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({ 
-  eoi_id, 
-  eoi_number, 
+const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
+  eoi_id,
+  eoi_number,
   eoi_status,
   categories,  // Use props provided by controller 
   products,    // Use props provided by controller
-  flash 
+  flash
 }) => {
   // State for filters
   const [ratingFilter, setRatingFilter] = useState("");
@@ -54,15 +55,15 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
   const [maxPrice, setMaxPrice] = useState("");
   const [startDeliveryDate, setStartDeliveryDate] = useState<Date | null>(null);
   const [endDeliveryDate, setEndDeliveryDate] = useState<Date | null>(null);
-  
+
   // Changed from string to string[] for multiselect
   const [selectedProductCategories, setSelectedProductCategories] = useState<string[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  
+
   // Dropdown state management
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
-  
+
   const [showFilters, setShowFilters] = useState(false);
   const [dataTable, setDataTable] = useState<any>(null);
 
@@ -76,27 +77,27 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
   const buildApiUrl = () => {
     let url = `/eoi-submission/${eoi_id}`;
     const params = new URLSearchParams();
-    
+
     if (ratingFilter) params.append("rating_filter", ratingFilter);
     if (minPrice) params.append("min_price", minPrice);
     if (maxPrice) params.append("max_price", maxPrice);
     if (startDeliveryDate) params.append("start_delivery_date", formatDate(startDeliveryDate));
     if (endDeliveryDate) params.append("end_delivery_date", formatDate(endDeliveryDate));
-    
+
     // Handle multiple selected categories
     if (selectedProductCategories.length > 0) {
       selectedProductCategories.forEach(category => {
         params.append("product_categories[]", category);
       });
     }
-    
+
     // Handle multiple selected products
     if (selectedProducts.length > 0) {
       selectedProducts.forEach(product => {
         params.append("products[]", product);
       });
     }
-    
+
     const queryString = params.toString();
     return queryString ? `${url}?${queryString}` : url;
   };
@@ -117,7 +118,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
     setEndDeliveryDate(null);
     setSelectedProductCategories([]);
     setSelectedProducts([]);
-    
+
     // Reset datatable
     if (dataTable) {
       dataTable.ajax.url(`/eoi-submission/${eoi_id}`).load();
@@ -209,19 +210,19 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
       <Head title={`EOIs - ${eoi_number}`} />
       <div className="container mx-auto p-4">
         <h2 className="text-xl font-bold mb-4">Submitted EOIs for {eoi_number}</h2>
-        
+
         {flash?.message && (
           <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
             {flash.message}
           </div>
         )}
-        
+
         {flash?.error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
             {flash.error}
           </div>
         )}
-        
+
         <div className="flex items-center justify-between w-full mb-4">
           <Button
             onClick={() => setShowFilters(!showFilters)}
@@ -229,12 +230,14 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
           >
             {showFilters ? "Hide Filters" : "Show Filters"}
           </Button>
-          
-          {eoi_status === "closed" && (
-            <div className="ml-auto">
+
+          <div className="ml-auto">
+            {eoi_status === "closed" ? (
               <BeginSelectionModal eoiId={eoi_id} />
-            </div>
-          )}
+            ) : (
+              <CloseEOIModal eoiId={eoi_id} />
+            )}
+          </div>
         </div>
 
         {/* Advanced Filters Panel */}
@@ -305,7 +308,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
               {/* Product category multiselect dropdown */}
               <div className="mb-4 relative category-dropdown">
                 <label className="block font-semibold mb-2">Product Categories:</label>
-                <div 
+                <div
                   className="border p-2 rounded w-full flex justify-between items-center cursor-pointer bg-white"
                   onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
                 >
@@ -318,13 +321,13 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
                     </svg>
                   </div>
                 </div>
-                
+
                 {/* Dropdown content */}
                 {isCategoryDropdownOpen && (
                   <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg">
                     <div className="sticky top-0 bg-white p-2 border-b flex justify-between">
-                      <button 
-                        className="text-blue-600 text-sm hover:underline" 
+                      <button
+                        className="text-blue-600 text-sm hover:underline"
                         onClick={(e) => {
                           e.stopPropagation();
                           selectAllCategories();
@@ -332,8 +335,8 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
                       >
                         Select All
                       </button>
-                      <button 
-                        className="text-blue-600 text-sm hover:underline" 
+                      <button
+                        className="text-blue-600 text-sm hover:underline"
                         onClick={(e) => {
                           e.stopPropagation();
                           deselectAllCategories();
@@ -344,8 +347,8 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
                     </div>
                     <div className="max-h-60 overflow-y-auto">
                       {categories.map((category) => (
-                        <div 
-                          key={category} 
+                        <div
+                          key={category}
                           className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -356,11 +359,11 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
                             type="checkbox"
                             id={`category-${category}`}
                             checked={selectedProductCategories.includes(category)}
-                            onChange={() => {}} 
+                            onChange={() => { }}
                             className="mr-2"
                             onClick={(e) => e.stopPropagation()}
                           />
-                          <label 
+                          <label
                             htmlFor={`category-${category}`}
                             className="cursor-pointer w-full"
                           >
@@ -379,7 +382,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
               {/* Product multiselect dropdown */}
               <div className="mb-4 relative product-dropdown">
                 <label className="block font-semibold mb-2">Products:</label>
-                <div 
+                <div
                   className="border p-2 rounded w-full flex justify-between items-center cursor-pointer bg-white"
                   onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
                 >
@@ -392,13 +395,13 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
                     </svg>
                   </div>
                 </div>
-                
+
                 {/* Dropdown content */}
                 {isProductDropdownOpen && (
                   <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg">
                     <div className="sticky top-0 bg-white p-2 border-b flex justify-between">
-                      <button 
-                        className="text-blue-600 text-sm hover:underline" 
+                      <button
+                        className="text-blue-600 text-sm hover:underline"
                         onClick={(e) => {
                           e.stopPropagation();
                           selectAllProducts();
@@ -406,8 +409,8 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
                       >
                         Select All
                       </button>
-                      <button 
-                        className="text-blue-600 text-sm hover:underline" 
+                      <button
+                        className="text-blue-600 text-sm hover:underline"
                         onClick={(e) => {
                           e.stopPropagation();
                           deselectAllProducts();
@@ -418,8 +421,8 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
                     </div>
                     <div className="max-h-60 overflow-y-auto">
                       {products.map((product) => (
-                        <div 
-                          key={product} 
+                        <div
+                          key={product}
                           className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -430,11 +433,11 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
                             type="checkbox"
                             id={`product-${product}`}
                             checked={selectedProducts.includes(product)}
-                            onChange={() => {}} // Handled by div click
+                            onChange={() => { }} // Handled by div click
                             className="mr-2"
                             onClick={(e) => e.stopPropagation()}
                           />
-                          <label 
+                          <label
                             htmlFor={`product-${product}`}
                             className="cursor-pointer w-full"
                           >
@@ -474,7 +477,7 @@ const ListSubmissionByEoi: React.FC<ListSubmissionByEoiProps> = ({
           <DataTable
             columns={columns}
             ajaxUrl={buildApiUrl()}
-            // tableRef={dataTableRef}
+          // tableRef={dataTableRef}
           />
         </div>
       </div>
