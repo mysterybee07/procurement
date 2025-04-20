@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CategoryRequest;
 use App\Models\ProductCategory;
 use App\Services\ProductCategoryService;
+use Barryvdh\Debugbar\Facades\Debugbar;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -33,6 +34,7 @@ class ProductCategoryController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        // Debugbar::info($request);
         if ($request->ajax() && $request->expectsJson()) {
             $categories = DB::table('product_categories as c')
                 ->leftJoin('product_categories as p', 'c.parent_category_id', '=', 'p.id')
@@ -77,7 +79,7 @@ class ProductCategoryController extends Controller implements HasMiddleware
     public function create()
     {
         $parentCategories = $this->categoryService->getParentCategories();
-
+        // Debugbar::info($parentCategories);
         return Inertia::render('product-category/product-category-form', [
             'parentCategories' => $parentCategories
         ]);

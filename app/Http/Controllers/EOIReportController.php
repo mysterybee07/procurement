@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\Debugbar\Facades\Debugbar;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -250,6 +251,7 @@ class EOIReportController extends Controller
             ORDER BY ves.submission_date DESC, p.name, ra.created_at
         ", [$eoi_id]);
         
+        Debugbar::info($data);
         // Rest of your processing code remains the same...
         $overview = null;
         $submissions = [];

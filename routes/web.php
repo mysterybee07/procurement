@@ -14,12 +14,14 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRegisteredMailController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\VendorEOISubmissionController;
+use Barryvdh\Debugbar\Facades\Debugbar;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 
 
 Route::get('/', function () {
+    Debugbar::info('info');
     return Inertia::render('welcome');
 })->name('home');
 

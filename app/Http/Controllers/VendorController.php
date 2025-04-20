@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EOI;
 use App\Models\Vendor;
+use Barryvdh\Debugbar\Facades\Debugbar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -31,6 +32,7 @@ class VendorController extends Controller
             ->where('eois.status', 'published')
             ->distinct()
             ->pluck('product_categories.category_name');
+            // Debugbar::info($categories);
         // dd($categories);
         return Inertia::render('vendor/vendor-side/open-eois-for-vendor', [
             'eois' => $openedEOIs,

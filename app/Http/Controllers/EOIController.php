@@ -8,6 +8,7 @@ use App\Models\Document;
 use App\Models\EOI;
 use App\Models\Product;
 use App\Models\Requisition;
+use Barryvdh\Debugbar\Facades\Debugbar;
 use DB;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -207,6 +208,7 @@ class EOIController extends Controller implements HasMiddleware
     public function edit(EOI $eoi)
     {
         $eoi->load('documents', 'requisitions');
+        // Debugbar::error($eoi);
         // dd($eoi);
         $products = Product::all();
         $requiredDocuments = Document::all();
