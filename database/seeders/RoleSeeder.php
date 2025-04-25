@@ -12,18 +12,14 @@ class RoleSeeder extends Seeder
     /**
      * Run the database seeds.
      */
-    public function run(): void
-    {
-        $createUserPermission = Permission::create(['name' => 'create users']);
+    // public function run(): void
+    // {
+    //     $this->call(PermissionSeeder::class);
 
-        $superAdminRole = Role::create(['name'=>'super admin']);
-        Role::create(['name'=>'vendor']);
-        Role::create(['name'=>'user']);
+    //     // $superAdminRole = Role::create(['name'=>'superadmin']);
+    //     // Role::create(['name'=>'procurement officer']);
+    //     // Role::create(['name'=>'vendor']);
+    //     // Role::create(['name'=>'user']);
 
-        $superAdminRole -> givePermissionTo($createUserPermission);
-
-        $user = User::find(1);
-
-        $user ->assignRole($superAdminRole);
-    }
+    // }
 }
